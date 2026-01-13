@@ -1,0 +1,192 @@
+# ==========================================
+# Node & Dependencies
+# ==========================================
+node_modules/
+vendor/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+composer.lock
+pnpm-lock.yaml
+
+# ==========================================
+# Environment Variables
+# ==========================================
+.env
+.env.local
+.env.*.local
+.env.backup
+.env.production
+.env.development
+.env.test
+*.env
+
+# ==========================================
+# Build & Distribution
+# ==========================================
+dist/
+build/
+.cache/
+out/
+/public/build
+/public/hot
+/public/storage
+*.tsbuildinfo
+
+# ==========================================
+# Logs
+# ==========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ==========================================
+# Database
+# ==========================================
+*.sqlite
+*.sqlite3
+*.db
+/database/*.sqlite
+/database/*.db
+
+# ==========================================
+# Uploads & User Content
+# ==========================================
+/backend/public/uploads/*
+!/backend/public/uploads/.gitkeep
+/uploads/
+/storage/
+
+# ==========================================
+# IDE & Editors
+# ==========================================
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+.nova/
+.fleet/
+.zed/
+*.swp
+*.swo
+*.swn
+*~
+.project
+.classpath
+.settings/
+.phpactor.json
+.php_cs
+.php_cs.cache
+
+# ==========================================
+# OS Files
+# ==========================================
+.DS_Store
+.DS_Store?
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*.tmp
+*.temp
+
+# ==========================================
+# Python Virtual Environment
+# ==========================================
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# ==========================================
+# Testing & Coverage
+# ==========================================
+coverage/
+*.lcov
+.nyc_output/
+.jest/
+test-results/
+junit.xml
+
+# ==========================================
+# Development Reports (archived)
+# ==========================================
+/docs/development-reports/
+*-REPORT-*.md
+*-COMPLETE-*.md
+CHANGELOG-*.md
+*GOOGLE-OAUTH-SETUP-GUIDE*.md
+
+# ==========================================
+# Temporary Files & Backups
+# ==========================================
+_backups/
+_temp_backup*/
+_temp_logs/
+*.bak
+*.backup
+*.orig
+*.rej
+*.patch
+.temp/
+tmp/
+temp/
+
+# ==========================================
+# Laravel Specific
+# ==========================================
+/storage/*.key
+/storage/pail
+/storage/logs/*
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/auth.json
+.phpunit.result.cache
+/.phpunit.cache
+Homestead.json
+Homestead.yaml
+
+# ==========================================
+# Cloud & Deployment
+# ==========================================
+.vercel
+.netlify
+.aws/
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+# ==========================================
+# Security
+# ==========================================
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+secrets/
+credentials/
+
+# ==========================================
+# Git
+# ==========================================
+.gitkeep
+.github

@@ -1,0 +1,532 @@
+/* ============================================ */
+/* SUPERVISOR PANEL - ALIGNED WITH ENGLISH-ADAPTIVE-LEARNING */
+/* ============================================ */
+
+.supervisor-page {
+    background-color: #f1f5fc;
+    font-family: "Inter", sans-serif;
+    color: #333333;
+    min-height: 100vh;
+}
+
+.supervisor-page .min-h-100 {
+    min-height: calc(100vh - 72px);
+}
+
+.supervisor-page .navbar {
+    height: 72px;
+}
+
+.supervisor-page .navbar .navbar-nav a {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2px solid #ffffff;
+    border-radius: 100%;
+    color: #ffffff;
+    margin-right: 20px;
+}
+
+.supervisor-page .navbar .navbar-nav a:hover {
+    background-color: #ffffff;
+    color: #0090ff;
+}
+
+.supervisor-page .sidebar {
+    transition: width 0.3s ease;
+    height: 100vh;
+    top: 0;
+    box-shadow: 0px 4px 6px 0px rgba(0, 0, 0, 0.2);
+    background: white;
+    color: #526071;
+}
+
+.supervisor-page .sidebar .top-logo {
+    height: 72px;
+}
+
+.supervisor-page .sidebar .nav-container {
+    height: calc(100vh - 124px);
+}
+
+.supervisor-page .sidebar .nav-container .menu-box {
+    height: calc(100% - 66px);
+    max-height: calc(100% - 52px);
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.supervisor-page .sidebar .nav-container .menu-box::-webkit-scrollbar {
+    width: 2px;
+}
+.supervisor-page .sidebar .nav-container .menu-box::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+.supervisor-page .sidebar .nav-container .menu-box::-webkit-scrollbar-thumb {
+    background: #888;
+}
+.supervisor-page
+    .sidebar
+    .nav-container
+    .menu-box::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.supervisor-page .sidebar .top-logo h5 {
+    color: #0090ff !important;
+}
+
+.supervisor-page .sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    background: #ffffff;
+    color: #526071;
+    border: 1px solid #f1f5fc;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.supervisor-page .sidebar .submenu .nav-link {
+    color: #959ea9;
+    margin-left: 24px;
+    border: none;
+    font-weight: normal;
+}
+
+.supervisor-page .sidebar .nav a:hover,
+.supervisor-page .sidebar .nav a.active {
+    background-color: #0090ff;
+    color: #ffffff;
+    border-color: #0090ff;
+}
+
+.supervisor-page .sidebar .nav .drop-menu:hover {
+    background-color: #ffffff;
+    border-color: #0090ff;
+    color: #0090ff;
+}
+
+.supervisor-page .sidebar .nav a.active-border {
+    border-color: #0090ff;
+    color: #0090ff;
+}
+
+.supervisor-page .sidebar.minimized {
+    width: 80px;
+}
+
+.supervisor-page .sidebar.minimized .nav-link span,
+.supervisor-page .sidebar.minimized .nav-link i.chrevon,
+.supervisor-page .sidebar.minimized .submenu {
+    display: none;
+}
+
+.supervisor-page .sidebar.minimized .nav-link i {
+    margin-right: 0 !important;
+}
+
+.supervisor-page .sidebar.minimized .nav-link {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Setting box positioning */
+.supervisor-page .sidebar .setting-box {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+}
+
+.supervisor-page .sidebar .setting-box .nav-link {
+    margin-bottom: 0;
+}
+
+.supervisor-page .sidebar.minimized .nav-link.drop-menu {
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+}
+
+/* Dashboard Stats Cards */
+.supervisor-dashboard .mini-cards {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 1rem !important;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.supervisor-dashboard .mini-cards:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.supervisor-dashboard .mini-cards h4 {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.supervisor-dashboard .mini-cards h1 {
+    color: white;
+    font-weight: bold;
+}
+
+/* Approval Cards */
+.supervisor-leave .card,
+.supervisor-logbook .card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.supervisor-leave .card:hover,
+.supervisor-logbook .card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Filter Buttons */
+.supervisor-leave .btn-group .btn,
+.supervisor-logbook .btn-group .btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 8px 20px;
+}
+
+.supervisor-leave .btn-group .btn:first-child {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.supervisor-leave .btn-group .btn:last-child {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* Division Management Cards */
+.manage-division .card {
+    border-radius: 12px;
+    border: none;
+}
+
+.manage-division .card-body {
+    padding: 1.5rem;
+}
+
+/* User Selection Cards */
+.manage-division .bg-light {
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.manage-division .bg-light:hover {
+    background-color: #e9ecef !important;
+    cursor: pointer;
+}
+
+.manage-division .bg-primary {
+    border: 2px solid #0d6efd !important;
+}
+
+/* Profile Page */
+.supervisor-profile .card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.supervisor-profile .rounded-circle {
+    border: 4px solid #28a745;
+}
+
+/* Table Styling */
+.supervisor-page table {
+    font-size: 14px;
+}
+
+.supervisor-page table thead {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.supervisor-page table th {
+    font-weight: 600;
+    color: #495057;
+    padding: 12px;
+}
+
+.supervisor-page table td {
+    padding: 12px;
+    vertical-align: middle;
+}
+
+.supervisor-page table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Badge Styling */
+.supervisor-page .badge {
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+}
+
+/* Button Styling */
+.supervisor-page .btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.supervisor-page .btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.supervisor-page .btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+/* Modal Styling */
+.supervisor-page .modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.supervisor-page .modal-header {
+    background-color: #28a745;
+    color: white;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    border-bottom: none;
+}
+
+.supervisor-page .modal-header .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+.supervisor-page .modal-footer {
+    border-top: 1px solid #dee2e6;
+    padding: 1rem 1.5rem;
+}
+
+/* Loading States */
+.supervisor-page .spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Empty States */
+.supervisor-page .text-muted {
+    color: #6c757d !important;
+}
+
+/* ============================================ */
+/* RESPONSIVE DESIGN - SUPERVISOR PANEL */
+/* ============================================ */
+
+/* Tablet and below */
+@media (max-width: 991px) {
+    .supervisor-page .sidebar {
+        position: fixed;
+        left: -100%;
+        transition: left 0.3s ease;
+        z-index: 1050;
+        height: 100vh;
+    }
+
+    .supervisor-page .sidebar.show {
+        left: 0;
+    }
+
+    .supervisor-dashboard .mini-cards {
+        margin-bottom: 1rem;
+    }
+
+    .manage-division .card-body {
+        padding: 1rem;
+    }
+
+    .supervisor-page table {
+        font-size: 12px;
+    }
+
+    .supervisor-page table th,
+    .supervisor-page table td {
+        padding: 8px 6px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+    .supervisor-page .navbar .btn-group {
+        margin-right: 0.5rem !important;
+    }
+
+    .supervisor-dashboard h2 {
+        font-size: 24px;
+    }
+
+    .supervisor-dashboard p {
+        font-size: 14px;
+    }
+
+    .supervisor-dashboard .mini-cards h4 {
+        font-size: 14px;
+    }
+
+    .supervisor-dashboard .mini-cards h1 {
+        font-size: 28px;
+    }
+
+    .supervisor-leave h2,
+    .supervisor-logbook h2 {
+        font-size: 22px;
+    }
+
+    .supervisor-leave .btn-group .btn,
+    .supervisor-logbook .btn-group .btn {
+        font-size: 13px;
+        padding: 6px 12px;
+    }
+
+    .supervisor-page table th,
+    .supervisor-page table td {
+        padding: 6px 4px;
+        font-size: 11px;
+    }
+
+    .supervisor-page .badge {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+
+    .supervisor-page .btn-group-sm .btn {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+
+    .supervisor-page .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .supervisor-page .modal-content {
+        border-radius: 8px;
+    }
+
+    .manage-division .card-body {
+        padding: 0.75rem;
+    }
+
+    .manage-division img {
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    .supervisor-profile img {
+        width: 120px !important;
+        height: 120px !important;
+    }
+}
+
+/* Extra small devices */
+@media (max-width: 575px) {
+    .supervisor-page .sidebar {
+        width: 60px;
+    }
+
+    .supervisor-page .sidebar.minimized {
+        width: 60px;
+    }
+
+    .supervisor-dashboard .cards {
+        margin-bottom: 1rem;
+    }
+
+    .supervisor-page .container-fluid {
+        padding: 0.5rem;
+    }
+
+    .supervisor-leave .card-body,
+    .supervisor-logbook .card-body {
+        padding: 0.75rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .supervisor-page .sidebar,
+    .supervisor-page .navbar,
+    .supervisor-page .btn {
+        display: none;
+    }
+
+    .supervisor-page .admin-content {
+        padding: 0;
+    }
+
+    .supervisor-page table {
+        font-size: 10px;
+    }
+}
+
+/* Accessibility */
+.supervisor-page .btn:focus,
+.supervisor-page .form-control:focus,
+.supervisor-page .form-select:focus {
+    box-shadow: 0 0 0 0.25rem rgba(40, 167, 69, 0.25);
+    border-color: #28a745;
+}
+
+/* Smooth Scrolling */
+.supervisor-page {
+    scroll-behavior: smooth;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.supervisor-page .card {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Custom Scrollbar */
+.supervisor-page ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.supervisor-page ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.supervisor-page ::-webkit-scrollbar-thumb {
+    background: #28a745;
+    border-radius: 10px;
+}
+
+.supervisor-page ::-webkit-scrollbar-thumb:hover {
+    background: #218838;
+}

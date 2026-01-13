@@ -1,0 +1,44 @@
+{
+  "name": "attendance-backend",
+  "version": "1.0.0",
+  "description": "Attendance System REST API",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "db:create": "npx sequelize-cli db:create --config config/config.js",
+    "db:drop": "npx sequelize-cli db:drop --config config/config.js",
+    "db:migrate": "npx sequelize-cli db:migrate --migrations-path database/migrations --config config/config.js",
+    "db:seed": "npx sequelize-cli db:seed:all --seeders-path database/seeders --config config/config.js",
+    "db:migrate:undo": "npx sequelize-cli db:migrate:undo --migrations-path database/migrations --config config/config.js",
+    "db:seed:undo": "npx sequelize-cli db:seed:undo --seeders-path database/seeders --config config/config.js"
+  },
+  "keywords": [
+    "attendance",
+    "api",
+    "express"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "google-auth-library": "^10.5.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment-timezone": "^0.5.45",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.11.0",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^6.9.14",
+    "nodemon": "^3.1.4",
+    "pdfkit": "^0.17.2",
+    "sequelize": "^6.37.3",
+    "sequelize-cli": "^6.6.2",
+    "uuid": "^10.0.0"
+  }
+}

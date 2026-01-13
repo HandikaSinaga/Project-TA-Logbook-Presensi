@@ -1,0 +1,195 @@
+/* User Dashboard Styles */
+
+.user-dashboard {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Welcome Section */
+.welcome-card {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.welcome-card::before {
+    content: "";
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    filter: blur(40px);
+}
+
+.welcome-card::after {
+    content: "";
+    position: absolute;
+    bottom: -30px;
+    left: -30px;
+    width: 150px;
+    height: 150px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    filter: blur(30px);
+}
+
+.welcome-card .card-body {
+    position: relative;
+    z-index: 1;
+}
+
+.welcome-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.welcome-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.95;
+}
+
+.date-badge {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Stats Cards */
+.stats-grid {
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.stat-attendance {
+    border-left: 4px solid #06b6d4 !important;
+}
+
+.stat-logbook {
+    border-left: 4px solid #10b981 !important;
+}
+
+.stat-division {
+    border-left: 4px solid #3b82f6 !important;
+}
+
+.stat-leave {
+    border-left: 4px solid #f59e0b !important;
+}
+
+.stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+    flex-shrink: 0;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Recent Activities */
+.recent-activities .card-header {
+    padding: 1rem 1.25rem;
+}
+
+.recent-activities .card-header h5 {
+    font-weight: 600;
+}
+
+.recent-activities .table {
+    font-size: 0.9rem;
+}
+
+.recent-activities .table th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+}
+
+.recent-activities .table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.recent-activities .table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Badges */
+.badge {
+    padding: 0.35em 0.65em;
+    font-weight: 600;
+    font-size: 0.75rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .user-dashboard {
+        padding: 1rem;
+    }
+
+    .welcome-title {
+        font-size: 1.25rem;
+    }
+
+    .welcome-subtitle {
+        font-size: 0.95rem;
+    }
+
+    .date-badge {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+    }
+
+    .stat-icon i {
+        font-size: 1.5rem !important;
+    }
+
+    .stat-value {
+        font-size: 1.25rem;
+    }
+
+    .recent-activities .table {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .welcome-card .card-body > div {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+
+    .date-badge {
+        width: 100%;
+        text-align: center;
+    }
+}
