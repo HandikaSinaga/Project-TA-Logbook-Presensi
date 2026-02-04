@@ -1,9 +1,10 @@
 // Auto-detect API URL based on environment
+// Production: /api (via Nginx proxy)
+// Development: http://localhost:3001/api (direct backend)
 export const API_URL =
-    import.meta.env.VITE_API_URL ||
-    (import.meta.env.MODE === "production"
+    import.meta.env.MODE === "production"
         ? "/api"
-        : "http://localhost:3001/api");
+        : "http://localhost:3001/api";
 
 export const ROLES = {
     USER: "user",

@@ -23,8 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment
+# Environment variables (frontend doesn't use .env)
 .env
-.env.local
-# Keep .env.production for deployment reference
-# .env.production
+.env.*
