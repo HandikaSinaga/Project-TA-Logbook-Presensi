@@ -50,9 +50,7 @@ const SupervisorDashboard = () => {
                     active_tasks: 0,
                 });
             }
-            setRecentActivities(
-                data.pending_approvals || [],
-            );
+            setRecentActivities(data.pending_approvals || []);
         } catch (error) {
             console.error("Error fetching dashboard:", error);
             toast.error(

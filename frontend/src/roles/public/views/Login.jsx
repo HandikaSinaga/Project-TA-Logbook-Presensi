@@ -59,12 +59,12 @@ const Login = () => {
                             shape: "rectangular",
                             logo_alignment: "left",
                             width: googleButtonRef.current.offsetWidth || 300,
-                        }
+                        },
                     );
                 } catch (error) {
                     console.error(
                         "Failed to initialize Google Sign-In:",
-                        error
+                        error,
                     );
                 }
             }
@@ -117,25 +117,34 @@ const Login = () => {
 
                 switch (status) {
                     case 400:
-                        errorMessage = serverMessage || "Token Google tidak valid";
+                        errorMessage =
+                            serverMessage || "Token Google tidak valid";
                         break;
                     case 401:
-                        errorMessage = serverMessage || "Autentikasi Google gagal";
+                        errorMessage =
+                            serverMessage || "Autentikasi Google gagal";
                         break;
                     case 403:
-                        errorMessage = serverMessage || "Akun Anda belum diaktifkan. Hubungi administrator.";
+                        errorMessage =
+                            serverMessage ||
+                            "Akun Anda belum diaktifkan. Hubungi administrator.";
                         break;
                     case 404:
-                        errorMessage = "Email Google tidak terdaftar dalam sistem. Hubungi administrator.";
+                        errorMessage =
+                            "Email Google tidak terdaftar dalam sistem. Hubungi administrator.";
                         break;
                     case 500:
-                        errorMessage = "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
+                        errorMessage =
+                            "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
                         break;
                     default:
-                        errorMessage = serverMessage || "Login dengan Google gagal. Silakan coba lagi.";
+                        errorMessage =
+                            serverMessage ||
+                            "Login dengan Google gagal. Silakan coba lagi.";
                 }
             } else if (error.request) {
-                errorMessage = "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.";
+                errorMessage =
+                    "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.";
             }
 
             toast.error(errorMessage);
@@ -168,7 +177,7 @@ const Login = () => {
                 localStorage.setItem("token", response.data.token);
                 localStorage.setItem(
                     "user",
-                    JSON.stringify(response.data.user)
+                    JSON.stringify(response.data.user),
                 );
 
                 toast.success("Login berhasil!");
@@ -197,25 +206,33 @@ const Login = () => {
 
                 switch (status) {
                     case 400:
-                        errorMessage = serverMessage || "Email dan password harus diisi";
+                        errorMessage =
+                            serverMessage || "Email dan password harus diisi";
                         break;
                     case 401:
-                        errorMessage = serverMessage || "Email atau password yang Anda masukkan salah";
+                        errorMessage =
+                            serverMessage ||
+                            "Email atau password yang Anda masukkan salah";
                         break;
                     case 403:
-                        errorMessage = serverMessage || "Akun Anda telah dinonaktifkan. Hubungi administrator.";
+                        errorMessage =
+                            serverMessage ||
+                            "Akun Anda telah dinonaktifkan. Hubungi administrator.";
                         break;
                     case 404:
                         errorMessage = "Email tidak terdaftar dalam sistem";
                         break;
                     case 500:
-                        errorMessage = "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
+                        errorMessage =
+                            "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
                         break;
                     default:
-                        errorMessage = serverMessage || "Login gagal. Silakan coba lagi.";
+                        errorMessage =
+                            serverMessage || "Login gagal. Silakan coba lagi.";
                 }
             } else if (error.request) {
-                errorMessage = "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.";
+                errorMessage =
+                    "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.";
             }
 
             toast.error(errorMessage);

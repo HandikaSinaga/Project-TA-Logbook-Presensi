@@ -15,7 +15,7 @@ axiosInstance.interceptors.request.use(
     },
     (error) => {
         return Promise.reject(error);
-    }
+    },
 );
 
 const refreshAccessToken = async () => {
@@ -23,7 +23,7 @@ const refreshAccessToken = async () => {
         const response = await axios.post(
             `${API_URL}/refresh`,
             {},
-            { withCredentials: true }
+            { withCredentials: true },
         );
         const token = response.data.payload.TOKEN;
 
@@ -54,13 +54,22 @@ axiosInstance.interceptors.response.use(
         }
 
         // Skip token refresh for login/auth endpoints
-        const authEndpoints = ['/login', '/google-idtoken', '/register', '/forgot-password'];
-        const isAuthEndpoint = authEndpoints.some(endpoint => 
-            originalRequest.url?.includes(endpoint)
+        const authEndpoints = [
+            "/login",
+            "/google-idtoken",
+            "/register",
+            "/forgot-password",
+        ];
+        const isAuthEndpoint = authEndpoints.some((endpoint) =>
+            originalRequest.url?.includes(endpoint),
         );
 
         // Unauthorized - token expired or invalid (but not for login endpoints)
-        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+        if (
+            error.response?.status === 401 &&
+            !originalRequest._retry &&
+            !isAuthEndpoint
+        ) {
             originalRequest._retry = true;
 
             try {
@@ -76,7 +85,7 @@ axiosInstance.interceptors.response.use(
         }
 
         return Promise.reject(error);
-    }
+    },
 );
 
 export default axiosInstance;

@@ -12,14 +12,14 @@ Sistem manajemen presensi dan logbook modern yang dibangun dengan **React 18** (
 
 ## 📋 Daftar Isi
 
--   [Fitur Utama](#-fitur-utama)
--   [Teknologi](#-teknologi)
--   [Struktur Project](#-struktur-project)
--   [Instalasi](#-instalasi)
--   [Konfigurasi](#-konfigurasi)
--   [Development](#-development)
--   [Deployment](#-deployment)
--   [Lisensi](#-lisensi)
+- [Fitur Utama](#-fitur-utama)
+- [Teknologi](#-teknologi)
+- [Struktur Project](#-struktur-project)
+- [Instalasi](#-instalasi)
+- [Konfigurasi](#-konfigurasi)
+- [Development](#-development)
+- [Deployment](#-deployment)
+- [Lisensi](#-lisensi)
 
 ---
 
@@ -27,71 +27,71 @@ Sistem manajemen presensi dan logbook modern yang dibangun dengan **React 18** (
 
 ### 👥 Manajemen User
 
--   **Multi-role System**: Role Admin, Supervisor, dan User dengan permission granular
--   **Import/Export User**: Manajemen user massal via Excel template
--   **Manajemen Profil**: Upload avatar dengan crop image, informasi personal
--   **Manajemen Divisi**: Organisasi user berdasarkan departemen
--   **Aktivasi/Deaktivasi**: Kontrol status akun user
--   **Reset Password**: Fitur reset password untuk admin
+- **Multi-role System**: Role Admin, Supervisor, dan User dengan permission granular
+- **Import/Export User**: Manajemen user massal via Excel template
+- **Manajemen Profil**: Upload avatar dengan crop image, informasi personal
+- **Manajemen Divisi**: Organisasi user berdasarkan departemen
+- **Aktivasi/Deaktivasi**: Kontrol status akun user
+- **Reset Password**: Fitur reset password untuk admin
 
 ### 📅 Sistem Presensi
 
--   **Check-in/Check-out**: Verifikasi lokasi berbasis GPS
--   **Deteksi Tipe Kerja**: Onsite (di kantor) atau Offsite (di luar kantor) otomatis
--   **Validasi Lokasi**: Radius GPS dan koordinat kantor
--   **Capture Foto**: Foto selfie untuk verifikasi identitas
--   **Auto Checkout**: Checkout otomatis di akhir hari
--   **Deteksi Keterlambatan**: Status otomatis berdasarkan jadwal kantor
--   **Riwayat Presensi**: History lengkap dengan detail waktu dan lokasi
+- **Check-in/Check-out**: Verifikasi lokasi berbasis GPS
+- **Deteksi Tipe Kerja**: Onsite (di kantor) atau Offsite (di luar kantor) otomatis
+- **Validasi Lokasi**: Radius GPS dan koordinat kantor
+- **Capture Foto**: Foto selfie untuk verifikasi identitas
+- **Auto Checkout**: Checkout otomatis di akhir hari
+- **Deteksi Keterlambatan**: Status otomatis berdasarkan jadwal kantor
+- **Riwayat Presensi**: History lengkap dengan detail waktu dan lokasi
 
 ### 📝 Manajemen Logbook
 
--   **Tracking Aktivitas Harian**: Catat aktivitas kerja dengan deskripsi detail
--   **Progress Percentage**: Persentase penyelesaian kegiatan
--   **Attachment File**: Upload dokumen pendukung
--   **Sistem Review**: Supervisor dapat review dan approve logbook
--   **Status Approval**: Pending, Approved, Rejected dengan feedback
--   **Filter & Export**: Filter data dan export ke Excel
+- **Tracking Aktivitas Harian**: Catat aktivitas kerja dengan deskripsi detail
+- **Progress Percentage**: Persentase penyelesaian kegiatan
+- **Attachment File**: Upload dokumen pendukung
+- **Sistem Review**: Supervisor dapat review dan approve logbook
+- **Status Approval**: Pending, Approved, Rejected dengan feedback
+- **Filter & Export**: Filter data dan export ke Excel
 
 ### 🏖️ Manajemen Izin
 
--   **Multiple Leave Types**: Sakit, cuti, keperluan pribadi
--   **Durasi Multi-hari**: Support izin beberapa hari
--   **Workflow Approval**: Request → Review → Approval
--   **Upload Dokumen**: Lampirkan surat keterangan atau dokumen pendukung
--   **History Izin**: Riwayat pengajuan dengan status lengkap
+- **Multiple Leave Types**: Sakit, cuti, keperluan pribadi
+- **Durasi Multi-hari**: Support izin beberapa hari
+- **Workflow Approval**: Request → Review → Approval
+- **Upload Dokumen**: Lampirkan surat keterangan atau dokumen pendukung
+- **History Izin**: Riwayat pengajuan dengan status lengkap
 
 ### 📊 Laporan & Analitik
 
--   **Dashboard Real-time**: Statistik terkini untuk setiap role
--   **Multiple Report Types**: Laporan presensi, logbook, izin
--   **Advanced Filters**: Filter berdasarkan divisi, periode, tanggal
--   **Export ke Excel**: Format profesional dengan data lengkap
--   **Visualisasi Data**: Grafik dan tabel interaktif
+- **Dashboard Real-time**: Statistik terkini untuk setiap role
+- **Multiple Report Types**: Laporan presensi, logbook, izin
+- **Advanced Filters**: Filter berdasarkan divisi, periode, tanggal
+- **Export ke Excel**: Format profesional dengan data lengkap
+- **Visualisasi Data**: Grafik dan tabel interaktif
 
 ### 🔔 Notifikasi Real-time
 
--   **Live Updates**: Sistem notifikasi berbasis WebSocket
--   **Action Notifications**: Approval, rejection, perubahan status
--   **Unread Counter**: Indikator visual untuk notifikasi baru
--   **Notification Center**: Manajemen notifikasi terpusat
+- **Live Updates**: Sistem notifikasi berbasis WebSocket
+- **Action Notifications**: Approval, rejection, perubahan status
+- **Unread Counter**: Indikator visual untuk notifikasi baru
+- **Notification Center**: Manajemen notifikasi terpusat
 
 ### 🎨 Modern UI/UX
 
--   **Responsive Design**: Optimasi untuk mobile, tablet, desktop
--   **Bootstrap 5.3**: Framework UI modern dan konsisten
--   **Interactive Components**: Modal, toast notifications, tooltips
--   **Tab Navigation**: Presentasi data terorganisir
--   **Badge Counters**: Ringkasan data visual
+- **Responsive Design**: Optimasi untuk mobile, tablet, desktop
+- **Bootstrap 5.3**: Framework UI modern dan konsisten
+- **Interactive Components**: Modal, toast notifications, tooltips
+- **Tab Navigation**: Presentasi data terorganisir
+- **Badge Counters**: Ringkasan data visual
 
 ### 🔒 Fitur Keamanan
 
--   **JWT Authentication**: Autentikasi berbasis token yang aman
--   **Google OAuth**: Login dengan akun Google
--   **Password Encryption**: Hashing dengan Bcrypt
--   **CORS Protection**: Kebijakan cross-origin yang dapat dikonfigurasi
--   **Role-based Access**: Sistem permission granular
--   **Token Refresh**: Automatic token renewal
+- **JWT Authentication**: Autentikasi berbasis token yang aman
+- **Google OAuth**: Login dengan akun Google
+- **Password Encryption**: Hashing dengan Bcrypt
+- **CORS Protection**: Kebijakan cross-origin yang dapat dikonfigurasi
+- **Role-based Access**: Sistem permission granular
+- **Token Refresh**: Automatic token renewal
 
 ---
 
@@ -99,30 +99,30 @@ Sistem manajemen presensi dan logbook modern yang dibangun dengan **React 18** (
 
 ### Backend
 
-| Teknologi           | Versi   | Fungsi                    |
-| ------------------- | ------- | ------------------------- |
-| **Node.js**         | 22.x    | Runtime environment       |
-| **Express.js**      | 4.19.2  | Web framework             |
-| **MySQL**           | 8.0+    | Relational database       |
-| **Sequelize**       | 6.37.3  | ORM untuk database        |
-| **JWT**             | 9.0.2   | Authentication            |
-| **Bcrypt**          | 5.1.1   | Password hashing          |
-| **Multer**          | 1.4.5   | File upload handling      |
-| **ExcelJS**         | 4.4.0   | Excel file generation     |
-| **Node-cron**       | 3.0.3   | Scheduled tasks           |
+| Teknologi      | Versi  | Fungsi                |
+| -------------- | ------ | --------------------- |
+| **Node.js**    | 22.x   | Runtime environment   |
+| **Express.js** | 4.19.2 | Web framework         |
+| **MySQL**      | 8.0+   | Relational database   |
+| **Sequelize**  | 6.37.3 | ORM untuk database    |
+| **JWT**        | 9.0.2  | Authentication        |
+| **Bcrypt**     | 5.1.1  | Password hashing      |
+| **Multer**     | 1.4.5  | File upload handling  |
+| **ExcelJS**    | 4.4.0  | Excel file generation |
+| **Node-cron**  | 3.0.3  | Scheduled tasks       |
 
 ### Frontend
 
-| Teknologi            | Versi   | Fungsi                    |
-| -------------------- | ------- | ------------------------- |
-| **React**            | 18.3.1  | UI library                |
-| **Vite**             | 5.3.4   | Build tool & dev server   |
-| **React Router**     | 6.26.0  | Client-side routing       |
-| **Axios**            | 1.7.7   | HTTP client               |
-| **Bootstrap**        | 5.3.3   | CSS framework             |
-| **React Bootstrap**  | 2.10.4  | React UI components       |
-| **React Hot Toast**  | 2.4.1   | Notifications             |
-| **React Image Crop** | 11.0.7  | Image cropping            |
+| Teknologi            | Versi  | Fungsi                  |
+| -------------------- | ------ | ----------------------- |
+| **React**            | 18.3.1 | UI library              |
+| **Vite**             | 5.3.4  | Build tool & dev server |
+| **React Router**     | 6.26.0 | Client-side routing     |
+| **Axios**            | 1.7.7  | HTTP client             |
+| **Bootstrap**        | 5.3.3  | CSS framework           |
+| **React Bootstrap**  | 2.10.4 | React UI components     |
+| **React Hot Toast**  | 2.4.1  | Notifications           |
+| **React Image Crop** | 11.0.7 | Image cropping          |
 
 ---
 
@@ -226,9 +226,9 @@ Project-TA-Logbook-Presensi/
 
 Ensure you have the following installed:
 
--   **Node.js** 22.x or higher ([Download](https://nodejs.org/))
--   **MySQL** 8.0 or higher ([Download](https://www.mysql.com/downloads/))
--   **Git** ([Download](https://git-scm.com/downloads))
+- **Node.js** 22.x or higher ([Download](https://nodejs.org/))
+- **MySQL** 8.0 or higher ([Download](https://www.mysql.com/downloads/))
+- **Git** ([Download](https://git-scm.com/downloads))
 
 ### 1. Clone Repository
 
@@ -336,6 +336,7 @@ Semua konfigurasi diambil dari backend melalui endpoint `/api/config`.
 ### Menjalankan Aplikasi
 
 #### Backend
+
 ```bash
 cd backend
 npm run dev    # Development mode dengan auto-reload
@@ -344,6 +345,7 @@ npm run dev    # Development mode dengan auto-reload
 Backend berjalan di `http://localhost:3001`
 
 #### Frontend
+
 ```bash
 cd frontend
 npm run dev    # Development server
@@ -361,18 +363,19 @@ npm run build  # Output: dist/ folder
 ### Default Test Credentials
 
 **Admin:**
+
 - Email: `admin@presensi.com`
 - Password: `admin123`
 
 **Supervisor:**
 
--   Email: `supervisor@presensi.com`
--   Password: `super123`
+- Email: `supervisor@presensi.com`
+- Password: `super123`
 
 **User:**
 
--   Email: `user@presensi.com`
--   Password: `user123`
+- Email: `user@presensi.com`
+- Password: `user123`
 
 ---
 
@@ -450,10 +453,12 @@ git push heroku main
 npm install -g vercel
 vercel --prod
 ```
+
 - Email: `supervisor@presensi.com`
 - Password: `supervisor123`
 
 **User:**
+
 - Email: `user@presensi.com`
 - Password: `user123`
 
@@ -482,6 +487,7 @@ Build output akan berada di folder `dist/`.
 ## 🐛 Troubleshooting
 
 ### Database Connection Failed
+
 ```bash
 # Check MySQL service
 mysql -u root -p
@@ -490,6 +496,7 @@ mysql -u root -p
 ```
 
 ### Port Already in Use
+
 ```bash
 # Windows
 netstat -ano | findstr :3001
@@ -497,6 +504,7 @@ taskkill /PID <PID> /F
 ```
 
 ### CORS Error
+
 - Cek `CORS_ORIGIN` di backend `.env`
 - Pastikan sesuai dengan URL frontend
 
@@ -511,6 +519,7 @@ Project ini dilisensikan di bawah **MIT License**.
 ## 👨‍💻 Developer
 
 **Handika Sinaga**
+
 - GitHub: [@HandikaSinaga](https://github.com/HandikaSinaga)
 - Repository: [Project-TA-Logbook-Presensi](https://github.com/HandikaSinaga/Project-TA-Logbook-Presensi)
 
@@ -527,6 +536,7 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
 ```
 
 ---
@@ -582,3 +592,4 @@ For support, email handika.sinaga@example.com or open an issue in the repository
 **Made with ❤️ by Handika Sinaga**
 
 ⭐ Star this repo if you find it helpful!
+```
