@@ -26,4 +26,5 @@ dist-ssr
 # Environment
 .env
 .env.local
-.env.production
+# Keep .env.production for deployment reference
+# .env.production

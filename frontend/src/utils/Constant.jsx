@@ -1,4 +1,9 @@
-export const API_URL = "http://localhost:3001/api";
+// Auto-detect API URL based on environment
+export const API_URL =
+    import.meta.env.VITE_API_URL ||
+    (import.meta.env.MODE === "production"
+        ? "/api"
+        : "http://localhost:3001/api");
 
 export const ROLES = {
     USER: "user",
@@ -60,7 +65,7 @@ export const getAvatarUrl = (user) => {
         return `${API_URL.replace("/api", "")}${user.avatar}`;
     }
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-        user.name || "User"
+        user.name || "User",
     )}&background=random&color=fff&size=128`;
 };
 
