@@ -129,41 +129,94 @@ Sistem manajemen presensi dan logbook modern yang dibangun dengan **React 18** (
 ## 📁 Struktur Project
 
 ```
-project-ta/
+Project-TA-Logbook-Presensi/
 ├── backend/                    # Express.js API Server (Port 3001)
 │   ├── config/                 # Konfigurasi database & aplikasi
+│   │   ├── config.js           # Sequelize config
+│   │   └── uploadConfig.js     # Upload configuration
 │   ├── controllers/            # Business logic handlers
-│   ├── database/               # Migrations & seeders
+│   │   ├── AuthController.js
+│   │   ├── UserController.js
+│   │   ├── AttendanceController.js
+│   │   ├── LogbookController.js
+│   │   ├── LeaveController.js
+│   │   └── DashboardController.js
+│   ├── database/               # Database migrations & seeders
+│   │   ├── db.js               # Database connection
+│   │   ├── migrations/
+│   │   └── seeders/
 │   ├── middlewares/            # Express middlewares
+│   │   ├── auth.js             # JWT authentication
+│   │   ├── roleCheck.js        # Role-based access
+│   │   └── uploadAvatar.js     # File upload handling
 │   ├── models/                 # Sequelize ORM models
+│   │   ├── index.js
+│   │   ├── usersModels/
+│   │   ├── attendanceModels/
+│   │   ├── logbookModels/
+│   │   ├── leaveModels/
+│   │   ├── divisionsModels/
+│   │   └── officeNetworkModels/
 │   ├── routes/                 # API route definitions
+│   │   ├── index.js
+│   │   ├── authRoutes.js
+│   │   ├── adminRoutes.js
+│   │   ├── supervisorRoutes.js
+│   │   └── userRoutes.js
 │   ├── services/               # Business logic services
+│   │   ├── ExportService.js
+│   │   └── ImportExportUserService.js
 │   ├── utils/                  # Helper utilities
-│   ├── public/uploads/         # User uploads
+│   │   ├── autoCheckoutScheduler.js
+│   │   ├── locationHelper.js
+│   │   └── uploadHelper.js
+│   ├── public/                 # Static files
+│   │   └── uploads/            # User uploads (avatars, docs)
+│   ├── scripts/                # Utility scripts
+│   ├── .env.example            # Environment template
+│   ├── package.json            # Dependencies
 │   └── index.js                # Server entry point
 │
 ├── frontend/                   # React SPA (Port 5173)
 │   ├── src/
 │   │   ├── assets/             # Static assets
-│   │   ├── roles/              # Role-based components
+│   │   │   ├── images/
+│   │   │   └── styles/
+│   │   ├── components/         # Reusable components
+│   │   │   └── layout/         # Layout components
+│   │   │       ├── admin/
+│   │   │       ├── supervisor/
+│   │   │       ├── user/
+│   │   │       └── public/
+│   │   ├── context/            # React Context
+│   │   ├── hooks/              # Custom hooks
+│   │   │   └── useConfig.js
+│   │   ├── roles/              # Role-based pages
 │   │   │   ├── admin/          # Admin dashboard
 │   │   │   ├── supervisor/     # Supervisor panel
-│   │   │   └── user/           # User interface
+│   │   │   ├── user/           # User interface
+│   │   │   └── public/         # Public pages (Login)
+│   │   ├── services/           # API service layer
 │   │   ├── utils/              # Helper utilities
-│   │   └── App.jsx             # Root component
+│   │   │   ├── axiosInstance.jsx
+│   │   │   ├── Constant.jsx
+│   │   │   └── ProtectedRoute.jsx
+│   │   ├── App.jsx             # Root component
+│   │   └── main.jsx            # React entry point
 │   ├── public/                 # Public assets
-│   └── vite.config.js          # Vite configuration
+│   ├── dist/                   # Production build (generated)
+│   ├── index.html              # HTML template
+│   ├── vite.config.js          # Vite configuration
+│   ├── .env.example            # Environment template
+│   └── package.json            # Dependencies
 │
-├── docs/                       # Documentation
-│   ├── API_DOCUMENTATION.md    # API reference
-│   ├── AWS_DEPLOYMENT_GUIDE.md # Cloud deployment guide
-│   └── development-reports/    # Development logs (archived)
-│
+├── .github/                    # GitHub workflows
 ├── .gitignore                  # Git ignore rules
-├── README.md                   # This file
 ├── LICENSE                     # MIT License
-└── QUICK-START.md              # Quick start guide
+└── README.md                   # This file
 ```
+
+**Note:** Folder `docs/` tidak disertakan di repository untuk menjaga fokus pada kode aplikasi web.
 
 ---
 
