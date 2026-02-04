@@ -12,13 +12,13 @@ class DashboardController {
             const today = new Date(
                 now.getFullYear(),
                 now.getMonth(),
-                now.getDate()
+                now.getDate(),
             );
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
             const endOfMonth = new Date(
                 now.getFullYear(),
                 now.getMonth() + 1,
-                0
+                0,
             );
 
             // Get user with division
@@ -104,27 +104,29 @@ class DashboardController {
 
             res.json({
                 success: true,
-                user: {
-                    name: user.name,
-                    email: user.email,
-                    role: user.role,
-                    avatar: user.avatar,
-                },
-                stats: {
-                    attendance_status: attendanceStatus,
-                    logbook_status: logbookStatus,
-                    leave_pending: pendingLeaves,
-                    total_attendance: totalAttendance,
-                    monthly_logbooks: monthlyLogbooks,
-                    attendance_rate: attendanceRate,
-                    division_name: user.division?.name || "No Division",
-                    division_members: divisionMembers,
+                data: {
+                    user: {
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                        avatar: user.avatar,
+                    },
+                    stats: {
+                        attendance_status: attendanceStatus,
+                        logbook_status: logbookStatus,
+                        leave_pending: pendingLeaves,
+                        total_attendance: totalAttendance,
+                        monthly_logbooks: monthlyLogbooks,
+                        attendance_rate: attendanceRate,
+                        division_name: user.division?.name || "No Division",
+                        division_members: divisionMembers,
+                    },
                 },
             });
         } catch (error) {
             console.error(
                 "[DashboardController.getUserDashboard] Error:",
-                error.message
+                error.message,
             );
             res.status(500).json({
                 success: false,
@@ -141,7 +143,7 @@ class DashboardController {
             const today = new Date(
                 now.getFullYear(),
                 now.getMonth(),
-                now.getDate()
+                now.getDate(),
             );
 
             // Get supervisor's division
@@ -212,23 +214,37 @@ class DashboardController {
                 order: [["created_at", "DESC"]],
             });
 
+            // Pending logbooks for supervisor's team
+            const pendingLogbooks = await Logbook.count({
+                where: { status: "pending" },
+                include: [
+                    {
+                        model: User,
+                        as: "user",
+                        where: { division_id: supervisor.division_id },
+                    },
+                ],
+            });
+
             res.json({
                 success: true,
-                stats: {
-                    team_members: teamMembers,
-                    pending_approvals: pendingApprovals,
-                    today_attendance: todayAttendance,
-                    avg_attendance_rate: avgAttendanceRate,
+                data: {
+                    stats: {
+                        team_members: teamMembers,
+                        present_today: todayAttendance,
+                        pending_approvals: pendingApprovals,
+                        active_tasks: pendingLogbooks,
+                    },
+                    pending_approvals: pendingList.map((leave) => ({
+                        user_id: leave.user.id,
+                        user_name: leave.user.name,
+                        user_email: leave.user.email,
+                        user_avatar: leave.user.avatar,
+                        type: leave.type,
+                        date: leave.start_date,
+                        status: leave.status,
+                    })),
                 },
-                pending_approvals: pendingList.map((leave) => ({
-                    user_id: leave.user.id,
-                    user_name: leave.user.name,
-                    user_email: leave.user.email,
-                    user_avatar: leave.user.avatar,
-                    type: leave.type,
-                    date: leave.start_date,
-                    status: leave.status,
-                })),
             });
         } catch (error) {
             console.error("Get supervisor dashboard error:", error);
@@ -246,7 +262,7 @@ class DashboardController {
             const today = new Date(
                 now.getFullYear(),
                 now.getMonth(),
-                now.getDate()
+                now.getDate(),
             );
             const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -266,8 +282,9 @@ class DashboardController {
             // Total divisions
             const totalDivisions = await Division.count();
 
-            // Total locations (assuming locations table exists)
-            const totalLocations = 10; // Placeholder
+            // Total locations from OfficeNetwork
+            const OfficeNetwork = models.OfficeNetwork;
+            const totalLocations = await OfficeNetwork.count();
 
             // Today's attendance
             const todayAttendance = await Attendance.count({
@@ -279,42 +296,56 @@ class DashboardController {
                 where: { status: "pending" },
             });
 
+            // Pending logbooks
+            const pendingLogbooks = await Logbook.count({
+                where: { status: "pending" },
+            });
+
             // Average attendance rate
             const avgAttendanceRate =
                 totalUsers > 0
                     ? ((todayAttendance / totalUsers) * 100).toFixed(1)
                     : 0;
 
-            // Recent activities (placeholder)
-            const recentActivities = [
-                {
-                    type: "user",
-                    icon: "person-plus",
-                    description: "New user registered",
-                    time: "2 hours ago",
-                },
-                {
-                    type: "attendance",
-                    icon: "calendar-check",
-                    description: "Attendance recorded",
-                    time: "3 hours ago",
-                },
-            ];
+            // Recent activities from real data
+            const recentAttendances = await Attendance.findAll({
+                where: { date: today },
+                include: [
+                    {
+                        model: User,
+                        as: "user",
+                        attributes: ["name"],
+                    },
+                ],
+                order: [["created_at", "DESC"]],
+                limit: 5,
+            });
+
+            const recentActivities = recentAttendances.map((att) => ({
+                type: "attendance",
+                icon: "calendar-check",
+                description: `${att.user?.name || "User"} recorded attendance`,
+                time: new Date(att.created_at).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                }),
+            }));
 
             res.json({
                 success: true,
-                stats: {
-                    total_users: totalUsers,
-                    new_users_this_month: newUsersThisMonth,
-                    total_divisions: totalDivisions,
-                    total_locations: totalLocations,
-                    today_attendance: todayAttendance,
-                    pending_leaves: pendingLeaves,
-                    avg_attendance_rate: avgAttendanceRate,
-                    api_response_time: 45,
-                    active_sessions: 12,
+                data: {
+                    stats: {
+                        total_users: totalUsers,
+                        new_users_this_month: newUsersThisMonth,
+                        total_divisions: totalDivisions,
+                        total_locations: totalLocations,
+                        attendance_today: todayAttendance,
+                        pending_leaves: pendingLeaves,
+                        pending_logbooks: pendingLogbooks,
+                        avg_attendance_rate: avgAttendanceRate,
+                    },
+                    recent_activities: recentActivities,
                 },
-                recent_activities: recentActivities,
             });
         } catch (error) {
             console.error("Get admin dashboard error:", error);

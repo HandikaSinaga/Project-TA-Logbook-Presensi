@@ -105,16 +105,37 @@ const Login = () => {
                 }, 500);
             }
         } catch (error) {
+            console.error("Google login error:", error);
+
             let errorMessage = "Login dengan Google gagal. Silakan coba lagi.";
 
-            if (error.response) {
-                if (error.response.status === 403) {
-                    errorMessage =
-                        error.response.data.message ||
-                        "Akun Anda belum diaktifkan";
-                } else if (error.response.data?.message) {
-                    errorMessage = error.response.data.message;
+            if (error.isNetworkError) {
+                errorMessage = error.message;
+            } else if (error.response) {
+                const status = error.response.status;
+                const serverMessage = error.response.data?.message;
+
+                switch (status) {
+                    case 400:
+                        errorMessage = serverMessage || "Token Google tidak valid";
+                        break;
+                    case 401:
+                        errorMessage = serverMessage || "Autentikasi Google gagal";
+                        break;
+                    case 403:
+                        errorMessage = serverMessage || "Akun Anda belum diaktifkan. Hubungi administrator.";
+                        break;
+                    case 404:
+                        errorMessage = "Email Google tidak terdaftar dalam sistem. Hubungi administrator.";
+                        break;
+                    case 500:
+                        errorMessage = "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
+                        break;
+                    default:
+                        errorMessage = serverMessage || "Login dengan Google gagal. Silakan coba lagi.";
                 }
+            } else if (error.request) {
+                errorMessage = "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.";
             }
 
             toast.error(errorMessage);
@@ -171,13 +192,30 @@ const Login = () => {
             if (error.isNetworkError) {
                 errorMessage = error.message;
             } else if (error.response) {
-                if (error.response.status === 401) {
-                    errorMessage = "Email atau password salah";
-                } else if (error.response.status === 403) {
-                    errorMessage = "Akun Anda telah dinonaktifkan";
-                } else if (error.response.data?.message) {
-                    errorMessage = error.response.data.message;
+                const status = error.response.status;
+                const serverMessage = error.response.data?.message;
+
+                switch (status) {
+                    case 400:
+                        errorMessage = serverMessage || "Email dan password harus diisi";
+                        break;
+                    case 401:
+                        errorMessage = serverMessage || "Email atau password yang Anda masukkan salah";
+                        break;
+                    case 403:
+                        errorMessage = serverMessage || "Akun Anda telah dinonaktifkan. Hubungi administrator.";
+                        break;
+                    case 404:
+                        errorMessage = "Email tidak terdaftar dalam sistem";
+                        break;
+                    case 500:
+                        errorMessage = "Terjadi kesalahan pada server. Silakan coba lagi nanti.";
+                        break;
+                    default:
+                        errorMessage = serverMessage || "Login gagal. Silakan coba lagi.";
                 }
+            } else if (error.request) {
+                errorMessage = "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.";
             }
 
             toast.error(errorMessage);

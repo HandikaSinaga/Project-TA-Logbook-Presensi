@@ -268,18 +268,13 @@ cd frontend
 # Install dependencies
 npm install
 
-# Copy environment file
-cp .env.example .env
-
-# Edit .env with backend API URL
-# nano .env  (Linux/Mac)
-# notepad .env  (Windows)
-
-# Start development server
+# Start development server (no .env needed!)
 npm run dev
 ```
 
 ✅ Frontend should now be running on `http://localhost:5173`
+
+**Note:** Frontend tidak memerlukan file `.env`! Semua konfigurasi (Google Client ID, API URL, dll) diambil dari backend melalui endpoint `/api/config`.
 
 ---
 
@@ -331,22 +326,44 @@ AUTO_CHECKOUT_ENABLED=false
 FORCE_CHECKOUT_TIME=23:59:59
 ```
 
-### Frontend Environment Variables
+### Frontend Configuration
 
-Create `.env` file in `frontend/` directory:
+**Frontend TIDAK memerlukan file `.env`!**
 
-```env
-# API Configuration
-VITE_API_URL=http://localhost:3001
-VITE_SOCKET_URL=http://localhost:3001
+✅ **Best Practice:** Semua konfigurasi frontend diambil dari backend melalui API endpoint:
 
-# Google OAuth
-VITE_GOOGLE_CLIENT_ID=your_google_client_id
+```javascript
+// Frontend fetches config from backend at runtime
+GET /api/config
 
-# Upload Limits
-VITE_MAX_FILE_SIZE=5
-VITE_ALLOWED_IMAGE_TYPES=image/jpeg,image/png,image/jpg
+// Response:
+{
+  "success": true,
+  "config": {
+    "googleClientId": "xxx.apps.googleusercontent.com",
+    "apiUrl": "http://localhost:3001",
+    "features": {
+      "googleOAuth": true,
+      "emailVerification": false
+    },
+    "app": {
+      "name": "Logbook Presensi",
+      "version": "1.0.0"
+    }
+  }
+}
 ```
+
+**Keuntungan:**
+
+-   ✅ Satu sumber konfigurasi (backend/.env)
+-   ✅ Tidak ada duplikasi config
+-   ✅ Lebih aman (secrets hanya di backend)
+-   ✅ Mudah update config (rebuild tidak perlu)
+-   ✅ Environment-specific config otomatis
+
+**Development:** Vite proxy `/api` → `http://localhost:3001`  
+**Production:** Nginx proxy `/api` → backend server
 
 ---
 

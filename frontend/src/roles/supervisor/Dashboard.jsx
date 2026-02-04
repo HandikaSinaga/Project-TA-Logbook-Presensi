@@ -40,21 +40,23 @@ const SupervisorDashboard = () => {
             const response = await axiosInstance.get("/supervisor/dashboard");
             const data = response.data.data || response.data;
 
-            setStats(
-                data.stats || {
+            if (data && data.stats) {
+                setStats(data.stats);
+            } else {
+                setStats({
                     team_members: 0,
                     present_today: 0,
                     pending_approvals: 0,
                     active_tasks: 0,
-                }
-            );
+                });
+            }
             setRecentActivities(
-                data.recent_activities || data.recentActivities || []
+                data.pending_approvals || [],
             );
         } catch (error) {
             console.error("Error fetching dashboard:", error);
             toast.error(
-                error.response?.data?.message || "Gagal memuat dashboard"
+                error.response?.data?.message || "Gagal memuat dashboard",
             );
         } finally {
             setLoading(false);

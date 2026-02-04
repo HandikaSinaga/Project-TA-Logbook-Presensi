@@ -53,8 +53,14 @@ axiosInstance.interceptors.response.use(
             });
         }
 
-        // Unauthorized - token expired or invalid
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Skip token refresh for login/auth endpoints
+        const authEndpoints = ['/login', '/google-idtoken', '/register', '/forgot-password'];
+        const isAuthEndpoint = authEndpoints.some(endpoint => 
+            originalRequest.url?.includes(endpoint)
+        );
+
+        // Unauthorized - token expired or invalid (but not for login endpoints)
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
             originalRequest._retry = true;
 
             try {

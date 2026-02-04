@@ -43,14 +43,6 @@ const AdminDashboard = () => {
 
             if (data && data.stats) {
                 setStats(data.stats);
-            } else if (data) {
-                // Fallback jika stats langsung di root data
-                setStats({
-                    total_users: data.total_users || 0,
-                    total_divisions: data.total_divisions || 0,
-                    total_locations: data.total_locations || 0,
-                    attendance_today: data.attendance_today || 0,
-                });
             } else {
                 setStats({
                     total_users: 0,
@@ -63,7 +55,7 @@ const AdminDashboard = () => {
             console.error("Error fetching dashboard:", error);
             setError("Gagal memuat data dashboard");
             toast.error(
-                error.response?.data?.message || "Gagal memuat dashboard"
+                error.response?.data?.message || "Gagal memuat dashboard",
             );
         } finally {
             setLoading(false);

@@ -42,14 +42,6 @@ const UserDashboard = () => {
 
             if (data && data.stats) {
                 setStats(data.stats);
-            } else if (data) {
-                // Fallback jika stats langsung di root data
-                setStats({
-                    attendance_status:
-                        data.attendance_status || "Belum Presensi",
-                    logbook_status: data.logbook_status || "Belum Mengisi",
-                    leave_pending: data.leave_pending || 0,
-                });
             } else {
                 setStats({
                     attendance_status: "Belum Presensi",
@@ -61,7 +53,7 @@ const UserDashboard = () => {
             console.error("Error fetching dashboard:", error);
             setError("Gagal memuat data dashboard");
             toast.error(
-                error.response?.data?.message || "Gagal memuat dashboard"
+                error.response?.data?.message || "Gagal memuat dashboard",
             );
         } finally {
             setLoading(false);
@@ -355,9 +347,9 @@ const UserDashboard = () => {
                                                             "Sudah Check-out"
                                                             ? "bg-success"
                                                             : stats.attendance_status ===
-                                                              "Belum Presensi"
-                                                            ? "bg-danger"
-                                                            : "bg-warning text-dark"
+                                                                "Belum Presensi"
+                                                              ? "bg-danger"
+                                                              : "bg-warning text-dark"
                                                     }`}
                                                 >
                                                     {stats.attendance_status}
@@ -385,9 +377,9 @@ const UserDashboard = () => {
                                                         "Sudah Mengisi"
                                                             ? "bg-success"
                                                             : stats.logbook_status ===
-                                                              "Belum Mengisi"
-                                                            ? "bg-danger"
-                                                            : "bg-warning text-dark"
+                                                                "Belum Mengisi"
+                                                              ? "bg-danger"
+                                                              : "bg-warning text-dark"
                                                     }`}
                                                 >
                                                     {stats.logbook_status}

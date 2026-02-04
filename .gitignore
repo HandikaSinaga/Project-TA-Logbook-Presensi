@@ -133,7 +133,31 @@ junit.xml
 *-REPORT-*.md
 *-COMPLETE-*.md
 CHANGELOG-*.md
-*GOOGLE-OAUTH-SETUP-GUIDE*.md
+*GOOGLE-OAUTH*.md
+*OAUTH*.md
+*URL-STANDARD*.md
+GOOGLE-OAUTH-SETUP-GUIDE.md
+URL-STANDARDIZATION-COMPLETE.md
+
+# ==========================================
+# Documentation Files (Exclude from Git)
+# ==========================================
+/docs/
+*.md
+!README.md
+!LICENSE.md
+!CONTRIBUTING.md
+!CODE_OF_CONDUCT.md
+*.sql
+*.docx
+*.pdf
+*.pptx
+*.xlsx
+/manual-book/
+/dokumentasi/
+/laporan/
+/proposal/
+/presentation/
 
 # ==========================================
 # Temporary Files & Backups
