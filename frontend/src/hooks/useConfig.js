@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { API_URL } from "../utils/Constant";
 
 let configCache = null;
 
@@ -20,9 +21,7 @@ export const useConfig = () => {
 
         const fetchConfig = async () => {
             try {
-                const response = await fetch(
-                    "http://localhost:3001/api/config"
-                );
+                const response = await fetch(`${API_URL}/config`);
                 const data = await response.json();
 
                 if (data.success && data.config) {
@@ -34,11 +33,11 @@ export const useConfig = () => {
             } catch (err) {
                 console.error("Failed to fetch config:", err);
                 setError(err.message);
-                // Fallback to safe defaults
+                // Fallback to safe defaults (uses current API_URL)
                 configCache = {
                     googleClientId: "",
                     features: { googleOAuth: false },
-                    apiUrl: "http://localhost:3001",
+                    apiUrl: API_URL.replace("/api", ""),
                     app: { name: "Logbook Presensi", version: "1.0.0" },
                 };
                 setConfig(configCache);
