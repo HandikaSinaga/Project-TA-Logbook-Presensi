@@ -10,67 +10,68 @@ import react from "@vitejs/plugin-react";
 // No .env file needed in frontend!
 // ==========================================
 
-export default defineConfig(({ mode }) => ({
-    plugins: [react()],
-    
-    // Ensure production mode sets correct environment
-    mode: mode,
+export default defineConfig(({ mode }) => {
+    console.log("🔧 Vite build mode:", mode);
 
-    // Development server
-    server: {
-        port: 5173,
-        // Proxy API calls to backend (no CORS issues in dev)
-        proxy: {
-            "/api": {
-                target: "http://localhost:3001",
-                changeOrigin: true,
-                secure: false,
-            },
-            "/uploads": {
-                target: "http://localhost:3001",
-                changeOrigin: true,
-                secure: false,
-            },
-        },
-    },
+    return {
+        plugins: [react()],
 
-    // Production build
-    build: {
-        outDir: "dist",
-        emptyOutDir: true,
-        sourcemap: false,
-        assetsDir: "assets",
-        rollupOptions: {
-            output: {
-                // Code splitting for better caching
-                manualChunks: {
-                    vendor: ["react", "react-dom", "react-router-dom"],
-                    bootstrap: ["bootstrap", "react-bootstrap"],
-                    utils: ["axios", "jwt-decode"],
+        // Development server
+        server: {
+            port: 5173,
+            // Proxy API calls to backend (no CORS issues in dev)
+            proxy: {
+                "/api": {
+                    target: "http://localhost:3001",
+                    changeOrigin: true,
+                    secure: false,
                 },
-                // Asset naming with hash for cache busting
-                assetFileNames: "assets/[name]-[hash][extname]",
-                chunkFileNames: "assets/[name]-[hash].js",
-                entryFileNames: "assets/[name]-[hash].js",
+                "/uploads": {
+                    target: "http://localhost:3001",
+                    changeOrigin: true,
+                    secure: false,
+                },
             },
         },
-    },
 
-    // Preview production build locally
-    preview: {
-        port: 4173,
-        // Proxy for testing production build locally
-        proxy: {
-            "/api": {
-                target: "http://localhost:3001",
-                changeOrigin: true,
-                secure: false,
-            },
-            "/uploads": {
-                target: "http://localhost:3001",
-                changeOrigin: true,
-                secure: false,
+        // Production build
+        build: {
+            outDir: "dist",
+            emptyOutDir: true,
+            sourcemap: false,
+            assetsDir: "assets",
+            rollupOptions: {
+                output: {
+                    // Code splitting for better caching
+                    manualChunks: {
+                        vendor: ["react", "react-dom", "react-router-dom"],
+                        bootstrap: ["bootstrap", "react-bootstrap"],
+                        utils: ["axios", "jwt-decode"],
+                    },
+                    // Asset naming with hash for cache busting
+                    assetFileNames: "assets/[name]-[hash][extname]",
+                    chunkFileNames: "assets/[name]-[hash].js",
+                    entryFileNames: "assets/[name]-[hash].js",
+                },
             },
         },
-    },
-}));
+
+        // Preview production build locally
+        preview: {
+            port: 4173,
+            // Proxy for testing production build locally
+            proxy: {
+                "/api": {
+                    target: "http://localhost:3001",
+                    changeOrigin: true,
+                    secure: false,
+                },
+                "/uploads": {
+                    target: "http://localhost:3001",
+                    changeOrigin: true,
+                    secure: false,
+                },
+            },
+        },
+    };
+});

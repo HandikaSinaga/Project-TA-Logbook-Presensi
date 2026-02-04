@@ -1,6 +1,14 @@
 // Auto-detect API URL based on environment
 // Production: /api (via Nginx proxy)
 // Development: http://localhost:3001/api (direct backend)
+console.log("🌍 Environment MODE:", import.meta.env.MODE);
+console.log(
+    "🔗 API URL will be:",
+    import.meta.env.MODE === "production"
+        ? "/api"
+        : "http://localhost:3001/api",
+);
+
 export const API_URL =
     import.meta.env.MODE === "production"
         ? "/api"
