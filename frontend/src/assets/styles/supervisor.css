@@ -477,24 +477,26 @@
     .supervisor-page .sidebar .nav-container {
         display: flex !important;
         flex-direction: column !important;
-        height: calc(100vh - 72px) !important;
+        height: calc(100vh - 100px) !important;
+        padding-bottom: 20px !important;
     }
-
+    
     .supervisor-page .sidebar .nav-container .menu-box {
         flex: 1 !important;
         overflow-y: auto !important;
         height: auto !important;
         max-height: none !important;
+        padding-bottom: 10px !important;
     }
-
+    
     .supervisor-page .sidebar .nav-container .setting-box {
         position: relative !important;
         flex-shrink: 0 !important;
-        margin-top: 0 !important;
-        bottom: auto !important;
-    }
-
-    .supervisor-page .sidebar-overlay {
+        margin-top: auto !important;
+        bottom: 0 !important;
+        padding: 12px !important;
+        background: white !important;
+    }    .supervisor-page .sidebar-overlay {
         position: fixed;
         top: 0;
         left: 0;

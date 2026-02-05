@@ -508,7 +508,8 @@
     .user-page .sidebar .nav-container {
         display: flex !important;
         flex-direction: column !important;
-        height: calc(100vh - 72px) !important;
+        height: calc(100vh - 100px) !important;
+        padding-bottom: 20px !important;
     }
     
     .user-page .sidebar .nav-container .menu-box {
@@ -516,13 +517,16 @@
         overflow-y: auto !important;
         height: auto !important;
         max-height: none !important;
+        padding-bottom: 10px !important;
     }
     
     .user-page .sidebar .nav-container .setting-box {
         position: relative !important;
         flex-shrink: 0 !important;
-        margin-top: 0 !important;
-        bottom: auto !important;
+        margin-top: auto !important;
+        bottom: 0 !important;
+        padding: 12px !important;
+        background: white !important;
     }
 
     .user-page .sidebar-overlay {
