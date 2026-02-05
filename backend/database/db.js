@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Set Node.js timezone to Jakarta
+process.env.TZ = 'Asia/Jakarta';
+
 const host = process.env.DB_HOST;
 const name = process.env.DB_NAME;
 const username = process.env.DB_USER;
@@ -13,6 +16,11 @@ const db = new Sequelize(name, username, password, {
   dialect: "mysql",
   logging: false,
   timezone: '+07:00',
+  dialectOptions: {
+    timezone: '+07:00',
+    // Force MySQL session timezone
+    initSqlCommands: ['SET time_zone = "+07:00"']
+  }
 });
 
 const testConnection = async () => {

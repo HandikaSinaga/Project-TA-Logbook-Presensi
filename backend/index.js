@@ -6,6 +6,9 @@ import { testConnection } from "./database/db.js";
 import router from "./routes/index.js";
 import { startAutoCheckoutScheduler } from "./utils/autoCheckoutScheduler.js";
 
+// Set timezone to Jakarta BEFORE anything else
+process.env.TZ = 'Asia/Jakarta';
+
 dotenv.config();
 
 const app = express();
