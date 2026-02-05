@@ -160,7 +160,7 @@ class LogbookController {
                 "[LogbookController.create] Error:",
                 error.name,
                 "-",
-                error.message
+                error.message,
             );
             if (error.name === "SequelizeValidationError") {
                 return res.status(400).json({

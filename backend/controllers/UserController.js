@@ -397,16 +397,16 @@ class UserController {
                 await ImportExportUserService.generateUserTemplate();
 
             console.log(
-                "Template generated successfully, sending to client..."
+                "Template generated successfully, sending to client...",
             );
 
             res.setHeader(
                 "Content-Type",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             );
             res.setHeader(
                 "Content-Disposition",
-                "attachment; filename=Template_Import_User.xlsx"
+                "attachment; filename=Template_Import_User.xlsx",
             );
 
             await workbook.xlsx.write(res);
@@ -451,9 +451,8 @@ class UserController {
 
             console.log("Parsed filters:", filters);
 
-            const workbook = await ImportExportUserService.exportUsersByPeriode(
-                filters
-            );
+            const workbook =
+                await ImportExportUserService.exportUsersByPeriode(filters);
 
             // Generate dynamic filename
             let filename = "Export_Users";
@@ -466,11 +465,11 @@ class UserController {
 
             res.setHeader(
                 "Content-Type",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             );
             res.setHeader(
                 "Content-Disposition",
-                `attachment; filename=${filename}`
+                `attachment; filename=${filename}`,
             );
 
             await workbook.xlsx.write(res);
@@ -499,7 +498,7 @@ class UserController {
             }
 
             const result = await ImportExportUserService.importUsersFromExcel(
-                req.file.buffer
+                req.file.buffer,
             );
 
             if (!result.success) {

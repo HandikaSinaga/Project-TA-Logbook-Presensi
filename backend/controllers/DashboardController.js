@@ -18,11 +18,11 @@ class DashboardController {
             const today = getTodayJakarta();
             const startOfMonth = getStartOfMonthJakarta(
                 now.getFullYear(),
-                now.getMonth() + 1
+                now.getMonth() + 1,
             );
             const endOfMonth = getEndOfMonthJakarta(
                 now.getFullYear(),
-                now.getMonth() + 1
+                now.getMonth() + 1,
             );
 
             // Get user with division
@@ -262,7 +262,7 @@ class DashboardController {
             const today = getTodayJakarta();
             const startOfMonth = getStartOfMonthJakarta(
                 now.getFullYear(),
-                now.getMonth() + 1
+                now.getMonth() + 1,
             );
 
             // Total users

@@ -99,7 +99,7 @@ class AttendanceController {
             console.log(
                 `[Pre-check] IP: ${clientIp} | GPS: ${latitude || "none"},${
                     longitude || "none"
-                }`
+                }`,
             );
 
             // Validate location (GPS opsional)
@@ -107,7 +107,7 @@ class AttendanceController {
                 await LocationHelper.validateAttendanceLocation(
                     clientIp,
                     latitude || null,
-                    longitude || null
+                    longitude || null,
                 );
 
             const workType = locationValidation.isOnsite ? "onsite" : "offsite";
@@ -131,7 +131,7 @@ class AttendanceController {
         } catch (error) {
             console.error(
                 "[AttendanceController.preCheckWorkType] Error:",
-                error
+                error,
             );
             res.status(500).json({
                 success: false,
@@ -168,7 +168,7 @@ class AttendanceController {
             console.log(
                 `[Check-in] User ${userId} | IP: ${clientIp} | GPS: ${
                     latitude || "none"
-                },${longitude || "none"}`
+                },${longitude || "none"}`,
             );
 
             // Validate location (ONSITE vs OFFSITE)
@@ -178,7 +178,7 @@ class AttendanceController {
                 await LocationHelper.validateAttendanceLocation(
                     clientIp,
                     latitude || null,
-                    longitude || null
+                    longitude || null,
                 );
 
             const workType = locationValidation.isOnsite ? "onsite" : "offsite";
@@ -249,7 +249,7 @@ class AttendanceController {
             console.log(
                 `[Check-in Success] User ${userId} | Type: ${workType.toUpperCase()} | Status: ${
                     attendance.status
-                }`
+                }`,
             );
 
             res.json({
@@ -263,7 +263,7 @@ class AttendanceController {
         } catch (error) {
             console.error(
                 "[AttendanceController.checkIn] Error:",
-                error.message
+                error.message,
             );
             res.status(500).json({
                 success: false,
@@ -338,7 +338,7 @@ class AttendanceController {
             console.log(
                 `[Check-out] User ${userId} | IP: ${clientIp} | GPS: ${
                     latitude || "none"
-                },${longitude || "none"}`
+                },${longitude || "none"}`,
             );
 
             // Validate location untuk check-out (bisa berbeda dari check-in)
@@ -347,7 +347,7 @@ class AttendanceController {
                 await LocationHelper.validateAttendanceLocation(
                     clientIp,
                     latitude || null,
-                    longitude || null
+                    longitude || null,
                 );
 
             const workType = locationValidation.isOnsite ? "onsite" : "offsite";
@@ -406,7 +406,7 @@ class AttendanceController {
             console.log(
                 `[Check-out Success] User ${userId} | Type: ${workType.toUpperCase()} | Hours: ${workHours} | Checkout Reason: ${
                     workType === "offsite" ? offsite_reason : "N/A"
-                }`
+                }`,
             );
 
             // Debug: Log updated attendance data
@@ -431,7 +431,7 @@ class AttendanceController {
         } catch (error) {
             console.error(
                 "[AttendanceController.checkOut] Error:",
-                error.message
+                error.message,
             );
             res.status(500).json({
                 success: false,
@@ -595,7 +595,7 @@ class AttendanceController {
                 "[AttendanceController.getTeamAttendance] Error:",
                 error.name,
                 "-",
-                error.message
+                error.message,
             );
             res.status(500).json({
                 success: false,
@@ -1069,7 +1069,7 @@ export const uploadAttendancePhoto = createUploadMiddleware(
     "photo",
     {
         limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
-    }
+    },
 );
 
 export default new AttendanceController();

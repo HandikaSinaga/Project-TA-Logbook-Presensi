@@ -10,12 +10,12 @@
 export const getJakartaDate = () => {
     // Buat date object dan konversi ke Jakarta timezone
     const now = new Date();
-    
+
     // Konversi ke Jakarta timezone menggunakan toLocaleString
     const jakartaTime = new Date(
-        now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+        now.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
     );
-    
+
     return jakartaTime;
 };
 
@@ -48,12 +48,12 @@ export const getEndOfTodayJakarta = () => {
 export const getStartOfMonthJakarta = (year, month) => {
     // month adalah 1-based (1 = Januari)
     const date = new Date(year, month - 1, 1);
-    
+
     // Konversi ke Jakarta timezone
     const jakartaDate = new Date(
-        date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+        date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
     );
-    
+
     jakartaDate.setHours(0, 0, 0, 0);
     return jakartaDate;
 };
@@ -68,12 +68,12 @@ export const getEndOfMonthJakarta = (year, month) => {
     // month adalah 1-based (1 = Januari)
     // Bulan 0 dari bulan berikutnya = hari terakhir bulan ini
     const date = new Date(year, month, 0);
-    
+
     // Konversi ke Jakarta timezone
     const jakartaDate = new Date(
-        date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+        date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
     );
-    
+
     jakartaDate.setHours(23, 59, 59, 999);
     return jakartaDate;
 };
@@ -85,12 +85,12 @@ export const getEndOfMonthJakarta = (year, month) => {
  */
 export const parseJakartaDate = (dateString) => {
     const date = new Date(dateString);
-    
+
     // Konversi ke Jakarta timezone
     const jakartaDate = new Date(
-        date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+        date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
     );
-    
+
     return jakartaDate;
 };
 
@@ -121,7 +121,7 @@ export const formatJakartaDate = (
         second: "2-digit",
         hour12: false,
         timeZone: "Asia/Jakarta",
-    }
+    },
 ) => {
     return new Date(date).toLocaleString(locale, options);
 };

@@ -199,12 +199,12 @@ const AdminUsers = () => {
             (!formData.password || formData.password.length < 6)
         ) {
             toast.error(
-                "Password wajib diisi minimal 6 karakter untuk user baru"
+                "Password wajib diisi minimal 6 karakter untuk user baru",
             );
             // Scroll to password field
             setTimeout(() => {
                 const passwordField = document.querySelector(
-                    'input[type="password"]'
+                    'input[type="password"]',
                 );
                 if (passwordField) {
                     passwordField.focus();
@@ -235,7 +235,7 @@ const AdminUsers = () => {
             if (editingId) {
                 await axiosInstance.put(
                     `/admin/users/${editingId}`,
-                    submitData
+                    submitData,
                 );
                 toast.success("User berhasil diupdate");
             } else {
@@ -264,7 +264,7 @@ const AdminUsers = () => {
         } catch (error) {
             console.error("Error saving user:", error);
             toast.error(
-                error.response?.data?.message || "Gagal menyimpan user"
+                error.response?.data?.message || "Gagal menyimpan user",
             );
         }
     };
@@ -316,7 +316,7 @@ const AdminUsers = () => {
         } catch (error) {
             console.error("Error resetting password:", error);
             toast.error(
-                error.response?.data?.message || "Gagal reset password"
+                error.response?.data?.message || "Gagal reset password",
             );
         }
     };
@@ -337,7 +337,7 @@ const AdminUsers = () => {
                 "/admin/users/template/download",
                 {
                     responseType: "blob",
-                }
+                },
             );
 
             console.log("Response received:", response.data);
@@ -386,7 +386,7 @@ const AdminUsers = () => {
                 `/admin/users/export?${params.toString()}`,
                 {
                     responseType: "blob",
-                }
+                },
             );
 
             const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -469,13 +469,13 @@ const AdminUsers = () => {
                     headers: {
                         "Content-Type": "multipart/form-data",
                     },
-                }
+                },
             );
 
             if (response.data.success) {
                 toast.success(
                     response.data.message ||
-                        `Berhasil import ${response.data.data?.count || 0} user`
+                        `Berhasil import ${response.data.data?.count || 0} user`,
                 );
 
                 setShowImportModal(false);
@@ -490,15 +490,15 @@ const AdminUsers = () => {
                     const errorMessages = response.data.errors
                         .map(
                             (err) =>
-                                `Baris ${err.row}: ${err.errors.join(", ")}`
+                                `Baris ${err.row}: ${err.errors.join(", ")}`,
                         )
                         .join("\n");
                     toast.error(
                         `${response.data.message}\n\n${errorMessages.substring(
                             0,
-                            200
+                            200,
                         )}${errorMessages.length > 200 ? "..." : ""}`,
-                        { autoClose: 8000 }
+                        { autoClose: 8000 },
                     );
                 } else {
                     toast.error(response.data.message || "Import gagal");
@@ -522,11 +522,11 @@ const AdminUsers = () => {
                     }\n\n${errorMessages.substring(0, 200)}${
                         errorMessages.length > 200 ? "..." : ""
                     }`,
-                    { autoClose: 8000 }
+                    { autoClose: 8000 },
                 );
             } else {
                 toast.error(
-                    error.response?.data?.message || "Gagal import data"
+                    error.response?.data?.message || "Gagal import data",
                 );
             }
         } finally {
@@ -648,7 +648,7 @@ const AdminUsers = () => {
                                 onChange={(e) =>
                                     handleFilterChange(
                                         "sumber_magang",
-                                        e.target.value
+                                        e.target.value,
                                     )
                                 }
                             >
@@ -670,7 +670,7 @@ const AdminUsers = () => {
                                 onChange={(e) =>
                                     handleFilterChange(
                                         "periode",
-                                        e.target.value
+                                        e.target.value,
                                     )
                                 }
                             >
@@ -692,7 +692,7 @@ const AdminUsers = () => {
                                 onChange={(e) =>
                                     handleFilterChange(
                                         "division_id",
-                                        e.target.value
+                                        e.target.value,
                                     )
                                 }
                             >
@@ -731,7 +731,7 @@ const AdminUsers = () => {
                                 onChange={(e) =>
                                     handleFilterChange(
                                         "is_active",
-                                        e.target.value
+                                        e.target.value,
                                     )
                                 }
                             >
@@ -810,7 +810,7 @@ const AdminUsers = () => {
                                                     <td>
                                                         <img
                                                             src={getAvatarUrl(
-                                                                user
+                                                                user,
                                                             )}
                                                             alt={user.name}
                                                             className="rounded-circle"
@@ -843,9 +843,9 @@ const AdminUsers = () => {
                                                                 "admin"
                                                                     ? "bg-danger"
                                                                     : user.role ===
-                                                                      "supervisor"
-                                                                    ? "bg-warning"
-                                                                    : "bg-primary"
+                                                                        "supervisor"
+                                                                      ? "bg-warning"
+                                                                      : "bg-primary"
                                                             }`}
                                                         >
                                                             {user.role}
@@ -892,7 +892,7 @@ const AdminUsers = () => {
                                                                 className="btn btn-outline-primary"
                                                                 onClick={() => {
                                                                     setEditingId(
-                                                                        user.id
+                                                                        user.id,
                                                                     );
                                                                     setFormData(
                                                                         {
@@ -927,10 +927,10 @@ const AdminUsers = () => {
                                                                                 undefined
                                                                                     ? user.is_active
                                                                                     : true,
-                                                                        }
+                                                                        },
                                                                     );
                                                                     setShowModal(
-                                                                        true
+                                                                        true,
                                                                     );
                                                                 }}
                                                                 title="Edit User"
@@ -941,10 +941,10 @@ const AdminUsers = () => {
                                                                 className="btn btn-outline-warning"
                                                                 onClick={() => {
                                                                     setResetPasswordUserId(
-                                                                        user.id
+                                                                        user.id,
                                                                     );
                                                                     setShowResetPasswordModal(
-                                                                        true
+                                                                        true,
                                                                     );
                                                                 }}
                                                                 title="Reset Password"
@@ -955,7 +955,7 @@ const AdminUsers = () => {
                                                                 className="btn btn-outline-danger"
                                                                 onClick={() =>
                                                                     handleDelete(
-                                                                        user.id
+                                                                        user.id,
                                                                     )
                                                                 }
                                                                 title="Hapus User"
@@ -1021,7 +1021,7 @@ const AdminUsers = () => {
                                                         {index + 1}
                                                     </button>
                                                 </li>
-                                            )
+                                            ),
                                         )}
                                         <li
                                             className={`page-item ${
@@ -1343,7 +1343,7 @@ const AdminUsers = () => {
                                                                     {sup.name} -{" "}
                                                                     {sup.email}
                                                                 </option>
-                                                            )
+                                                            ),
                                                         )}
                                                     </select>
                                                     <small className="text-muted">
@@ -1511,7 +1511,7 @@ const AdminUsers = () => {
                                                             className="btn btn-outline-secondary"
                                                             onClick={() =>
                                                                 setShowPassword(
-                                                                    !showPassword
+                                                                    !showPassword,
                                                                 )
                                                             }
                                                             title={
@@ -2050,8 +2050,8 @@ const AdminUsers = () => {
                                                                 (d) =>
                                                                     d.id ===
                                                                     parseInt(
-                                                                        filters.division_id
-                                                                    )
+                                                                        filters.division_id,
+                                                                    ),
                                                             )?.name
                                                         }
                                                     </strong>
@@ -2067,7 +2067,7 @@ const AdminUsers = () => {
                                                             .charAt(0)
                                                             .toUpperCase() +
                                                             filters.sumber_magang.slice(
-                                                                1
+                                                                1,
                                                             )}
                                                     </strong>
                                                 </li>

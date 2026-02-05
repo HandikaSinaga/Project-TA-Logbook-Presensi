@@ -31,7 +31,7 @@ class LeaveController {
                 "[LeaveController.getQuota] Error:",
                 error.name,
                 "-",
-                error.message
+                error.message,
             );
             res.status(500).json({
                 success: false,
@@ -93,7 +93,7 @@ class LeaveController {
                 "[LeaveController.getUserLeaves] Error:",
                 error.name,
                 "-",
-                error.message
+                error.message,
             );
             res.status(500).json({
                 success: false,
@@ -486,7 +486,7 @@ class LeaveController {
                 "[LeaveController.getTeamLeaves] Error:",
                 error.name,
                 "-",
-                error.message
+                error.message,
             );
             res.status(500).json({
                 success: false,
@@ -840,7 +840,7 @@ class LeaveController {
                 "[LeaveController.getAllLeaves] Error:",
                 error.name,
                 "-",
-                error.message
+                error.message,
             );
             res.status(500).json({
                 success: false,
