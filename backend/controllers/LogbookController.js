@@ -1,5 +1,6 @@
 import models from "../models/index.js";
 import { Op } from "sequelize";
+import { getJakartaDate, getTodayJakarta } from "../utils/dateHelper.js";
 
 const { Logbook, User } = models;
 
@@ -64,8 +65,7 @@ class LogbookController {
     async getTodayLogbook(req, res) {
         try {
             const userId = req.user.id;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const today = getTodayJakarta();
 
             const logbook = await Logbook.findOne({
                 where: {
@@ -128,8 +128,16 @@ class LogbookController {
             }
 
             // Set time to current time if not provided
+            const now = getJakartaDate();
             const logbookTime =
-                time || new Date().toTimeString().split(" ")[0].substring(0, 8);
+                time ||
+                `${now.getHours().toString().padStart(2, "0")}:${now
+                    .getMinutes()
+                    .toString()
+                    .padStart(2, "0")}:${now
+                    .getSeconds()
+                    .toString()
+                    .padStart(2, "0")}`;
 
             const logbook = await Logbook.create({
                 user_id: userId,

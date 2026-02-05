@@ -1,5 +1,11 @@
 import models from "../models/index.js";
 import { Op } from "sequelize";
+import {
+    getJakartaDate,
+    getTodayJakarta,
+    getStartOfMonthJakarta,
+    getEndOfMonthJakarta,
+} from "../utils/dateHelper.js";
 
 const { User, Attendance, Logbook, Leave, Division } = models;
 
@@ -8,17 +14,15 @@ class DashboardController {
     async getUserDashboard(req, res) {
         try {
             const userId = req.user.id;
-            const now = new Date();
-            const today = new Date(
+            const now = getJakartaDate();
+            const today = getTodayJakarta();
+            const startOfMonth = getStartOfMonthJakarta(
                 now.getFullYear(),
-                now.getMonth(),
-                now.getDate(),
+                now.getMonth() + 1
             );
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-            const endOfMonth = new Date(
+            const endOfMonth = getEndOfMonthJakarta(
                 now.getFullYear(),
-                now.getMonth() + 1,
-                0,
+                now.getMonth() + 1
             );
 
             // Get user with division
@@ -139,12 +143,8 @@ class DashboardController {
     async getSupervisorDashboard(req, res) {
         try {
             const userId = req.user.id;
-            const now = new Date();
-            const today = new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                now.getDate(),
-            );
+            const now = getJakartaDate();
+            const today = getTodayJakarta();
 
             // Get supervisor's division
             const supervisor = await User.findByPk(userId, {
@@ -258,13 +258,12 @@ class DashboardController {
     // Admin Dashboard
     async getAdminDashboard(req, res) {
         try {
-            const now = new Date();
-            const today = new Date(
+            const now = getJakartaDate();
+            const today = getTodayJakarta();
+            const startOfMonth = getStartOfMonthJakarta(
                 now.getFullYear(),
-                now.getMonth(),
-                now.getDate(),
+                now.getMonth() + 1
             );
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
             // Total users
             const totalUsers = await User.count({

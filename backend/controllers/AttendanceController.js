@@ -5,6 +5,7 @@ import {
     createUploadMiddleware,
     getPublicPath,
 } from "../utils/uploadHelper.js";
+import { getJakartaDate, getTodayJakarta } from "../utils/dateHelper.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
@@ -63,8 +64,7 @@ class AttendanceController {
     async getTodayAttendance(req, res) {
         try {
             const userId = req.user.id;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const today = getTodayJakarta();
 
             const attendance = await Attendance.findOne({
                 where: {
@@ -146,8 +146,7 @@ class AttendanceController {
         try {
             const userId = req.user.id;
             const { latitude, longitude, address, offsite_reason } = req.body;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const today = getTodayJakarta();
 
             // Check if already checked in
             const existing = await Attendance.findOne({
@@ -208,7 +207,7 @@ class AttendanceController {
             // Jika ONSITE, tidak perlu keterangan/foto - langsung check-in saja
             // GPS opsional, WiFi/IP sebagai prioritas utama
 
-            const now = new Date();
+            const now = getJakartaDate();
             const checkInTime = `${now
                 .getHours()
                 .toString()
@@ -289,8 +288,7 @@ class AttendanceController {
                 hasFile: !!req.file,
             });
 
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const today = getTodayJakarta();
 
             const attendance = await Attendance.findOne({
                 where: {
@@ -314,8 +312,8 @@ class AttendanceController {
             }
 
             // Validate logbook - user must have logbook entry today before checkout
-            const todayStart = new Date(today);
-            const todayEnd = new Date(today);
+            const todayStart = getTodayJakarta();
+            const todayEnd = getTodayJakarta();
             todayEnd.setHours(23, 59, 59, 999);
 
             const todayLogbook = await Logbook.findOne({
@@ -375,7 +373,7 @@ class AttendanceController {
                 }
             }
 
-            const now = new Date();
+            const now = getJakartaDate();
             const checkOutTime = `${now
                 .getHours()
                 .toString()

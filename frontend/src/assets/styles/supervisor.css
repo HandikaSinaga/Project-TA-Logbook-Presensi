@@ -481,7 +481,7 @@
         height: calc(100vh - 120px) !important;
         padding-bottom: 16px !important;
     }
-    
+
     .supervisor-page .sidebar .nav-container .menu-box {
         flex: 1 !important;
         overflow-y: auto !important;
@@ -489,7 +489,7 @@
         max-height: none !important;
         padding-bottom: 8px !important;
     }
-    
+
     .supervisor-page .sidebar .nav-container .setting-box {
         position: relative !important;
         flex-shrink: 0 !important;
@@ -499,11 +499,11 @@
         background: white !important;
         border-top: 2px solid #f1f5fc !important;
     }
-    
+
     .supervisor-page .sidebar .nav-container .setting-box .nav-link {
         margin-bottom: 8px !important;
     }
-    
+
     .supervisor-page .sidebar .nav-container .setting-box .nav-link:last-child {
         margin-bottom: 0 !important;
     }

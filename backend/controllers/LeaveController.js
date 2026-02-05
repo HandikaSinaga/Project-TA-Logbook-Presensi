@@ -1,6 +1,7 @@
 import models from "../models/index.js";
 import { Op } from "sequelize";
 import { getPublicPath } from "../utils/uploadHelper.js";
+import { getJakartaDate } from "../utils/dateHelper.js";
 
 const { Leave, User, AppSetting } = models;
 
@@ -568,7 +569,7 @@ class LeaveController {
             await leave.update({
                 status: "approved",
                 reviewed_by: supervisorId,
-                reviewed_at: new Date(),
+                reviewed_at: getJakartaDate(),
             });
 
             res.json({
@@ -627,7 +628,7 @@ class LeaveController {
             await leave.update({
                 status: "rejected",
                 reviewed_by: supervisorId,
-                reviewed_at: new Date(),
+                reviewed_at: getJakartaDate(),
                 review_notes: rejection_reason || "No reason provided",
             });
 
