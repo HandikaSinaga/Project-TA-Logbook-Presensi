@@ -1,3 +1,7 @@
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     font-family: "Inter", sans-serif;
     margin: 0;
@@ -6,6 +10,7 @@ body {
     min-width: 320px;
     min-height: 100vh;
     color: #333333;
+    overflow-x: hidden;
 }
 
 .w-fit {
@@ -425,6 +430,142 @@ footer {
 .rounded-start-35 {
     border-top-left-radius: 12px !important;
     border-bottom-left-radius: 12px !important;
+}
+
+/* ============================================ */
+/* LANDING PAGE RESPONSIVE */
+/* ============================================ */
+
+/* Tablet */
+@media (max-width: 991px) {
+    .landing-page .hero-section h1 {
+        font-size: 2.5rem;
+    }
+
+    .landing-page .hero-section p.lead {
+        font-size: 1.1rem;
+    }
+
+    .landing-page .content-con {
+        padding: 3rem 1.5rem;
+    }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+    .landing-page .hero-section {
+        padding-top: 6rem !important;
+    }
+
+    .landing-page .hero-section h1 {
+        font-size: 2rem;
+    }
+
+    .landing-page .hero-section p.lead {
+        font-size: 1rem;
+    }
+
+    .landing-page section {
+        padding-top: 2rem;
+        margin-bottom: 3rem;
+    }
+
+    .landing-page .content-con {
+        padding: 2rem 1rem;
+    }
+
+    .landing-page .content-con section:not(:last-of-type) {
+        margin-bottom: 2rem;
+    }
+
+    .landing-page .features-section h2,
+    .landing-page .benefits-section h2 {
+        font-size: 1.75rem;
+    }
+
+    .landing-page .cta-section h2 {
+        font-size: 1.75rem;
+    }
+
+    .landing-page .cta-section p.lead {
+        font-size: 1rem;
+    }
+
+    /* Improve button layout on mobile */
+    .landing-page .d-flex.gap-3 {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .landing-page .d-flex.gap-3 .btn {
+        width: 100%;
+    }
+
+    /* Adjust card spacing */
+    .landing-page .feature-icon {
+        height: 60px;
+    }
+
+    .landing-page .hover-lift {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Small mobile */
+@media (max-width: 575px) {
+    .landing-page .hero-section h1 {
+        font-size: 1.75rem;
+    }
+
+    .landing-page .navbar-brand img {
+        height: 24px;
+    }
+
+    footer {
+        font-size: 14px;
+    }
+
+    footer .container .row > div {
+        text-align: center !important;
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* ============================================ */
+/* NAVBAR IMPROVEMENTS */
+/* ============================================ */
+
+.navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    padding: 0.5rem;
+}
+
+.navbar-toggler:focus {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.navbar-collapse {
+    transition: max-height 0.3s ease-in-out;
+}
+
+@media (max-width: 767px) {
+    .navbar-collapse {
+        background: rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(10px);
+        padding: 1rem;
+        margin-top: 1rem;
+        border-radius: 12px;
+    }
+
+    .navbar .nav-link {
+        padding: 0.75rem 1rem !important;
+        border-radius: 8px;
+    }
+
+    .navbar .nav-link:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
 }
 
 .rounded-end-35 {

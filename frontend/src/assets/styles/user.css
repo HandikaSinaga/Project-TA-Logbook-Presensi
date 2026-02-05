@@ -10,8 +10,65 @@
   min-height: calc(100vh - 72px);
 }
 
-.user-page .navbar{
+.user-page .navbar {
   height: 72px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.user-page .navbar .navbar-brand {
+  flex-grow: 0;
+  display: flex;
+  align-items: center;
+}
+
+.user-page .navbar .dropdown {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 991px) {
+  .user-page .navbar .navbar-brand .btn {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+  }
+  
+  .user-page .navbar .navbar-brand > div {
+    padding-left: 48px;
+  }
+  
+  .user-page .navbar .dropdown,
+  .user-page .navbar .btn-group {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    position: absolute !important;
+    left: -9999px !important;
+  }
+  
+  .user-page .navbar .dropdown {
+    display: none !important;
+  }
+  
+  .user-page .navbar .dropdown .btn {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  
+  .user-page .navbar .dropdown .btn img {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .user-page .navbar .dropdown .truncate {
+    max-width: 80px;
+  }
 }
 
 .user-page .navbar .navbar-nav a{
@@ -38,21 +95,27 @@
   box-shadow: 0px 4px 6px 0px rgba(0, 0, 0, 0.20);
   background: white;
   color: #526071;
+  max-width: 250px;
+  overflow-x: hidden;
+}
+
+.user-page .sidebar * {
+  box-sizing: border-box;
+}
+
+.user-page .sidebar .text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .user-page .sidebar .top-logo{
   height: 72px;
 }
 
-.user-page .sidebar .nav-container{
+.user-page .sidebar .nav-container {
   height: calc(100vh - 124px);
-}
-
-.user-page .sidebar .nav-container .menu-box{
-  height: calc(100% - 66px);
-  max-height: calc(100% - 52px);
-  overflow: auto;
-  padding-right: 4px;
 }
 
 .user-page .sidebar .nav-container .menu-box::-webkit-scrollbar {
@@ -68,6 +131,26 @@
   background: #555; 
 }
 
+.user-page .sidebar .nav-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 124px);
+}
+
+.user-page .sidebar .nav-container .menu-box {
+  flex: 1;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.user-page .sidebar .nav-container .setting-box {
+  flex-shrink: 0;
+  padding: 12px;
+  background-color: white;
+  border-top: 1px solid #f1f5fc;
+}
+
 .user-page .sidebar .top-logo h5 {
     color: #0090FF !important;
 }
@@ -79,12 +162,26 @@
   margin-bottom: 12px;
   background: #ffffff;
   color: #526071;
-  border: 1px solid #F1F5FC;
+  border: 1px solid #f1f5fc;
   font-weight: 500;
+  min-width: 0;
+  width: 100%;
+}
+
+.user-page .sidebar .nav-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.user-page .sidebar .nav-link i {
+  flex-shrink: 0;
 }
 
 .user-page .sidebar .nav a:hover, 
-.user-page .sidebar .nav a.active{
+.user-page .sidebar .nav a.active {
   background-color: #0090FF;
   color: #ffffff;
   border-color: #0090FF;
@@ -94,7 +191,14 @@
   width: 80px;
 }
 
+.user-page .sidebar.minimized .sidebar-title {
+    display: none;
+}
 .user-page .sidebar.minimized .nav-link span {
+  display: none;
+}
+
+.user-page .sidebar.minimized .nav-link.d-lg-none {
   display: none;
 }
 
@@ -371,4 +475,114 @@
 .admin-dashboard .mini-cards:hover{
   transform: translateY(-4px);
   box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive Design - Tablet and below */
+@media (max-width: 991px) {
+    .user-page .sidebar {
+        position: fixed;
+        left: -100%;
+        transition: left 0.3s ease-in-out;
+        z-index: 1050;
+        height: 100vh;
+        width: 250px !important;
+    }
+
+    .user-page .sidebar.show {
+        left: 0;
+    }
+    
+    /* Disable minimize feature on mobile */
+    .user-page .sidebar.minimized {
+        width: 250px !important;
+    }
+    
+    .user-page .sidebar.minimized .nav-link span,
+    .user-page .sidebar.minimized .submenu,
+    .user-page .sidebar.minimized input {
+        display: block !important;
+        opacity: 1 !important;
+    }
+    
+    /* Ensure flexbox layout works on mobile */
+    .user-page .sidebar .nav-container {
+        display: flex !important;
+        flex-direction: column !important;
+        height: calc(100vh - 72px) !important;
+    }
+    
+    .user-page .sidebar .nav-container .menu-box {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        height: auto !important;
+        max-height: none !important;
+    }
+    
+    .user-page .sidebar .nav-container .setting-box {
+        position: relative !important;
+        flex-shrink: 0 !important;
+        margin-top: 0 !important;
+        bottom: auto !important;
+    }
+
+    .user-page .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+        display: block;
+    }
+}
+
+/* Desktop - ensure sidebar is visible */
+@media (min-width: 992px) {
+    .user-page .sidebar {
+        position: sticky !important;
+        left: 0 !important;
+        display: block !important;
+    }
+
+    .user-page .sidebar-overlay {
+        display: none !important;
+    }
+}
+
+/* Mobile Optimizations */
+@media (max-width: 767px) {
+    .user-page .navbar {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .user-page .navbar .navbar-brand {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        font-size: 12px;
+    }
+
+    .user-page .navbar .navbar-brand span {
+        font-size: 11px;
+    }
+
+    .user-page .navbar .btn-group .truncate {
+        max-width: 80px !important;
+        font-size: 12px;
+    }
+
+    .user-page .admin-content {
+        padding: 1rem !important;
+    }
+
+    .admin-dashboard .mini-cards {
+        margin-bottom: 1rem !important;
+    }
+
+    .cards-body table th,
+    .cards-body table td {
+        padding: 8px 4px;
+        font-size: 11px;
+    }
 }

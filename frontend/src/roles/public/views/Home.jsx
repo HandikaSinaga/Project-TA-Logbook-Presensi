@@ -14,7 +14,7 @@ const Home = () => {
             <MainNav />
             <div className="landing-page">
                 {/* Hero Section */}
-                <section className="hero-section bg-gd text-white py-5">
+                <section id="hero" className="hero-section bg-gd text-white py-5">
                     <Container>
                         <Row className="align-items-center min-vh-50 py-5">
                             <Col
@@ -46,6 +46,7 @@ const Home = () => {
                                         variant="outline-light"
                                         size="lg"
                                         className="px-4 rounded-35"
+                                        onClick={() => document.getElementById('whatis')?.scrollIntoView({ behavior: 'smooth' })}
                                     >
                                         <i className="bi bi-info-circle me-2"></i>
                                         Pelajari Lebih Lanjut
@@ -127,8 +128,23 @@ const Home = () => {
                     </Container>
                 </section>
 
+                {/* What Is Section - Benefits Preview */}
+                <section id="whatis" className="py-5">
+                    <Container>
+                        <div className="text-center mb-5">
+                            <h2 className="fw-bold text-blue mb-3">
+                                Apa itu Sistem Presensi & Logbook?
+                            </h2>
+                            <p className="text-secondary lead">
+                                Solusi digital terpadu untuk manajemen kehadiran dan dokumentasi aktivitas kerja harian secara real-time, 
+                                membantu perusahaan meningkatkan produktivitas dan transparansi.
+                            </p>
+                        </div>
+                    </Container>
+                </section>
+
                 {/* Features Section */}
-                <section className="features-section py-5 bg-light">
+                <section id="feature" className="features-section py-5 bg-light">
                     <Container>
                         <div className="text-center mb-5">
                             <h2 className="fw-bold text-blue mb-3">
@@ -213,7 +229,7 @@ const Home = () => {
                 </section>
 
                 {/* Benefits Section */}
-                <section className="benefits-section py-5">
+                <section id="youget" className="benefits-section py-5">
                     <Container>
                         <Row className="align-items-center">
                             <Col lg={6} className="mb-4 mb-lg-0">
@@ -366,6 +382,7 @@ const Home = () => {
                                     variant="outline-light"
                                     size="lg"
                                     className="px-5 rounded-35"
+                                    onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
                                 >
                                     Hubungi Kami
                                 </Button>
@@ -389,20 +406,32 @@ const Home = () => {
                             </Col>
                             <Col md={6} className="text-center text-md-end">
                                 <a
-                                    href="#"
+                                    href="#whatis"
                                     className="text-white text-decoration-none me-3"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        document.getElementById('whatis')?.scrollIntoView({ behavior: 'smooth' });
+                                    }}
                                 >
                                     Tentang
                                 </a>
                                 <a
-                                    href="#"
+                                    href="#feature"
                                     className="text-white text-decoration-none me-3"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        document.getElementById('feature')?.scrollIntoView({ behavior: 'smooth' });
+                                    }}
                                 >
                                     Bantuan
                                 </a>
                                 <a
-                                    href="#"
+                                    href="#hero"
                                     className="text-white text-decoration-none"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
                                 >
                                     Kontak
                                 </a>

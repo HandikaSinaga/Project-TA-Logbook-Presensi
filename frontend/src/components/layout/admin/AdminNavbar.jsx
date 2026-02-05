@@ -10,76 +10,41 @@ import {
 import { Link } from "react-router-dom";
 import { logout } from "../../../services/authService";
 import { getAvatarUrl } from "../../../utils/Constant";
+import { validName, getDateNow, loadUserData as loadUserFromStorage } from "../../../utils/navbarHelpers";
 import logoutIllustration from "../../../assets/images/logout.png";
 
-function validName(fullName) {
-    if (!fullName) return "Admin";
-    const nameArray = fullName.split(" ");
-    const firstTwoWords = nameArray.slice(0, 2).join(" ");
-    return firstTwoWords;
-}
+const AVATAR_SIZE = 24;
+const MAX_NAME_WIDTH = "112px";
+const SUBTITLE_SIZE = "14px";
 
-function getDateNow() {
-    const days = [
-        "Minggu",
-        "Senin",
-        "Selasa",
-        "Rabu",
-        "Kamis",
-        "Jumat",
-        "Sabtu",
-    ];
-    const months = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "Mei",
-        "Jun",
-        "Jul",
-        "Agu",
-        "Sep",
-        "Okt",
-        "Nov",
-        "Des",
-    ];
-
-    const now = new Date();
-    const dayName = days[now.getDay()];
-    const day = String(now.getDate()).padStart(2, "0");
-    const monthName = months[now.getMonth()];
-    const year = now.getFullYear();
-
-    return `${dayName}, ${day} ${monthName} ${year}`;
-}
-
-const AdminNavbar = () => {
+const AdminNavbar = ({ onToggleSidebar }) => {
     const [show, setShow] = useState(false);
-    const handleClose = () => setShow(false);
-    const handleShow = () => setShow(true);
-
+    const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 992);
     const [userData, setUserData] = useState({
         name: "Admin",
         email: "",
         picture: null,
     });
 
-    const loadUserData = () => {
-        try {
-            const stored = localStorage.getItem("user");
-            if (stored) {
-                setUserData(JSON.parse(stored));
-            }
-        } catch (error) {
-            console.error("Error parsing user data:", error);
-        }
-    };
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
 
     useEffect(() => {
-        loadUserData();
+        const handleResize = () => {
+            setIsDesktop(window.innerWidth >= 992);
+        };
+        
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        const data = loadUserFromStorage();
+        if (data) setUserData(data);
 
         const handleStorageChange = () => {
-            loadUserData();
+            const updatedData = loadUserFromStorage();
+            if (updatedData) setUserData(updatedData);
         };
 
         window.addEventListener("storage", handleStorageChange);
@@ -99,72 +64,82 @@ const AdminNavbar = () => {
 
     return (
         <>
-            <Navbar bg="ts" className="border-bottom">
+            <Navbar bg="ts" className="border-bottom" expand="lg">
                 <Navbar.Brand href="#" className="px-4 d-flex items-center">
+                    <Button 
+                        variant="link" 
+                        className="d-lg-none p-0 me-3 text-dark border-0"
+                        onClick={onToggleSidebar}
+                        aria-label="Toggle sidebar"
+                        style={{ background: 'none' }}
+                    >
+                        <i className="bi bi-list fs-3"></i>
+                    </Button>
                     <div>
                         <span className="fw-bold text-navy">
                             {getDateNow()}
                         </span>
                         <span
                             className="fw-light text-grey d-block"
-                            style={{ fontSize: "14px" }}
+                            style={{ fontSize: SUBTITLE_SIZE }}
                         >
                             CMS Attendance & Logbook System
                         </span>
                     </div>
                 </Navbar.Brand>
-                <Navbar.Toggle aria-controls="navbar-nav" />
-                <Navbar.Collapse id="navbar-nav">
-                    <Dropdown
-                        as={ButtonGroup}
-                        align="end"
-                        className="ms-auto me-4 rounded rounded-35"
+                
+                {isDesktop && (
+                <Dropdown
+                    as={ButtonGroup}
+                    align="end"
+                    className="ms-auto me-4 rounded rounded-35"
+                    style={{ alignSelf: 'center' }}
+                >
+                    <Button
+                        variant="white"
+                        className="d-flex align-items-center"
                     >
-                        <Button
-                            variant="white"
-                            className="d-flex align-items-center"
-                        >
-                            <img
-                                src={getAvatarUrl(userData)}
-                                alt="profile"
-                                style={{
-                                    objectFit: "cover",
-                                    height: "24px",
-                                    width: "24px",
-                                    borderRadius: "100%",
-                                }}
-                                className="me-2"
-                                onError={(e) => {
-                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                        userData.name || "Admin"
-                                    )}&background=0D8ABC&color=fff&size=128`;
-                                }}
-                            />
-                            <span
-                                className="truncate text-start"
-                                style={{ maxWidth: "112px" }}
-                            >
-                                {validName(userData.name)}
-                            </span>
-                        </Button>
-
-                        <Dropdown.Toggle
-                            split
-                            variant="white"
-                            className="border-start"
-                            id="dropdown-split-basic"
+                        <img
+                            src={getAvatarUrl(userData)}
+                            alt="profile"
+                            style={{
+                                objectFit: "cover",
+                                height: `${AVATAR_SIZE}px`,
+                                width: `${AVATAR_SIZE}px`,
+                                borderRadius: "100%",
+                            }}
+                            className="me-2"
+                            onError={(e) => {
+                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                    userData.name || "Admin"
+                                )}&background=0D8ABC&color=fff&size=128`;
+                            }}
                         />
+                        <span
+                            className="truncate text-start"
+                            style={{ maxWidth: MAX_NAME_WIDTH }}
+                        >
+                            {validName(userData.name, "Admin")}
+                        </span>
+                    </Button>
 
-                        <Dropdown.Menu>
-                            <Dropdown.Item as={Link} to="/admin/profile">
-                                Profile
-                            </Dropdown.Item>
-                            <Dropdown.Item onClick={handleShow}>
-                                Logout
-                            </Dropdown.Item>
-                        </Dropdown.Menu>
-                    </Dropdown>
-                </Navbar.Collapse>
+                    <Dropdown.Toggle
+                        split
+                        variant="white"
+                        className="border-start"
+                        id="dropdown-split-basic"
+                    />
+
+                    <Dropdown.Menu>
+                        <Dropdown.Item as={Link} to="/admin/profile">
+                            Profile
+                        </Dropdown.Item>
+                        <Dropdown.Item onClick={handleShow}>
+                            Logout
+                        </Dropdown.Item>
+                    </Dropdown.Menu>
+                </Dropdown>
+                )}
             </Navbar>
 
             <Modal show={show} onHide={handleClose} centered>

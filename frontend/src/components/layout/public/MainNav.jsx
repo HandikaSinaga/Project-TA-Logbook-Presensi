@@ -32,25 +32,70 @@ const MainNav = () => {
     }
   };
 
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
     <Navbar collapseOnSelect expand="md" className={`position-fixed w-100 ${scrolled ? 'bg-blue' : 'bg-blur'}`} style={{zIndex:"99",top:"0"}}>
         <Container>
           <Navbar.Brand href="/" className='text-white'>
             <img
-              alt=""
+              alt="Logo"
               src={(location.pathname === '/' || scrolled) ? logoWhite : logo}
               height="32"
               className="d-inline-block align-top"
             />{' '}
           </Navbar.Brand>
           <div className={getNavbarMenu()}>
-            <Navbar.Toggle aria-controls="responsive-navbar-nav" />
+            <Navbar.Toggle aria-controls="responsive-navbar-nav" className="border-0">
+              <span className="navbar-toggler-icon" style={{filter: 'invert(1)'}}></span>
+            </Navbar.Toggle>
             <Navbar.Collapse id="responsive-navbar-nav">
               <Nav className="w-100 w-lg-75 justify-content-center">
-                <Nav.Link href="#hero" className='text-white me-3'>Home.</Nav.Link>
-                <Nav.Link href="#whatis" className='text-white me-3'>What Is.</Nav.Link>
-                <Nav.Link href="#feature" className='text-white me-3'>Feature.</Nav.Link>
-                <Nav.Link href="#youget" className='text-white me-3'>Benefits.</Nav.Link>
+                <Nav.Link 
+                  href="#hero" 
+                  className='text-white me-3'
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollToSection('hero');
+                  }}
+                >
+                  Home.
+                </Nav.Link>
+                <Nav.Link 
+                  href="#whatis" 
+                  className='text-white me-3'
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollToSection('whatis');
+                  }}
+                >
+                  What Is.
+                </Nav.Link>
+                <Nav.Link 
+                  href="#feature" 
+                  className='text-white me-3'
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollToSection('feature');
+                  }}
+                >
+                  Feature.
+                </Nav.Link>
+                <Nav.Link 
+                  href="#youget" 
+                  className='text-white me-3'
+                  onClick={(e) => {
+                    e.preventDefault();
+                    scrollToSection('youget');
+                  }}
+                >
+                  Benefits.
+                </Nav.Link>
                 <Nav.Link onClick={() => navigate("/login")} className='text-white me-3 d-block d-md-none'>Login</Nav.Link>
               </Nav>
               <Nav className='d-none d-lg-flex'>

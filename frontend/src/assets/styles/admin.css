@@ -18,6 +18,63 @@
 
 .admin-page .navbar {
     height: 72px;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.admin-page .navbar .navbar-brand {
+    flex-grow: 0;
+    display: flex;
+    align-items: center;
+}
+
+.admin-page .navbar .dropdown {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+}
+
+@media (max-width: 991px) {
+    .admin-page .navbar .navbar-brand .btn {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+    }
+    
+    .admin-page .navbar .navbar-brand > div {
+        padding-left: 48px;
+    }
+    
+    .admin-page .navbar .dropdown,
+    .admin-page .navbar .btn-group {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+    
+    .admin-page .navbar .dropdown {
+        display: none !important;
+    }
+    
+    .admin-page .navbar .dropdown .btn {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+    
+    .admin-page .navbar .dropdown .btn img {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .admin-page .navbar .dropdown .truncate {
+        max-width: 80px;
+    }
 }
 
 .admin-page .navbar .btn-group button {
@@ -52,6 +109,31 @@
     height: 100vh;
     top: 0;
     box-shadow: 0px 4px 6px 0px rgba(0, 0, 0, 0.2);
+    max-width: 250px;
+    overflow-x: hidden;
+}
+
+.admin-page .sidebar * {
+    box-sizing: border-box;
+}
+
+.admin-page .sidebar .text-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.admin-page .sidebar .nav-link.drop-menu {
+    min-width: 0;
+    width: 100%;
+}
+
+.admin-page .sidebar .nav-link.drop-menu > div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 
 .admin-page .sidebar .top-logo {
@@ -62,13 +144,6 @@
     /* height: calc(100vh - 122px); */
     height: calc(100vh - 124px);
     /* background-color: red; */
-}
-
-.admin-page .sidebar .nav-container .menu-box {
-    height: calc(100% - 66px);
-    max-height: calc(100% - 52px);
-    overflow: auto;
-    padding-right: 4px;
 }
 
 .admin-page .sidebar .nav-container .menu-box::-webkit-scrollbar {
@@ -82,6 +157,26 @@
 }
 .admin-page .sidebar .nav-container .menu-box::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+.admin-page .sidebar .nav-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 124px);
+}
+
+.admin-page .sidebar .nav-container .menu-box {
+    flex: 1;
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.admin-page .sidebar .nav-container .setting-box {
+    flex-shrink: 0;
+    padding: 12px;
+    background-color: white;
+    border-top: 1px solid #f1f5fc;
 }
 
 .admin-page .sidebar input {
@@ -136,6 +231,20 @@
     color: #526071;
     border: 1px solid #f1f5fc;
     font-weight: 500;
+    min-width: 0;
+    width: 100%;
+}
+
+.admin-page .sidebar .nav-link span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+}
+
+.admin-page .sidebar .nav-link i {
+    flex-shrink: 0;
 }
 
 .admin-page .sidebar .submenu .nav-link {
@@ -143,6 +252,13 @@
     margin-left: 24px;
     border: none;
     font-weight: normal;
+    min-width: 0;
+}
+
+.admin-page .sidebar .submenu .nav-link span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .admin-page .sidebar .nav a:hover,
@@ -167,8 +283,8 @@
     width: 80px;
 }
 
-.admin-page .sidebar.minimized .toggle-sidebar {
-    rotate: 180deg;
+.admin-page .sidebar.minimized .top-logo img {
+    display: none;
 }
 
 .admin-page .sidebar.minimized .img-avatar {
@@ -184,7 +300,8 @@
 .admin-page .sidebar.minimized .nav-link span,
 .admin-page .sidebar.minimized .nav-link i.chrevon,
 .admin-page .sidebar.minimized .submenu,
-.admin-page .sidebar.minimized input {
+.admin-page .sidebar.minimized input,
+.admin-page .sidebar.minimized .nav-link.d-lg-none {
     display: none;
 }
 
@@ -642,13 +759,58 @@
     .admin-page .sidebar {
         position: fixed;
         left: -100%;
-        transition: left 0.3s ease;
+        transition: left 0.3s ease-in-out;
         z-index: 1050;
         height: 100vh;
+        width: 250px !important;
     }
 
     .admin-page .sidebar.show {
         left: 0;
+    }
+    
+    /* Disable minimize feature on mobile */
+    .admin-page .sidebar.minimized {
+        width: 250px !important;
+    }
+    
+    .admin-page .sidebar.minimized .nav-link span,
+    .admin-page .sidebar.minimized .submenu,
+    .admin-page .sidebar.minimized input {
+        display: block !important;
+        opacity: 1 !important;
+    }
+    
+    /* Ensure flexbox layout works on mobile */
+    .admin-page .sidebar .nav-container {
+        display: flex !important;
+        flex-direction: column !important;
+        height: calc(100vh - 72px) !important;
+    }
+    
+    .admin-page .sidebar .nav-container .menu-box {
+        flex: 1 !important;
+        overflow-y: auto !important;
+        height: auto !important;
+        max-height: none !important;
+    }
+    
+    .admin-page .sidebar .nav-container .setting-box {
+        position: relative !important;
+        flex-shrink: 0 !important;
+        margin-top: 0 !important;
+        bottom: auto !important;
+    }
+
+    .admin-page .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+        display: block;
     }
 
     .admin-page .page-title.strip::after {
@@ -660,10 +822,43 @@
     }
 }
 
+/* Desktop - ensure sidebar is visible */
+@media (min-width: 992px) {
+    .admin-page .sidebar {
+        position: sticky !important;
+        left: 0 !important;
+        display: block !important;
+    }
+
+    .admin-page .sidebar-overlay {
+        display: none !important;
+    }
+}
+
 /* Mobile */
 @media (max-width: 767px) {
+    .admin-page .navbar {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .admin-page .navbar .navbar-brand {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        font-size: 12px;
+    }
+
+    .admin-page .navbar .navbar-brand span {
+        font-size: 11px;
+    }
+
     .admin-page .navbar .btn-group {
         margin-right: 0.5rem !important;
+    }
+
+    .admin-page .navbar .btn-group .truncate {
+        max-width: 80px !important;
+        font-size: 12px;
     }
 
     .admin-page .page-title {
