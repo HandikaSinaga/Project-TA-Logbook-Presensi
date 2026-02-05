@@ -43,11 +43,11 @@
         transform: translateY(-50%);
         z-index: 10;
     }
-    
+
     .admin-page .navbar .navbar-brand > div {
         padding-left: 48px;
     }
-    
+
     .admin-page .navbar .dropdown,
     .admin-page .navbar .btn-group {
         display: none !important;
@@ -57,21 +57,21 @@
         position: absolute !important;
         left: -9999px !important;
     }
-    
+
     .admin-page .navbar .dropdown {
         display: none !important;
     }
-    
+
     .admin-page .navbar .dropdown .btn {
         padding: 4px 8px;
         font-size: 12px;
     }
-    
+
     .admin-page .navbar .dropdown .btn img {
         width: 20px;
         height: 20px;
     }
-    
+
     .admin-page .navbar .dropdown .truncate {
         max-width: 80px;
     }
@@ -768,33 +768,33 @@
     .admin-page .sidebar.show {
         left: 0;
     }
-    
+
     /* Disable minimize feature on mobile */
     .admin-page .sidebar.minimized {
         width: 250px !important;
     }
-    
+
     .admin-page .sidebar.minimized .nav-link span,
     .admin-page .sidebar.minimized .submenu,
     .admin-page .sidebar.minimized input {
         display: block !important;
         opacity: 1 !important;
     }
-    
+
     /* Ensure flexbox layout works on mobile */
     .admin-page .sidebar .nav-container {
         display: flex !important;
         flex-direction: column !important;
         height: calc(100vh - 72px) !important;
     }
-    
+
     .admin-page .sidebar .nav-container .menu-box {
         flex: 1 !important;
         overflow-y: auto !important;
         height: auto !important;
         max-height: none !important;
     }
-    
+
     .admin-page .sidebar .nav-container .setting-box {
         position: relative !important;
         flex-shrink: 0 !important;

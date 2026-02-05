@@ -13,7 +13,10 @@ const SupervisorLayout = ({ children }) => {
         <div className="admin-page supervisor-page">
             <div className="container-fluid admin-container">
                 <div className="row">
-                    <SideNav isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+                    <SideNav
+                        isOpen={sidebarOpen}
+                        onClose={() => setSidebarOpen(false)}
+                    />
                     <main className="col p-0 overflow-auto">
                         <Navbar onToggleSidebar={toggleSidebar} />
                         <div className="p-4 admin-content">{children}</div>

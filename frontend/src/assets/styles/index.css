@@ -133,9 +133,9 @@ body {
 }
 
 .bg-blur {
-    -webkit-backdrop-filter: blur(3px);
-    backdrop-filter: blur(3px);
-    background: #ffffff20;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    background: rgba(0, 144, 255, 0.85);
 }
 
 .bg-grey {
@@ -408,7 +408,9 @@ footer {
 }
 
 .hover-lift {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
 }
 
 .hover-lift:hover {

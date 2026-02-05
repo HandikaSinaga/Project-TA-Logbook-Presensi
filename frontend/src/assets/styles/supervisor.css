@@ -40,11 +40,11 @@
         transform: translateY(-50%);
         z-index: 10;
     }
-    
+
     .supervisor-page .navbar .navbar-brand > div {
         padding-left: 48px;
     }
-    
+
     .supervisor-page .navbar .dropdown,
     .supervisor-page .navbar .btn-group {
         display: none !important;
@@ -54,21 +54,21 @@
         position: absolute !important;
         left: -9999px !important;
     }
-    
+
     .supervisor-page .navbar .dropdown {
         display: none !important;
     }
-    
+
     .supervisor-page .navbar .dropdown .btn {
         padding: 4px 8px;
         font-size: 12px;
     }
-    
+
     .supervisor-page .navbar .dropdown .btn img {
         width: 20px;
         height: 20px;
     }
-    
+
     .supervisor-page .navbar .dropdown .truncate {
         max-width: 80px;
     }
@@ -269,7 +269,9 @@
     flex-direction: column;
     justify-content: space-between;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
 }
 
 .supervisor-dashboard .mini-cards:hover {
@@ -458,33 +460,33 @@
     .supervisor-page .sidebar.show {
         left: 0;
     }
-    
+
     /* Disable minimize feature on mobile */
     .supervisor-page .sidebar.minimized {
         width: 250px !important;
     }
-    
+
     .supervisor-page .sidebar.minimized .nav-link span,
     .supervisor-page .sidebar.minimized .submenu,
     .supervisor-page .sidebar.minimized input {
         display: block !important;
         opacity: 1 !important;
     }
-    
+
     /* Ensure flexbox layout works on mobile */
     .supervisor-page .sidebar .nav-container {
         display: flex !important;
         flex-direction: column !important;
         height: calc(100vh - 72px) !important;
     }
-    
+
     .supervisor-page .sidebar .nav-container .menu-box {
         flex: 1 !important;
         overflow-y: auto !important;
         height: auto !important;
         max-height: none !important;
     }
-    
+
     .supervisor-page .sidebar .nav-container .setting-box {
         position: relative !important;
         flex-shrink: 0 !important;

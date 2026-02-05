@@ -14,7 +14,10 @@ const Home = () => {
             <MainNav />
             <div className="landing-page">
                 {/* Hero Section */}
-                <section id="hero" className="hero-section bg-gd text-white py-5">
+                <section
+                    id="hero"
+                    className="hero-section bg-gd text-white py-5"
+                >
                     <Container>
                         <Row className="align-items-center min-vh-50 py-5">
                             <Col
@@ -46,7 +49,13 @@ const Home = () => {
                                         variant="outline-light"
                                         size="lg"
                                         className="px-4 rounded-35"
-                                        onClick={() => document.getElementById('whatis')?.scrollIntoView({ behavior: 'smooth' })}
+                                        onClick={() =>
+                                            document
+                                                .getElementById("whatis")
+                                                ?.scrollIntoView({
+                                                    behavior: "smooth",
+                                                })
+                                        }
                                     >
                                         <i className="bi bi-info-circle me-2"></i>
                                         Pelajari Lebih Lanjut
@@ -136,15 +145,20 @@ const Home = () => {
                                 Apa itu Sistem Presensi & Logbook?
                             </h2>
                             <p className="text-secondary lead">
-                                Solusi digital terpadu untuk manajemen kehadiran dan dokumentasi aktivitas kerja harian secara real-time, 
-                                membantu perusahaan meningkatkan produktivitas dan transparansi.
+                                Solusi digital terpadu untuk manajemen kehadiran
+                                dan dokumentasi aktivitas kerja harian secara
+                                real-time, membantu perusahaan meningkatkan
+                                produktivitas dan transparansi.
                             </p>
                         </div>
                     </Container>
                 </section>
 
                 {/* Features Section */}
-                <section id="feature" className="features-section py-5 bg-light">
+                <section
+                    id="feature"
+                    className="features-section py-5 bg-light"
+                >
                     <Container>
                         <div className="text-center mb-5">
                             <h2 className="fw-bold text-blue mb-3">
@@ -382,7 +396,12 @@ const Home = () => {
                                     variant="outline-light"
                                     size="lg"
                                     className="px-5 rounded-35"
-                                    onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}
+                                    onClick={() =>
+                                        window.scrollTo({
+                                            top: document.body.scrollHeight,
+                                            behavior: "smooth",
+                                        })
+                                    }
                                 >
                                     Hubungi Kami
                                 </Button>
@@ -410,7 +429,11 @@ const Home = () => {
                                     className="text-white text-decoration-none me-3"
                                     onClick={(e) => {
                                         e.preventDefault();
-                                        document.getElementById('whatis')?.scrollIntoView({ behavior: 'smooth' });
+                                        document
+                                            .getElementById("whatis")
+                                            ?.scrollIntoView({
+                                                behavior: "smooth",
+                                            });
                                     }}
                                 >
                                     Tentang
@@ -420,7 +443,11 @@ const Home = () => {
                                     className="text-white text-decoration-none me-3"
                                     onClick={(e) => {
                                         e.preventDefault();
-                                        document.getElementById('feature')?.scrollIntoView({ behavior: 'smooth' });
+                                        document
+                                            .getElementById("feature")
+                                            ?.scrollIntoView({
+                                                behavior: "smooth",
+                                            });
                                     }}
                                 >
                                     Bantuan
@@ -430,7 +457,10 @@ const Home = () => {
                                     className="text-white text-decoration-none"
                                     onClick={(e) => {
                                         e.preventDefault();
-                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                        window.scrollTo({
+                                            top: 0,
+                                            behavior: "smooth",
+                                        });
                                     }}
                                 >
                                     Kontak
