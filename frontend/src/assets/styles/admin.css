@@ -785,8 +785,8 @@
     .admin-page .sidebar .nav-container {
         display: flex !important;
         flex-direction: column !important;
-        height: calc(100vh - 100px) !important;
-        padding-bottom: 20px !important;
+        height: calc(100vh - 120px) !important;
+        padding-bottom: 16px !important;
     }
     
     .admin-page .sidebar .nav-container .menu-box {
@@ -794,17 +794,28 @@
         overflow-y: auto !important;
         height: auto !important;
         max-height: none !important;
-        padding-bottom: 10px !important;
+        padding-bottom: 8px !important;
     }
     
     .admin-page .sidebar .nav-container .setting-box {
         position: relative !important;
         flex-shrink: 0 !important;
-        margin-top: auto !important;
-        bottom: 0 !important;
+        margin-top: 0 !important;
+        bottom: auto !important;
         padding: 12px !important;
         background: white !important;
-    }    .admin-page .sidebar-overlay {
+        border-top: 2px solid #f1f5fc !important;
+    }
+    
+    .admin-page .sidebar .nav-container .setting-box .nav-link {
+        margin-bottom: 8px !important;
+    }
+    
+    .admin-page .sidebar .nav-container .setting-box .nav-link:last-child {
+        margin-bottom: 0 !important;
+    }
+
+    .admin-page .sidebar-overlay {
         position: fixed;
         top: 0;
         left: 0;
