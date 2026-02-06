@@ -65,14 +65,22 @@ class LogbookController {
     async getTodayLogbook(req, res) {
         try {
             const userId = req.user.id;
-            const today = getTodayJakarta();
+            const todayStart = getTodayJakarta();
+            const todayEnd = getTodayJakarta();
+            todayEnd.setHours(23, 59, 59, 999);
+
+            console.log(`[getTodayLogbook] User: ${userId}, Date range: ${todayStart} to ${todayEnd}`);
 
             const logbook = await Logbook.findOne({
                 where: {
                     user_id: userId,
-                    date: today,
+                    date: {
+                        [Op.between]: [todayStart, todayEnd],
+                    },
                 },
             });
+
+            console.log(`[getTodayLogbook] Found: ${logbook ? 'YES' : 'NO'}`, logbook ? `ID: ${logbook.id}` : '');
 
             res.json({
                 success: true,

@@ -316,6 +316,8 @@ class AttendanceController {
             const todayEnd = getTodayJakarta();
             todayEnd.setHours(23, 59, 59, 999);
 
+            console.log(`[Checkout Validation] User: ${userId}, Date range: ${todayStart} to ${todayEnd}`);
+
             const todayLogbook = await Logbook.findOne({
                 where: {
                     user_id: userId,
@@ -324,6 +326,8 @@ class AttendanceController {
                     },
                 },
             });
+
+            console.log(`[Checkout Validation] Logbook found: ${todayLogbook ? 'YES' : 'NO'}`, todayLogbook ? `ID: ${todayLogbook.id}, Date: ${todayLogbook.date}` : '');
 
             if (!todayLogbook) {
                 return res.status(400).json({
