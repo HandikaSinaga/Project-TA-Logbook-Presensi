@@ -52,7 +52,7 @@ router.delete("/divisions/:id", DivisionController.delete);
 router.get("/divisions/:id/members", DivisionController.getMembers);
 router.put(
     "/divisions/:id/assign-users",
-    DivisionController.assignUsersToDivision
+    DivisionController.assignUsersToDivision,
 );
 
 // Location Management
@@ -90,7 +90,7 @@ router.get("/reports/division", ReportController.getDivisionReport);
 // Export Reports
 router.get(
     "/reports/attendance/export",
-    ReportController.exportAttendanceReport
+    ReportController.exportAttendanceReport,
 );
 router.get("/reports/logbook/export", ReportController.exportLogbookReport);
 router.get("/reports/izin/export", ReportController.exportLeaveReport);
@@ -102,6 +102,10 @@ router.get("/reports/export", ReportController.exportReport);
 router.get("/settings", SettingsController.getSettings);
 router.put("/settings", SettingsController.updateSettings);
 router.get("/settings/system", SettingsController.getSystemInfo);
+router.get(
+    "/settings/time-validation",
+    SettingsController.getTimeValidationSettings,
+);
 
 // Office Networks
 router.get("/office-networks/active", OfficeNetworkController.getActive);
@@ -113,7 +117,7 @@ router.delete("/office-networks/:id", OfficeNetworkController.delete);
 // Office Location Testing (Admin can test detection without user role)
 router.post(
     "/office-networks/test-detection",
-    AttendanceController.preCheckWorkType
+    AttendanceController.preCheckWorkType,
 );
 
 // Get current IP information

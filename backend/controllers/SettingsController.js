@@ -1,4 +1,5 @@
 import models from "../models/index.js";
+import { getTimeValidationSettings } from "../utils/timeValidationHelper.js";
 
 const { User, Attendance, Logbook, Leave, Division, AppSetting } = models;
 
@@ -70,6 +71,100 @@ class SettingsController {
     async updateSettings(req, res) {
         try {
             const updates = req.body;
+
+            // ========== VALIDATE TIME SETTINGS ==========
+            const timeKeys = [
+                "check_in_start_time",
+                "check_in_end_time",
+                "check_out_start_time",
+                "check_out_end_time",
+                "working_hours_start",
+                "working_hours_end",
+                "auto_checkout_time",
+            ];
+
+            // Validate time format (HH:MM)
+            const timeFormatRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/;
+
+            for (const key of timeKeys) {
+                if (updates[key] && !timeFormatRegex.test(updates[key])) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Format waktu tidak valid untuk ${key}. Gunakan format HH:MM (contoh: 08:00)`,
+                        field: key,
+                    });
+                }
+            }
+
+            // Validate time logic (start < end)
+            const timeToMinutes = (time) => {
+                const [h, m] = time.split(":").map(Number);
+                return h * 60 + m;
+            };
+
+            // Check-in window
+            if (updates.check_in_start_time && updates.check_in_end_time) {
+                const start = timeToMinutes(updates.check_in_start_time);
+                const end = timeToMinutes(updates.check_in_end_time);
+                if (start >= end) {
+                    return res.status(400).json({
+                        success: false,
+                        message:
+                            "Waktu mulai check-in harus lebih awal dari waktu akhir check-in",
+                    });
+                }
+            }
+
+            // Check-out window
+            if (updates.check_out_start_time && updates.check_out_end_time) {
+                const start = timeToMinutes(updates.check_out_start_time);
+                const end = timeToMinutes(updates.check_out_end_time);
+                if (start >= end) {
+                    return res.status(400).json({
+                        success: false,
+                        message:
+                            "Waktu mulai check-out harus lebih awal dari waktu akhir check-out",
+                    });
+                }
+            }
+
+            // Working hours
+            if (updates.working_hours_start && updates.working_hours_end) {
+                const start = timeToMinutes(updates.working_hours_start);
+                const end = timeToMinutes(updates.working_hours_end);
+                if (start >= end) {
+                    return res.status(400).json({
+                        success: false,
+                        message:
+                            "Waktu mulai kerja harus lebih awal dari waktu selesai kerja",
+                    });
+                }
+            }
+
+            // Validate numeric values
+            if (
+                updates.late_tolerance_minutes &&
+                (isNaN(updates.late_tolerance_minutes) ||
+                    updates.late_tolerance_minutes < 0)
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Toleransi keterlambatan harus berupa angka positif",
+                });
+            }
+
+            if (
+                updates.max_leave_days_per_year &&
+                (isNaN(updates.max_leave_days_per_year) ||
+                    updates.max_leave_days_per_year < 0)
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message:
+                        "Maksimal hari izin per tahun harus berupa angka positif",
+                });
+            }
 
             // Update or create settings
             for (const [key, value] of Object.entries(updates)) {
@@ -151,6 +246,31 @@ class SettingsController {
             res.status(500).json({
                 success: false,
                 message: "Failed to get system info",
+            });
+        }
+    }
+
+    // Get time validation settings (for frontend)
+    async getTimeValidationSettings(req, res) {
+        try {
+            const settings = await getTimeValidationSettings();
+
+            if (!settings) {
+                return res.status(500).json({
+                    success: false,
+                    message: "Failed to get time validation settings",
+                });
+            }
+
+            res.json({
+                success: true,
+                data: settings,
+            });
+        } catch (error) {
+            console.error("Get time validation settings error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to get time validation settings",
             });
         }
     }

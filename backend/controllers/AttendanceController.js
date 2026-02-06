@@ -6,6 +6,10 @@ import {
     getPublicPath,
 } from "../utils/uploadHelper.js";
 import { getJakartaDate, getTodayJakarta } from "../utils/dateHelper.js";
+import {
+    validateCheckInTime,
+    validateCheckOutTime,
+} from "../utils/timeValidationHelper.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
@@ -148,6 +152,19 @@ class AttendanceController {
             const { latitude, longitude, address, offsite_reason } = req.body;
             const today = getTodayJakarta();
 
+            // ========== VALIDATE CHECK-IN TIME ==========
+            const timeValidation = await validateCheckInTime();
+            if (!timeValidation.allowed) {
+                return res.status(400).json({
+                    success: false,
+                    message: timeValidation.message,
+                    validation: {
+                        status: timeValidation.status,
+                        details: timeValidation.details,
+                    },
+                });
+            }
+
             // Check if already checked in
             const existing = await Attendance.findOne({
                 where: {
@@ -219,10 +236,8 @@ class AttendanceController {
                 .toString()
                 .padStart(2, "0")}`;
 
-            // Determine status (late if after 08:00)
-            const hour = now.getHours();
-            const minute = now.getMinutes();
-            const isLate = hour > 8 || (hour === 8 && minute > 0);
+            // Determine status from time validation
+            const isLate = timeValidation.is_late || false;
 
             const attendanceData = {
                 user_id: userId,
@@ -254,10 +269,17 @@ class AttendanceController {
 
             res.json({
                 success: true,
-                message: `Check-in berhasil (${workType.toUpperCase()})`,
+                message:
+                    timeValidation.message ||
+                    `Check-in berhasil (${workType.toUpperCase()})`,
                 data: {
                     ...attendance.toJSON(),
                     location_validation: locationValidation,
+                    time_validation: {
+                        status: timeValidation.status,
+                        is_late: timeValidation.is_late,
+                        late_minutes: timeValidation.late_minutes || 0,
+                    },
                 },
             });
         } catch (error) {
@@ -316,7 +338,9 @@ class AttendanceController {
             const todayEnd = getTodayJakarta();
             todayEnd.setHours(23, 59, 59, 999);
 
-            console.log(`[Checkout Validation] User: ${userId}, Date range: ${todayStart} to ${todayEnd}`);
+            console.log(
+                `[Checkout Validation] User: ${userId}, Date range: ${todayStart} to ${todayEnd}`,
+            );
 
             const todayLogbook = await Logbook.findOne({
                 where: {
@@ -327,13 +351,37 @@ class AttendanceController {
                 },
             });
 
-            console.log(`[Checkout Validation] Logbook found: ${todayLogbook ? 'YES' : 'NO'}`, todayLogbook ? `ID: ${todayLogbook.id}, Date: ${todayLogbook.date}` : '');
+            console.log(
+                `[Checkout Validation] Logbook found: ${todayLogbook ? "YES" : "NO"}`,
+                todayLogbook
+                    ? `ID: ${todayLogbook.id}, Date: ${todayLogbook.date}`
+                    : "",
+            );
 
             if (!todayLogbook) {
                 return res.status(400).json({
                     success: false,
                     message:
                         "Anda harus mengisi logbook terlebih dahulu sebelum check-out",
+                });
+            }
+
+            // ========== VALIDATE CHECK-OUT TIME ==========
+            const timeValidation = await validateCheckOutTime(
+                attendance.check_in_time,
+            );
+
+            // If checkout is too early (before allowed time), block it
+            if (!timeValidation.allowed) {
+                return res.status(400).json({
+                    success: false,
+                    message: timeValidation.message,
+                    validation: {
+                        status: timeValidation.status,
+                        wait_minutes: timeValidation.wait_minutes,
+                        can_checkout_at: timeValidation.can_checkout_at,
+                        details: timeValidation.details,
+                    },
                 });
             }
 
@@ -425,11 +473,18 @@ class AttendanceController {
 
             res.json({
                 success: true,
-                message: `Check-out berhasil (${workType.toUpperCase()})`,
+                message:
+                    timeValidation.message ||
+                    `Check-out berhasil (${workType.toUpperCase()})`,
                 data: {
                     ...attendance.toJSON(),
                     work_hours: workHours,
                     location_validation: locationValidation,
+                    time_validation: {
+                        status: timeValidation.status,
+                        early_minutes: timeValidation.early_minutes || 0,
+                        should_work_until: timeValidation.should_work_until,
+                    },
                 },
             });
         } catch (error) {

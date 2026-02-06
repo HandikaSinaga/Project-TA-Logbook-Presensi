@@ -69,7 +69,9 @@ class LogbookController {
             const todayEnd = getTodayJakarta();
             todayEnd.setHours(23, 59, 59, 999);
 
-            console.log(`[getTodayLogbook] User: ${userId}, Date range: ${todayStart} to ${todayEnd}`);
+            console.log(
+                `[getTodayLogbook] User: ${userId}, Date range: ${todayStart} to ${todayEnd}`,
+            );
 
             const logbook = await Logbook.findOne({
                 where: {
@@ -80,7 +82,10 @@ class LogbookController {
                 },
             });
 
-            console.log(`[getTodayLogbook] Found: ${logbook ? 'YES' : 'NO'}`, logbook ? `ID: ${logbook.id}` : '');
+            console.log(
+                `[getTodayLogbook] Found: ${logbook ? "YES" : "NO"}`,
+                logbook ? `ID: ${logbook.id}` : "",
+            );
 
             res.json({
                 success: true,

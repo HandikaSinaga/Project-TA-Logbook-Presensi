@@ -100,13 +100,13 @@ class ReportController {
                 absent: attendances.filter((a) => a.status === "absent").length,
                 leave: attendances.filter((a) => a.status === "leave").length,
                 approved: attendances.filter(
-                    (a) => a.approval_status === "approved"
+                    (a) => a.approval_status === "approved",
                 ).length,
                 pending: attendances.filter(
-                    (a) => a.approval_status === "pending"
+                    (a) => a.approval_status === "pending",
                 ).length,
                 rejected: attendances.filter(
-                    (a) => a.approval_status === "rejected"
+                    (a) => a.approval_status === "rejected",
                 ).length,
             };
 
@@ -322,13 +322,13 @@ class ReportController {
                 rejected: leaves.filter((l) => l.status === "rejected").length,
                 total_days: leaves.reduce(
                     (sum, l) => sum + (l.duration || 0),
-                    0
+                    0,
                 ),
                 by_type: {
                     izin_sakit: leaves.filter((l) => l.type === "izin_sakit")
                         .length,
                     izin_keperluan: leaves.filter(
-                        (l) => l.type === "izin_keperluan"
+                        (l) => l.type === "izin_keperluan",
                     ).length,
                 },
             };
@@ -520,13 +520,13 @@ class ReportController {
                     leave: attendances.filter((a) => a.status === "leave")
                         .length,
                     approved: attendances.filter(
-                        (a) => a.approval_status === "approved"
+                        (a) => a.approval_status === "approved",
                     ).length,
                     pending: attendances.filter(
-                        (a) => a.approval_status === "pending"
+                        (a) => a.approval_status === "pending",
                     ).length,
                     rejected: attendances.filter(
-                        (a) => a.approval_status === "rejected"
+                        (a) => a.approval_status === "rejected",
                     ).length,
                 },
                 logbook: {
@@ -548,7 +548,7 @@ class ReportController {
                         .length,
                     total_days: leaves.reduce(
                         (sum, l) => sum + (l.duration || 0),
-                        0
+                        0,
                     ),
                 },
             };
@@ -730,17 +730,17 @@ class ReportController {
                     logbooks,
                     leaves,
                 },
-                { start_date, end_date }
+                { start_date, end_date },
             );
 
             // Set response headers
             res.setHeader(
                 "Content-Type",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             );
             res.setHeader(
                 "Content-Disposition",
-                `attachment; filename=Laporan_Summary_${start_date}_${end_date}.xlsx`
+                `attachment; filename=Laporan_Summary_${start_date}_${end_date}.xlsx`,
             );
 
             res.send(buffer);
@@ -796,11 +796,11 @@ class ReportController {
 
                     const startOfMonth = getStartOfMonthJakarta(
                         today.getFullYear(),
-                        today.getMonth() + 1
+                        today.getMonth() + 1,
                     );
                     const endOfMonth = getEndOfMonthJakarta(
                         today.getFullYear(),
-                        today.getMonth() + 1
+                        today.getMonth() + 1,
                     );
 
                     const monthlyAttendance = await Attendance.count({
@@ -834,7 +834,7 @@ class ReportController {
                         monthly_attendance: monthlyAttendance,
                         attendance_rate: attendanceRate,
                     };
-                })
+                }),
             );
 
             res.json({
@@ -952,17 +952,17 @@ class ReportController {
             // Generate Excel file
             const buffer = await ExportService.exportAttendanceToExcel(
                 attendances,
-                { start_date, end_date }
+                { start_date, end_date },
             );
 
             // Set response headers
             res.setHeader(
                 "Content-Type",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             );
             res.setHeader(
                 "Content-Disposition",
-                `attachment; filename=Laporan_Presensi_${start_date}_${end_date}.xlsx`
+                `attachment; filename=Laporan_Presensi_${start_date}_${end_date}.xlsx`,
             );
 
             res.send(buffer);
@@ -1056,11 +1056,11 @@ class ReportController {
             // Set response headers
             res.setHeader(
                 "Content-Type",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             );
             res.setHeader(
                 "Content-Disposition",
-                `attachment; filename=Laporan_Logbook_${start_date}_${end_date}.xlsx`
+                `attachment; filename=Laporan_Logbook_${start_date}_${end_date}.xlsx`,
             );
 
             res.send(buffer);
@@ -1158,11 +1158,11 @@ class ReportController {
             // Set response headers
             res.setHeader(
                 "Content-Type",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             );
             res.setHeader(
                 "Content-Disposition",
-                `attachment; filename=Laporan_Izin_Cuti_${start_date}_${end_date}.xlsx`
+                `attachment; filename=Laporan_Izin_Cuti_${start_date}_${end_date}.xlsx`,
             );
 
             res.send(buffer);
@@ -1219,11 +1219,11 @@ class ReportController {
 
                     const startOfMonth = getStartOfMonthJakarta(
                         today.getFullYear(),
-                        today.getMonth() + 1
+                        today.getMonth() + 1,
                     );
                     const endOfMonth = getEndOfMonthJakarta(
                         today.getFullYear(),
-                        today.getMonth() + 1
+                        today.getMonth() + 1,
                     );
 
                     const monthlyAttendance = await Attendance.count({
@@ -1257,24 +1257,23 @@ class ReportController {
                         monthly_attendance: monthlyAttendance,
                         attendance_rate: attendanceRate,
                     };
-                })
+                }),
             );
 
             // Generate Excel file
-            const buffer = await ExportService.exportDivisionToExcel(
-                divisionStats
-            );
+            const buffer =
+                await ExportService.exportDivisionToExcel(divisionStats);
 
             // Set response headers
             const jakartaNow = getJakartaDate();
             const today = jakartaNow.toISOString().split("T")[0];
             res.setHeader(
                 "Content-Type",
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             );
             res.setHeader(
                 "Content-Disposition",
-                `attachment; filename=Laporan_Divisi_${today}.xlsx`
+                `attachment; filename=Laporan_Divisi_${today}.xlsx`,
             );
 
             res.send(buffer);

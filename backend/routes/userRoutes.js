@@ -29,12 +29,12 @@ router.post("/attendance/pre-check", AttendanceController.preCheckWorkType);
 router.post(
     "/attendance/check-in",
     uploadAttendancePhoto,
-    AttendanceController.checkIn
+    AttendanceController.checkIn,
 );
 router.post(
     "/attendance/check-out",
     uploadAttendancePhoto,
-    AttendanceController.checkOut
+    AttendanceController.checkOut,
 );
 
 // Logbook
@@ -59,7 +59,7 @@ router.delete("/izin/:id", LeaveController.delete);
 router.get("/division", DivisionController.getUserDivision);
 router.get(
     "/divisions/my-division",
-    DivisionController.getMyDivisionWithMembers
+    DivisionController.getMyDivisionWithMembers,
 );
 
 // Profile
@@ -70,5 +70,9 @@ router.post("/profile/avatar", uploadAvatar, ProfileController.uploadAvatar);
 
 // Settings (read-only for users)
 router.get("/settings", SettingsController.getSettings);
+router.get(
+    "/settings/time-validation",
+    SettingsController.getTimeValidationSettings,
+);
 
 export default router;
