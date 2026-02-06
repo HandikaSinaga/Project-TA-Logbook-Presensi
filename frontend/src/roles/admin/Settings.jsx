@@ -5,13 +5,22 @@ import toast from "react-hot-toast";
 
 // Constants untuk default values dan constraints
 const DEFAULT_SETTINGS = {
+    check_in_start_time: "06:00",
+    check_in_end_time: "08:30",
+    check_out_start_time: "16:00",
+    check_out_end_time: "20:00",
     working_hours_start: "08:00",
     working_hours_end: "17:00",
     late_tolerance_minutes: "15",
     auto_checkout_enabled: false,
     auto_checkout_time: "17:30",
     max_leave_days_per_year: "12", // Untuk izin/permission (magang tidak ada cuti)
+    leave_submission_deadline_hours: "24",
+    leave_min_notice_days: "3",
+    leave_min_reason_chars: "10",
+    leave_require_approval: true,
     notification_enabled: true,
+    notification_late_checkout: true,
 };
 
 const CONSTRAINTS = {
@@ -42,7 +51,7 @@ const AdminSettings = () => {
         } catch (error) {
             console.error("Error fetching settings:", error);
             toast.error(
-                error.response?.data?.message || "Gagal memuat pengaturan"
+                error.response?.data?.message || "Gagal memuat pengaturan",
             );
         } finally {
             setLoading(false);
@@ -169,6 +178,19 @@ const AdminSettings = () => {
             },
             {
                 condition:
+                    settings.check_in_start_time >= settings.check_in_end_time,
+                message:
+                    "Waktu mulai check-in harus lebih awal dari waktu akhir check-in",
+            },
+            {
+                condition:
+                    settings.check_out_start_time >=
+                    settings.check_out_end_time,
+                message:
+                    "Waktu mulai check-out harus lebih awal dari waktu akhir check-out",
+            },
+            {
+                condition:
                     settings.auto_checkout_enabled &&
                     !settings.auto_checkout_time,
                 message:
@@ -188,16 +210,16 @@ const AdminSettings = () => {
             setSaving(true);
             const response = await axiosInstance.put(
                 "/admin/settings",
-                settings
+                settings,
             );
             toast.success(
-                response.data.message || "Pengaturan berhasil disimpan"
+                response.data.message || "Pengaturan berhasil disimpan",
             );
             fetchSettings(); // Refresh data
         } catch (error) {
             console.error("Error saving settings:", error);
             toast.error(
-                error.response?.data?.message || "Gagal menyimpan pengaturan"
+                error.response?.data?.message || "Gagal menyimpan pengaturan",
             );
         } finally {
             setSaving(false);
@@ -256,7 +278,7 @@ const AdminSettings = () => {
 
             {/* Quick Stats Overview */}
             <div className="row g-3 mb-4">
-                <div className="col-md-4">
+                <div className="col-md-3">
                     <div className="card border-0 shadow-sm border-start border-primary border-3">
                         <div className="card-body">
                             <div className="d-flex align-items-center">
@@ -274,34 +296,53 @@ const AdminSettings = () => {
                         </div>
                     </div>
                 </div>
-                <div className="col-md-4">
-                    <div className="card border-0 shadow-sm border-start border-primary border-3">
+                <div className="col-md-3">
+                    <div className="card border-0 shadow-sm border-start border-success border-3">
                         <div className="card-body">
                             <div className="d-flex align-items-center">
-                                <i className="bi bi-hourglass-split fs-3 text-primary me-3"></i>
+                                <i className="bi bi-door-open fs-3 text-success me-3"></i>
                                 <div>
                                     <small className="text-muted d-block">
-                                        Toleransi Keterlambatan
+                                        Check-in Window
                                     </small>
                                     <strong className="fs-6">
-                                        {settings.late_tolerance_minutes} menit
+                                        {settings.check_in_start_time} -{" "}
+                                        {settings.check_in_end_time}
                                     </strong>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-4">
-                    <div className="card border-0 shadow-sm border-start border-primary border-3">
+                <div className="col-md-3">
+                    <div className="card border-0 shadow-sm border-start border-warning border-3">
                         <div className="card-body">
                             <div className="d-flex align-items-center">
-                                <i className="bi bi-calendar-event fs-3 text-primary me-3"></i>
+                                <i className="bi bi-door-closed fs-3 text-warning me-3"></i>
                                 <div>
                                     <small className="text-muted d-block">
-                                        Kuota Izin
+                                        Check-out Window
                                     </small>
                                     <strong className="fs-6">
-                                        {settings.max_leave_days_per_year} hari
+                                        {settings.check_out_start_time} -{" "}
+                                        {settings.check_out_end_time}
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div className="col-md-3">
+                    <div className="card border-0 shadow-sm border-start border-info border-3">
+                        <div className="card-body">
+                            <div className="d-flex align-items-center">
+                                <i className="bi bi-hourglass-split fs-3 text-info me-3"></i>
+                                <div>
+                                    <small className="text-muted d-block">
+                                        Toleransi
+                                    </small>
+                                    <strong className="fs-6">
+                                        {settings.late_tolerance_minutes} menit
                                     </strong>
                                 </div>
                             </div>
@@ -312,10 +353,405 @@ const AdminSettings = () => {
 
             {/* Settings Content with Tabs */}
             <Tabs
-                defaultActiveKey="working-hours"
+                defaultActiveKey="time-validation"
                 id="settings-tabs"
                 className="mb-4"
             >
+                {/* Tab 0: Time Validation (NEW - HIGH PRIORITY) */}
+                <Tab
+                    eventKey="time-validation"
+                    title={
+                        <span>
+                            <i className="bi bi-alarm me-2"></i>Validasi Waktu
+                        </span>
+                    }
+                >
+                    <div className="row g-4 mt-2">
+                        {/* Check-in Time Window Card */}
+                        <div className="col-12">
+                            <div className="cards">
+                                <div className="cards-title bg-success bg-opacity-10">
+                                    <h5 className="mb-0 text-success">
+                                        <i className="bi bi-door-open me-2"></i>
+                                        Window Check-in
+                                    </h5>
+                                </div>
+                                <div className="cards-body">
+                                    <div className="alert alert-success border-success d-flex align-items-start mb-4">
+                                        <i className="bi bi-info-circle fs-5 me-3 mt-1"></i>
+                                        <div>
+                                            <strong className="d-block mb-2">
+                                                Apa itu Window Check-in?
+                                            </strong>
+                                            <p className="mb-2">
+                                                Window check-in adalah rentang
+                                                waktu dimana karyawan{" "}
+                                                <strong>diizinkan</strong>{" "}
+                                                melakukan check-in. Di luar
+                                                rentang waktu ini, sistem akan{" "}
+                                                <strong>memblokir</strong>{" "}
+                                                check-in dan menampilkan pesan
+                                                error.
+                                            </p>
+                                            <ul className="mb-0 ps-3">
+                                                <li>
+                                                    Sebelum{" "}
+                                                    <strong>
+                                                        {
+                                                            settings.check_in_start_time
+                                                        }
+                                                    </strong>
+                                                    : Check-in{" "}
+                                                    <span className="badge bg-danger">
+                                                        DITOLAK
+                                                    </span>{" "}
+                                                    - "Check-in belum dibuka"
+                                                </li>
+                                                <li>
+                                                    Antara{" "}
+                                                    <strong>
+                                                        {
+                                                            settings.check_in_start_time
+                                                        }{" "}
+                                                        -{" "}
+                                                        {
+                                                            settings.check_in_end_time
+                                                        }
+                                                    </strong>
+                                                    : Check-in{" "}
+                                                    <span className="badge bg-success">
+                                                        DIIZINKAN
+                                                    </span>{" "}
+                                                    (bisa on-time atau late)
+                                                </li>
+                                                <li>
+                                                    Setelah{" "}
+                                                    <strong>
+                                                        {
+                                                            settings.check_in_end_time
+                                                        }
+                                                    </strong>
+                                                    : Check-in{" "}
+                                                    <span className="badge bg-danger">
+                                                        DITOLAK
+                                                    </span>{" "}
+                                                    - "Hubungi admin/supervisor"
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div className="row g-4">
+                                        <TimeInput
+                                            label="Waktu Buka Check-in"
+                                            icon="bi-door-open"
+                                            iconColor="text-success"
+                                            value={settings.check_in_start_time}
+                                            settingKey="check_in_start_time"
+                                            helpText="Karyawan bisa mulai check-in dari jam ini (contoh: 06:00 untuk early bird)"
+                                        />
+                                        <TimeInput
+                                            label="Waktu Tutup Check-in"
+                                            icon="bi-door-closed"
+                                            iconColor="text-danger"
+                                            value={settings.check_in_end_time}
+                                            settingKey="check_in_end_time"
+                                            helpText="Batas terakhir check-in, setelah ini akan ditolak (contoh: 08:30)"
+                                        />
+                                        <div className="col-md-4">
+                                            <div className="card bg-light h-100">
+                                                <div className="card-body">
+                                                    <div className="mb-2">
+                                                        <i className="bi bi-lightbulb text-warning me-2"></i>
+                                                        <strong>
+                                                            Rekomendasi
+                                                        </strong>
+                                                    </div>
+                                                    <small className="text-muted">
+                                                        • Buka check-in 1-2 jam
+                                                        sebelum jam kerja
+                                                        <br />
+                                                        • Tutup check-in 30
+                                                        menit setelah jam kerja
+                                                        + toleransi
+                                                        <br />• Contoh: Jam
+                                                        kerja 08:00, toleransi
+                                                        15 menit → tutup 08:30
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Check-out Time Window Card */}
+                        <div className="col-12">
+                            <div className="cards">
+                                <div className="cards-title bg-warning bg-opacity-10">
+                                    <h5 className="mb-0 text-warning">
+                                        <i className="bi bi-door-closed me-2"></i>
+                                        Window Check-out
+                                    </h5>
+                                </div>
+                                <div className="cards-body">
+                                    <div className="alert alert-warning border-warning d-flex align-items-start mb-4">
+                                        <i className="bi bi-exclamation-triangle fs-5 me-3 mt-1"></i>
+                                        <div>
+                                            <strong className="d-block mb-2">
+                                                Apa itu Window Check-out?
+                                            </strong>
+                                            <p className="mb-2">
+                                                Window check-out adalah rentang
+                                                waktu dimana karyawan{" "}
+                                                <strong>diizinkan</strong>{" "}
+                                                melakukan check-out. Berbeda
+                                                dengan check-in, check-out
+                                                memiliki validasi lebih ketat:
+                                            </p>
+                                            <ul className="mb-0 ps-3">
+                                                <li>
+                                                    Sebelum{" "}
+                                                    <strong>
+                                                        {
+                                                            settings.check_out_start_time
+                                                        }
+                                                    </strong>
+                                                    : Check-out{" "}
+                                                    <span className="badge bg-danger">
+                                                        DIBLOKIR
+                                                    </span>{" "}
+                                                    - "Belum waktunya, bisa
+                                                    dalam X menit lagi"
+                                                </li>
+                                                <li>
+                                                    Antara{" "}
+                                                    <strong>
+                                                        {
+                                                            settings.check_out_start_time
+                                                        }{" "}
+                                                        -{" "}
+                                                        {
+                                                            settings.check_out_end_time
+                                                        }
+                                                    </strong>
+                                                    : Check-out{" "}
+                                                    <span className="badge bg-success">
+                                                        DIIZINKAN
+                                                    </span>{" "}
+                                                    (bisa on-time atau early
+                                                    dengan warning)
+                                                </li>
+                                                <li>
+                                                    Setelah{" "}
+                                                    <strong>
+                                                        {
+                                                            settings.check_out_end_time
+                                                        }
+                                                    </strong>
+                                                    : Check-out{" "}
+                                                    <span className="badge bg-warning">
+                                                        DIIZINKAN
+                                                    </span>{" "}
+                                                    tapi dengan warning
+                                                    "overtime"
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div className="row g-4">
+                                        <TimeInput
+                                            label="Waktu Buka Check-out"
+                                            icon="bi-clock"
+                                            iconColor="text-warning"
+                                            value={
+                                                settings.check_out_start_time
+                                            }
+                                            settingKey="check_out_start_time"
+                                            helpText="Karyawan bisa mulai check-out dari jam ini (contoh: 16:00)"
+                                        />
+                                        <TimeInput
+                                            label="Waktu Tutup Check-out"
+                                            icon="bi-clock-history"
+                                            iconColor="text-danger"
+                                            value={settings.check_out_end_time}
+                                            settingKey="check_out_end_time"
+                                            helpText="Batas normal check-out, setelah ini dianggap overtime (contoh: 20:00)"
+                                        />
+                                        <div className="col-md-4">
+                                            <div className="card bg-light h-100">
+                                                <div className="card-body">
+                                                    <div className="mb-2">
+                                                        <i className="bi bi-lightbulb text-warning me-2"></i>
+                                                        <strong>
+                                                            Rekomendasi
+                                                        </strong>
+                                                    </div>
+                                                    <small className="text-muted">
+                                                        • Buka check-out 1 jam
+                                                        sebelum jam pulang
+                                                        <br />
+                                                        • Tutup check-out 3-4
+                                                        jam setelah jam pulang
+                                                        <br />• Contoh: Jam
+                                                        pulang 17:00 → buka
+                                                        16:00, tutup 20:00
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Visual Timeline */}
+                                    <div className="card bg-primary bg-opacity-10 border-primary mt-4">
+                                        <div className="card-body">
+                                            <h6 className="mb-3">
+                                                <i className="bi bi-diagram-3 me-2"></i>
+                                                Timeline Visualisasi
+                                            </h6>
+                                            <div className="d-flex align-items-center gap-2 flex-wrap">
+                                                <div className="badge bg-danger p-2">
+                                                    &lt;{" "}
+                                                    {
+                                                        settings.check_out_start_time
+                                                    }{" "}
+                                                    : BLOCKED
+                                                </div>
+                                                <i className="bi bi-arrow-right"></i>
+                                                <div className="badge bg-success p-2">
+                                                    {
+                                                        settings.check_out_start_time
+                                                    }{" "}
+                                                    -{" "}
+                                                    {
+                                                        settings.check_out_end_time
+                                                    }{" "}
+                                                    : ALLOWED
+                                                </div>
+                                                <i className="bi bi-arrow-right"></i>
+                                                <div className="badge bg-warning text-dark p-2">
+                                                    &gt;{" "}
+                                                    {
+                                                        settings.check_out_end_time
+                                                    }{" "}
+                                                    : OVERTIME
+                                                </div>
+                                            </div>
+                                            <small className="text-muted mt-2 d-block">
+                                                <i className="bi bi-info-circle me-1"></i>
+                                                User akan melihat countdown
+                                                timer dan pesan yang jelas untuk
+                                                setiap status
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Real-world Example */}
+                        <div className="col-12">
+                            <div className="card border-info">
+                                <div className="card-header bg-info bg-opacity-10">
+                                    <h6 className="mb-0">
+                                        <i className="bi bi-book me-2"></i>
+                                        Contoh Skenario (Setting Saat Ini)
+                                    </h6>
+                                </div>
+                                <div className="card-body">
+                                    <div className="row g-3">
+                                        <div className="col-md-6">
+                                            <div className="card h-100">
+                                                <div className="card-body">
+                                                    <h6 className="text-success mb-3">
+                                                        <i className="bi bi-check-circle me-2"></i>
+                                                        Scenario 1: Normal Day
+                                                    </h6>
+                                                    <ul className="small mb-0 ps-3">
+                                                        <li className="mb-2">
+                                                            <strong>
+                                                                07:30
+                                                            </strong>{" "}
+                                                            - User check-in{" "}
+                                                            <span className="badge bg-success">
+                                                                ✓
+                                                            </span>{" "}
+                                                            "Tepat waktu"
+                                                        </li>
+                                                        <li className="mb-2">
+                                                            <strong>
+                                                                15:00
+                                                            </strong>{" "}
+                                                            - User isi logbook{" "}
+                                                            <span className="badge bg-success">
+                                                                ✓
+                                                            </span>
+                                                        </li>
+                                                        <li className="mb-2">
+                                                            <strong>
+                                                                17:00
+                                                            </strong>{" "}
+                                                            - User check-out{" "}
+                                                            <span className="badge bg-success">
+                                                                ✓
+                                                            </span>{" "}
+                                                            "Selesai jam kerja"
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="card h-100">
+                                                <div className="card-body">
+                                                    <h6 className="text-danger mb-3">
+                                                        <i className="bi bi-x-circle me-2"></i>
+                                                        Scenario 2: Too Early
+                                                        Check-out
+                                                    </h6>
+                                                    <ul className="small mb-0 ps-3">
+                                                        <li className="mb-2">
+                                                            <strong>
+                                                                07:45
+                                                            </strong>{" "}
+                                                            - User check-in{" "}
+                                                            <span className="badge bg-success">
+                                                                ✓
+                                                            </span>
+                                                        </li>
+                                                        <li className="mb-2">
+                                                            <strong>
+                                                                14:00
+                                                            </strong>{" "}
+                                                            - User isi logbook{" "}
+                                                            <span className="badge bg-success">
+                                                                ✓
+                                                            </span>
+                                                        </li>
+                                                        <li className="mb-2">
+                                                            <strong>
+                                                                14:30
+                                                            </strong>{" "}
+                                                            - User coba
+                                                            check-out{" "}
+                                                            <span className="badge bg-danger">
+                                                                ✗
+                                                            </span>{" "}
+                                                            "Belum waktunya,
+                                                            bisa dalam 90 menit
+                                                            lagi"
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Tab>
+
                 {/* Tab 1: Working Hours */}
                 <Tab
                     eventKey="working-hours"

@@ -20,6 +20,10 @@ const Attendance = () => {
     const [workTypeDetection, setWorkTypeDetection] = useState(null); // { workType, isOnsite, reason, office }
     const [isDetectingWorkType, setIsDetectingWorkType] = useState(false);
 
+    // Time validation settings
+    const [timeSettings, setTimeSettings] = useState(null);
+    const [currentTime, setCurrentTime] = useState(new Date());
+
     // OFFSITE form (hanya muncul jika OFFSITE detected)
     const [offsiteReason, setOffsiteReason] = useState("");
     const [photoFile, setPhotoFile] = useState(null);
@@ -42,7 +46,23 @@ const Attendance = () => {
 
     useEffect(() => {
         fetchAttendanceData();
+        fetchTimeSettings();
         getCurrentLocation();
+
+        // Refresh time settings setiap 5 menit untuk catch perubahan dari admin
+        const timeSettingsInterval = setInterval(() => {
+            fetchTimeSettings();
+        }, 5 * 60 * 1000); // 5 minutes
+
+        // Update current time setiap detik
+        const timeInterval = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+
+        return () => {
+            clearInterval(timeSettingsInterval);
+            clearInterval(timeInterval);
+        };
     }, []);
 
     useEffect(() => {
@@ -208,6 +228,16 @@ const Attendance = () => {
         }
     };
 
+    const fetchTimeSettings = async () => {
+        try {
+            const response = await axiosInstance.get("/user/settings/time-validation");
+            setTimeSettings(response.data.data);
+        } catch (error) {
+            console.error("Error fetching time settings:", error);
+            // Non-critical, just log it
+        }
+    };
+
     const fetchAttendanceHistory = async () => {
         try {
             setHistoryLoading(true);
@@ -336,8 +366,21 @@ const Attendance = () => {
 
             const workType =
                 response.data.data?.work_type || workTypeDetection.workType;
-            toast.success(`✅ Check-in berhasil (${workType.toUpperCase()})!`, {
-                duration: 4000,
+            
+            // Show success with time validation info
+            const timeValidation = response.data.data?.time_validation;
+            let successMessage = `✅ Check-in berhasil (${workType.toUpperCase()})!`;
+            
+            if (timeValidation) {
+                if (timeValidation.is_late) {
+                    successMessage += `\n⚠️ Terlambat ${timeValidation.late_minutes} menit`;
+                } else if (timeValidation.status === "on_time") {
+                    successMessage += "\n✅ Tepat waktu";
+                }
+            }
+            
+            toast.success(successMessage, {
+                duration: 5000,
                 id: "check-in-success",
             });
 
@@ -352,8 +395,51 @@ const Attendance = () => {
             fetchAttendanceHistory();
         } catch (error) {
             console.error("Check-in error:", error);
-            const errorMsg = error.response?.data?.message || "Check-in gagal";
-            toast.error(errorMsg, { id: "check-in-error" });
+            const errorData = error.response?.data;
+            const errorMsg = errorData?.message || "Check-in gagal";
+            
+            // Handle time validation errors specifically
+            if (errorData?.validation) {
+                const validation = errorData.validation;
+                
+                if (validation.status === "too_early") {
+                    toast.error(
+                        <div>
+                            <strong>⏰ {errorMsg}</strong>
+                            <br />
+                            <small>
+                                Check-in dibuka mulai pukul{" "}
+                                {validation.details?.check_in_start} WIB
+                            </small>
+                        </div>,
+                        {
+                            id: "check-in-error",
+                            duration: 6000,
+                        }
+                    );
+                } else if (validation.status === "too_late") {
+                    toast.error(
+                        <div>
+                            <strong>⏰ {errorMsg}</strong>
+                            <br />
+                            <small>
+                                Waktu check-in sudah ditutup (pukul{" "}
+                                {validation.details?.check_in_end} WIB).
+                                <br />
+                                Silakan hubungi admin atau supervisor Anda.
+                            </small>
+                        </div>,
+                        {
+                            id: "check-in-error",
+                            duration: 8000,
+                        }
+                    );
+                } else {
+                    toast.error(errorMsg, { id: "check-in-error" });
+                }
+            } else {
+                toast.error(errorMsg, { id: "check-in-error" });
+            }
         } finally {
             setIsProcessing(false);
         }
@@ -447,13 +533,28 @@ const Attendance = () => {
             const workType =
                 response.data.data?.work_type || workTypeDetection.workType;
             const workHours = response.data.data?.work_hours || "0";
-            toast.success(
-                `✅ Check-out berhasil (${workType.toUpperCase()})! Jam kerja: ${workHours} jam`,
-                {
-                    duration: 4000,
-                    id: "check-out-success",
+            const timeValidation = response.data.data?.time_validation;
+            
+            // Build success message with time validation info
+            let successMessage = `✅ Check-out berhasil (${workType.toUpperCase()})!\nJam kerja: ${workHours} jam`;
+            
+            if (timeValidation) {
+                if (timeValidation.status === "early" && timeValidation.early_minutes > 0) {
+                    successMessage += `\n⚠️ Pulang ${timeValidation.early_minutes} menit lebih awal`;
+                    if (timeValidation.should_work_until) {
+                        successMessage += `\n(Seharusnya sampai ${timeValidation.should_work_until} WIB)`;
+                    }
+                } else if (timeValidation.status === "overtime") {
+                    successMessage += "\n⏰ Lembur (melewati batas waktu normal)";
+                } else if (timeValidation.status === "on_time") {
+                    successMessage += "\n✅ Tepat waktu";
                 }
-            );
+            }
+            
+            toast.success(successMessage, {
+                duration: 6000,
+                id: "check-out-success",
+            });
 
             // Reset form
             setOffsiteReason("");
@@ -467,10 +568,36 @@ const Attendance = () => {
         } catch (error) {
             console.error("Check-out error:", error);
             console.error("Error response:", error.response?.data);
-            const errorMsg = error.response?.data?.message || "Check-out gagal";
+            const errorData = error.response?.data;
+            const errorMsg = errorData?.message || "Check-out gagal";
 
+            // Handle time validation errors specifically
+            if (errorData?.validation) {
+                const validation = errorData.validation;
+                
+                if (validation.status === "too_early") {
+                    toast.error(
+                        <div>
+                            <strong>⏰ {errorMsg}</strong>
+                            <br />
+                            <small>
+                                Waktu check-out mulai pukul{" "}
+                                {validation.can_checkout_at} WIB
+                                <br />
+                                ⏳ Tunggu {validation.wait_minutes} menit lagi
+                            </small>
+                        </div>,
+                        {
+                            id: "check-out-error",
+                            duration: 8000,
+                        }
+                    );
+                } else {
+                    toast.error(errorMsg, { id: "check-out-error" });
+                }
+            }
             // Special handling for logbook validation
-            if (errorMsg.includes("logbook")) {
+            else if (errorMsg.includes("logbook")) {
                 toast.error(
                     <div>
                         <strong>{errorMsg}</strong>
@@ -522,6 +649,24 @@ const Attendance = () => {
         return workType === "onsite" ? "primary" : "warning";
     };
 
+    // Calculate late threshold dynamically from settings
+    const getLateThreshold = () => {
+        if (!timeSettings) return null;
+        
+        const workStart = timeSettings.working_hours.start; // e.g., "08:00"
+        const tolerance = timeSettings.check_in.late_tolerance_minutes; // e.g., 15
+        
+        // Parse working hours start
+        const [hours, minutes] = workStart.split(':').map(Number);
+        
+        // Add tolerance to get late threshold
+        const totalMinutes = hours * 60 + minutes + tolerance;
+        const lateHours = Math.floor(totalMinutes / 60);
+        const lateMinutes = totalMinutes % 60;
+        
+        return `${String(lateHours).padStart(2, '0')}:${String(lateMinutes).padStart(2, '0')}`;
+    };
+
     // Loading state
     if (loading) {
         return (
@@ -569,6 +714,163 @@ const Attendance = () => {
                     </div>
                 )}
             </div>
+
+            {/* Time Settings Info Banner */}
+            {timeSettings && (
+                <>
+                    {/* Current Time Display */}
+                    <div className="alert alert-primary border-0 shadow-sm mb-3">
+                        <div className="d-flex align-items-center justify-content-between">
+                            <div className="d-flex align-items-center">
+                                <i className="bi bi-clock-fill fs-3 me-3"></i>
+                                <div>
+                                    <strong className="d-block">Waktu Saat Ini</strong>
+                                    <h4 className="mb-0">
+                                        {currentTime.toLocaleTimeString('id-ID', { 
+                                            hour: '2-digit', 
+                                            minute: '2-digit',
+                                            second: '2-digit',
+                                            hour12: false 
+                                        })} WIB
+                                    </h4>
+                                </div>
+                            </div>
+                            <div className="text-end">
+                                {(() => {
+                                    const now = currentTime;
+                                    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                                    
+                                    // Check-in status
+                                    if (!todayAttendance?.check_in_time) {
+                                        if (currentTimeStr < timeSettings.check_in.start_time) {
+                                            return (
+                                                <span className="badge bg-warning text-dark px-3 py-2">
+                                                    <i className="bi bi-hourglass-split me-2"></i>
+                                                    Check-in belum dibuka
+                                                </span>
+                                            );
+                                        } else if (currentTimeStr >= timeSettings.check_in.start_time && currentTimeStr <= timeSettings.check_in.end_time) {
+                                            return (
+                                                <span className="badge bg-success px-3 py-2">
+                                                    <i className="bi bi-check-circle me-2"></i>
+                                                    Window Check-in BUKA
+                                                </span>
+                                            );
+                                        } else {
+                                            return (
+                                                <span className="badge bg-danger px-3 py-2">
+                                                    <i className="bi bi-x-circle me-2"></i>
+                                                    Window Check-in TUTUP
+                                                </span>
+                                            );
+                                        }
+                                    }
+                                    // Check-out status
+                                    else if (!todayAttendance?.check_out_time) {
+                                        if (currentTimeStr < timeSettings.check_out.start_time) {
+                                            return (
+                                                <span className="badge bg-warning text-dark px-3 py-2">
+                                                    <i className="bi bi-hourglass-split me-2"></i>
+                                                    Check-out belum dibuka
+                                                </span>
+                                            );
+                                        } else if (currentTimeStr >= timeSettings.check_out.start_time) {
+                                            return (
+                                                <span className="badge bg-success px-3 py-2">
+                                                    <i className="bi bi-check-circle me-2"></i>
+                                                    Bisa Check-out sekarang
+                                                </span>
+                                            );
+                                        }
+                                    } else {
+                                        return (
+                                            <span className="badge bg-info px-3 py-2">
+                                                <i className="bi bi-check-all me-2"></i>
+                                                Presensi Hari Ini Selesai
+                                            </span>
+                                        );
+                                    }
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="alert alert-info border-0 shadow-sm mb-4">
+                        <div className="row g-3">
+                            <div className="col-md-6">
+                                <div className="d-flex align-items-start">
+                                    <i className="bi bi-clock-history fs-4 me-3 text-info"></i>
+                                    <div className="flex-grow-1">
+                                        <strong className="d-block mb-2">
+                                            <i className="bi bi-box-arrow-in-right me-2"></i>
+                                            Jadwal Check-in
+                                        </strong>
+                                        <div className="mb-2">
+                                            <span className="badge bg-success me-2 px-3 py-2">
+                                                <i className="bi bi-unlock me-1"></i>
+                                                Buka: {timeSettings.check_in.start_time}
+                                            </span>
+                                            <span className="badge bg-danger px-3 py-2">
+                                                <i className="bi bi-lock me-1"></i>
+                                                Tutup: {timeSettings.check_in.end_time}
+                                            </span>
+                                        </div>
+                                        <div className="small">
+                                            <div className="text-muted mb-1">
+                                                <i className="bi bi-hourglass-split me-2"></i>
+                                                <strong>Jam Kerja:</strong> {timeSettings.working_hours.start} WIB
+                                            </div>
+                                            <div className="text-muted mb-1">
+                                                <i className="bi bi-clock me-2"></i>
+                                                <strong>Toleransi:</strong> {timeSettings.check_in.late_tolerance_minutes} menit
+                                            </div>
+                                            <div className="text-warning">
+                                                <i className="bi bi-exclamation-triangle me-2"></i>
+                                                <strong>Dianggap Terlambat:</strong> Setelah {getLateThreshold()} WIB
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="col-md-6">
+                                <div className="d-flex align-items-start">
+                                    <i className="bi bi-clock fs-4 me-3 text-primary"></i>
+                                    <div className="flex-grow-1">
+                                        <strong className="d-block mb-2">
+                                            <i className="bi bi-box-arrow-right me-2"></i>
+                                            Jadwal Check-out
+                                        </strong>
+                                        <div className="mb-2">
+                                            <span className="badge bg-success me-2 px-3 py-2">
+                                                <i className="bi bi-unlock me-1"></i>
+                                                Buka: {timeSettings.check_out.start_time}
+                                            </span>
+                                            <span className="badge bg-warning text-dark px-3 py-2">
+                                                <i className="bi bi-hourglass-split me-1"></i>
+                                                Normal: {timeSettings.check_out.end_time}
+                                            </span>
+                                        </div>
+                                        <div className="small">
+                                            <div className="text-muted mb-1">
+                                                <i className="bi bi-sunset me-2"></i>
+                                                <strong>Jam Pulang:</strong> {timeSettings.working_hours.end} WIB
+                                            </div>
+                                            <div className="text-info">
+                                                <i className="bi bi-info-circle me-2"></i>
+                                                <strong>Catatan:</strong> Wajib isi logbook sebelum checkout
+                                            </div>
+                                            <div className="text-danger">
+                                                <i className="bi bi-x-circle me-2"></i>
+                                                <strong>Diblokir:</strong> Sebelum {timeSettings.check_out.start_time} WIB
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
 
             {/* Quick Status Summary Cards */}
             {todayAttendance?.check_in_time && (
