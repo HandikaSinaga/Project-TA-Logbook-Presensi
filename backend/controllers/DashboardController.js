@@ -33,10 +33,16 @@ class DashboardController {
             });
 
             // Check today's attendance
+            const todayStart = getTodayJakarta();
+            const todayEnd = getTodayJakarta();
+            todayEnd.setHours(23, 59, 59, 999);
+
             const todayAttendance = await Attendance.findOne({
                 where: {
                     user_id: userId,
-                    date: today,
+                    date: {
+                        [Op.between]: [todayStart, todayEnd],
+                    },
                 },
             });
 
@@ -44,7 +50,9 @@ class DashboardController {
             const todayLogbook = await Logbook.findOne({
                 where: {
                     user_id: userId,
-                    date: today,
+                    date: {
+                        [Op.between]: [todayStart, todayEnd],
+                    },
                 },
             });
 
@@ -182,8 +190,16 @@ class DashboardController {
             });
 
             // Today's attendance
+            const todayStart = getTodayJakarta();
+            const todayEnd = getTodayJakarta();
+            todayEnd.setHours(23, 59, 59, 999);
+
             const todayAttendance = await Attendance.count({
-                where: { date: today },
+                where: {
+                    date: {
+                        [Op.between]: [todayStart, todayEnd],
+                    },
+                },
                 include: [
                     {
                         model: User,
@@ -286,8 +302,16 @@ class DashboardController {
             const totalLocations = await OfficeNetwork.count();
 
             // Today's attendance
+            const todayStart = getTodayJakarta();
+            const todayEnd = getTodayJakarta();
+            todayEnd.setHours(23, 59, 59, 999);
+
             const todayAttendance = await Attendance.count({
-                where: { date: today },
+                where: {
+                    date: {
+                        [Op.between]: [todayStart, todayEnd],
+                    },
+                },
             });
 
             // Pending leaves
@@ -308,7 +332,11 @@ class DashboardController {
 
             // Recent activities from real data
             const recentAttendances = await Attendance.findAll({
-                where: { date: today },
+                where: {
+                    date: {
+                        [Op.between]: [todayStart, todayEnd],
+                    },
+                },
                 include: [
                     {
                         model: User,

@@ -1,6 +1,12 @@
 import models from "../models/index.js";
 import { Op } from "sequelize";
 import ExportService from "../services/ExportService.js";
+import {
+    getTodayJakarta,
+    getJakartaDate,
+    getStartOfMonthJakarta,
+    getEndOfMonthJakarta,
+} from "../utils/dateHelper.js";
 
 const { Attendance, Logbook, Leave, User, Division } = models;
 
@@ -767,11 +773,18 @@ class ReportController {
                         where: { division_id: division.id, is_active: true },
                     });
 
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
+                    const today = getTodayJakarta();
+
+                    const todayStart = getTodayJakarta();
+                    const todayEnd = getTodayJakarta();
+                    todayEnd.setHours(23, 59, 59, 999);
 
                     const todayAttendance = await Attendance.count({
-                        where: { date: today },
+                        where: {
+                            date: {
+                                [Op.between]: [todayStart, todayEnd],
+                            },
+                        },
                         include: [
                             {
                                 model: User,
@@ -781,15 +794,13 @@ class ReportController {
                         ],
                     });
 
-                    const startOfMonth = new Date(
+                    const startOfMonth = getStartOfMonthJakarta(
                         today.getFullYear(),
-                        today.getMonth(),
-                        1
+                        today.getMonth() + 1
                     );
-                    const endOfMonth = new Date(
+                    const endOfMonth = getEndOfMonthJakarta(
                         today.getFullYear(),
-                        today.getMonth() + 1,
-                        0
+                        today.getMonth() + 1
                     );
 
                     const monthlyAttendance = await Attendance.count({
@@ -1185,11 +1196,18 @@ class ReportController {
                         where: { division_id: division.id, is_active: true },
                     });
 
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
+                    const today = getTodayJakarta();
+
+                    const todayStart = getTodayJakarta();
+                    const todayEnd = getTodayJakarta();
+                    todayEnd.setHours(23, 59, 59, 999);
 
                     const todayAttendance = await Attendance.count({
-                        where: { date: today },
+                        where: {
+                            date: {
+                                [Op.between]: [todayStart, todayEnd],
+                            },
+                        },
                         include: [
                             {
                                 model: User,
@@ -1199,15 +1217,13 @@ class ReportController {
                         ],
                     });
 
-                    const startOfMonth = new Date(
+                    const startOfMonth = getStartOfMonthJakarta(
                         today.getFullYear(),
-                        today.getMonth(),
-                        1
+                        today.getMonth() + 1
                     );
-                    const endOfMonth = new Date(
+                    const endOfMonth = getEndOfMonthJakarta(
                         today.getFullYear(),
-                        today.getMonth() + 1,
-                        0
+                        today.getMonth() + 1
                     );
 
                     const monthlyAttendance = await Attendance.count({
@@ -1250,7 +1266,8 @@ class ReportController {
             );
 
             // Set response headers
-            const today = new Date().toISOString().split("T")[0];
+            const jakartaNow = getJakartaDate();
+            const today = jakartaNow.toISOString().split("T")[0];
             res.setHeader(
                 "Content-Type",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

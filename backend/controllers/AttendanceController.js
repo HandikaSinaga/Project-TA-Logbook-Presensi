@@ -614,8 +614,7 @@ class AttendanceController {
             const supervisorId = req.user.id;
 
             const supervisor = await User.findByPk(supervisorId);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const today = getTodayJakarta();
 
             const attendances = await Attendance.findAll({
                 where: { date: today },
@@ -802,8 +801,7 @@ class AttendanceController {
     // Get today all attendance (Admin)
     async getTodayAllAttendance(req, res) {
         try {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            const today = getTodayJakarta();
 
             const attendances = await Attendance.findAll({
                 where: { date: today },
