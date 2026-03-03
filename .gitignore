@@ -142,7 +142,8 @@ URL-STANDARDIZATION-COMPLETE.md
 # ==========================================
 # Documentation Files (Exclude from Git)
 # ==========================================
-/docs/
+/docs/**
+!docs/README.md
 *.md
 !README.md
 !LICENSE.md
@@ -158,6 +159,19 @@ URL-STANDARDIZATION-COMPLETE.md
 /laporan/
 /proposal/
 /presentation/
+/screenshots/
+*GUIDE*.md
+*IMPLEMENTATION*.md
+*REFACTORING*.md
+*SUMMARY*.md
+*CHECKLIST*.md
+*OUTLINE*.md
+*BOOK*.md
+*FIX*.md
+*STATUS*.md
+db-*.sql
+development-archive/
+development-reports/
 
 # ==========================================
 # Temporary Files & Backups

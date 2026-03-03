@@ -15,6 +15,7 @@ import Leave from "./Leave";
 import Reports from "./Reports";
 import Settings from "./Settings"; // Modern settings with Tabs and enhanced UI/UX
 import Profile from "./Profile";
+import WorkCalendar from "./WorkCalendar";
 
 const AdminRoutes = () => {
     return (
@@ -36,6 +37,7 @@ const AdminRoutes = () => {
                     <Route path="attendance" element={<Attendance />} />
                     <Route path="logbook" element={<Logbook />} />
                     <Route path="leave" element={<Leave />} />
+                    <Route path="work-calendar" element={<WorkCalendar />} />
                     <Route path="reports" element={<Reports />} />
                     <Route path="system-settings" element={<Settings />} />
                     <Route

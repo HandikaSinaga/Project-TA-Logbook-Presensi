@@ -228,6 +228,20 @@ const SupervisorSideNav = ({ isOpen, onClose }) => {
                             </>
                         </div>
 
+                        <div className="menu-box">
+                            <Nav.Link
+                                as={NavLink}
+                                to="/supervisor/work-calendar"
+                                className="rounded rounded-35"
+                                onClick={handleNavClick}
+                            >
+                                <i className="bi bi-calendar-week me-2"></i>
+                                <span className="text-truncate">
+                                    Work Calendar
+                                </span>
+                            </Nav.Link>
+                        </div>
+
                         <div className="setting-box">
                             <Nav.Link
                                 as={NavLink}

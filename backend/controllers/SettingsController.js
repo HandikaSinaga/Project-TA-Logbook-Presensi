@@ -49,6 +49,9 @@ class SettingsController {
                 leave_min_reason_chars: "10", // Minimal karakter alasan izin
                 notification_enabled: true,
                 notification_late_checkout: true,
+                working_days: [1, 2, 3, 4, 5], // Monday-Friday default
+                check_holiday_enabled: true,
+                allow_weekend_work: false,
             };
 
             // Merge defaults with database settings
@@ -164,6 +167,46 @@ class SettingsController {
                     message:
                         "Maksimal hari izin per tahun harus berupa angka positif",
                 });
+            }
+
+            // Validate working_days array
+            if (updates.working_days) {
+                if (!Array.isArray(updates.working_days)) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "working_days harus berupa array",
+                    });
+                }
+
+                // Validate each day is between 0-6 (Sunday-Saturday)
+                const validDays = updates.working_days.every(
+                    (day) =>
+                        typeof day === "number" &&
+                        Number.isInteger(day) &&
+                        day >= 0 &&
+                        day <= 6,
+                );
+
+                if (!validDays) {
+                    return res.status(400).json({
+                        success: false,
+                        message:
+                            "working_days harus berisi angka 0-6 (0=Minggu, 1=Senin, ..., 6=Sabtu)",
+                    });
+                }
+
+                // Ensure at least one working day
+                if (updates.working_days.length === 0) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Minimal harus ada 1 hari kerja",
+                    });
+                }
+
+                // Remove duplicates
+                updates.working_days = [
+                    ...new Set(updates.working_days),
+                ].sort();
             }
 
             // Update or create settings

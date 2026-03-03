@@ -166,6 +166,18 @@ const UserSideNav = ({ isOpen, onClose }) => {
 
                             <Nav.Link
                                 as={NavLink}
+                                to="/user/work-calendar"
+                                className="rounded rounded-35"
+                                onClick={handleNavClick}
+                            >
+                                <i className="bi bi-calendar-week me-2"></i>
+                                <span className="text-truncate">
+                                    Work Calendar
+                                </span>
+                            </Nav.Link>
+
+                            <Nav.Link
+                                as={NavLink}
                                 to="/user/division"
                                 className="rounded rounded-35"
                                 onClick={handleNavClick}

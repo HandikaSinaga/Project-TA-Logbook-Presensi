@@ -7,6 +7,7 @@ import LogbookModel from "./logbookModels/logbookModel.js";
 import LeaveModel from "./leaveModels/leaveModel.js";
 import OfficeNetworkModel from "./officeNetworkModels/officeNetworkModel.js";
 import AppSettingModel from "./settingsModels/appSettingModel.js";
+import Holiday from "./settingsModels/Holiday.js";
 
 const Op = Sequelize.Op;
 
@@ -51,6 +52,10 @@ User.hasMany(Leave, { foreignKey: "user_id", as: "leaves" });
 Leave.belongsTo(User, { foreignKey: "user_id", as: "user" });
 Leave.belongsTo(User, { foreignKey: "reviewed_by", as: "reviewer" });
 
+// Holiday - User relationship
+Holiday.belongsTo(User, { foreignKey: "created_by", as: "creator" });
+User.hasMany(Holiday, { foreignKey: "created_by", as: "holidays_created" });
+
 const models = {
     Op,
     User,
@@ -60,6 +65,7 @@ const models = {
     Leave,
     OfficeNetwork,
     AppSetting,
+    Holiday,
 };
 
 export default models;

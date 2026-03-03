@@ -13,6 +13,8 @@ import OfficeNetworkController from "../controllers/OfficeNetworkController.js";
 import LogbookController from "../controllers/LogbookController.js";
 import LeaveController from "../controllers/LeaveController.js";
 import ProfileController from "../controllers/ProfileController.js";
+import HolidayController from "../controllers/HolidayController.js";
+import CalendarController from "../controllers/CalendarController.js";
 import { uploadAvatar } from "../config/uploadConfig.js";
 
 const router = express.Router();
@@ -167,5 +169,20 @@ router.get("/profile", ProfileController.getProfile);
 router.put("/profile", ProfileController.updateProfile);
 router.put("/profile/password", ProfileController.changePassword);
 router.post("/profile/avatar", uploadAvatar, ProfileController.uploadAvatar);
+
+// Holiday Management (Hari Libur Nasional & Custom)
+router.get("/holidays", HolidayController.getAllHolidays);
+router.get("/holidays/check", HolidayController.checkIsHoliday);
+router.get("/holidays/upcoming", HolidayController.getUpcomingHolidays);
+router.post("/holidays", HolidayController.createHoliday);
+router.post("/holidays/bulk-import", HolidayController.bulkImportHolidays);
+router.get("/holidays/:id", HolidayController.getHolidayById);
+router.put("/holidays/:id", HolidayController.updateHoliday);
+router.delete("/holidays/:id", HolidayController.deleteHoliday);
+router.patch("/holidays/:id/toggle", HolidayController.toggleHolidayStatus);
+
+// Work Calendar (Admin role)
+router.get("/calendar", CalendarController.getAdminCalendar);
+router.get("/calendar/date/:date", CalendarController.getAdminDateDetail);
 
 export default router;

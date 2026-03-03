@@ -12,6 +12,7 @@ import Leave from "./Leave";
 import Division from "./Division";
 import Profile from "./Profile";
 import ManageDivision from "./ManageDivision";
+import WorkCalendar from "./WorkCalendar";
 
 const SupervisorRoutes = () => {
     return (
@@ -26,6 +27,7 @@ const SupervisorRoutes = () => {
                     <Route path="attendance" element={<Attendance />} />
                     <Route path="logbooks" element={<Logbook />} />
                     <Route path="leaves" element={<Leave />} />
+                    <Route path="work-calendar" element={<WorkCalendar />} />
                     <Route path="division" element={<Division />} />
                     <Route
                         path="manage-division"

@@ -45,7 +45,7 @@ class ExportService {
         worksheet.mergeCells("A2:N2");
         const dateCell = worksheet.getCell("A2");
         dateCell.value = `Periode: ${this.formatDate(
-            dateRange.start_date
+            dateRange.start_date,
         )} - ${this.formatDate(dateRange.end_date)}`;
         dateCell.font = { size: 11, italic: true };
         dateCell.alignment = { vertical: "middle", horizontal: "center" };
@@ -55,7 +55,7 @@ class ExportService {
         worksheet.mergeCells("A3:N3");
         const generatedCell = worksheet.getCell("A3");
         generatedCell.value = `Digenerate pada: ${new Date().toLocaleString(
-            "id-ID"
+            "id-ID",
         )}`;
         generatedCell.font = { size: 9, italic: true };
         generatedCell.alignment = { vertical: "middle", horizontal: "center" };
@@ -314,7 +314,7 @@ class ExportService {
         worksheet.mergeCells("A2:L2");
         const dateCell = worksheet.getCell("A2");
         dateCell.value = `Periode: ${this.formatDate(
-            dateRange.start_date
+            dateRange.start_date,
         )} - ${this.formatDate(dateRange.end_date)}`;
         dateCell.font = { size: 11, italic: true };
         dateCell.alignment = { vertical: "middle", horizontal: "center" };
@@ -324,7 +324,7 @@ class ExportService {
         worksheet.mergeCells("A3:L3");
         const generatedCell = worksheet.getCell("A3");
         generatedCell.value = `Digenerate pada: ${new Date().toLocaleString(
-            "id-ID"
+            "id-ID",
         )}`;
         generatedCell.font = { size: 9, italic: true };
         generatedCell.alignment = { vertical: "middle", horizontal: "center" };
@@ -560,7 +560,7 @@ class ExportService {
         worksheet.mergeCells("A2:M2");
         const dateCell = worksheet.getCell("A2");
         dateCell.value = `Periode: ${this.formatDate(
-            dateRange.start_date
+            dateRange.start_date,
         )} - ${this.formatDate(dateRange.end_date)}`;
         dateCell.font = { size: 11, italic: true };
         dateCell.alignment = { vertical: "middle", horizontal: "center" };
@@ -570,7 +570,7 @@ class ExportService {
         worksheet.mergeCells("A3:M3");
         const generatedCell = worksheet.getCell("A3");
         generatedCell.value = `Digenerate pada: ${new Date().toLocaleString(
-            "id-ID"
+            "id-ID",
         )}`;
         generatedCell.font = { size: 9, italic: true };
         generatedCell.alignment = { vertical: "middle", horizontal: "center" };
@@ -825,7 +825,7 @@ class ExportService {
             worksheet.mergeCells("A2:F2");
             const dateCell = worksheet.getCell("A2");
             dateCell.value = `Periode: ${this.formatDate(
-                dateRange.start_date
+                dateRange.start_date,
             )} - ${this.formatDate(dateRange.end_date)}`;
             dateCell.font = { size: 11, italic: true };
             dateCell.alignment = { vertical: "middle", horizontal: "center" };
@@ -837,7 +837,7 @@ class ExportService {
         worksheet.mergeCells(`A${genRow}:F${genRow}`);
         const generatedCell = worksheet.getCell(`A${genRow}`);
         generatedCell.value = `Digenerate pada: ${new Date().toLocaleString(
-            "id-ID"
+            "id-ID",
         )}`;
         generatedCell.font = { size: 9, italic: true };
         generatedCell.alignment = { vertical: "middle", horizontal: "center" };
@@ -964,11 +964,11 @@ class ExportService {
 
         const totalMembers = data.reduce(
             (sum, d) => sum + (d.total_members || 0),
-            0
+            0,
         );
         const totalToday = data.reduce(
             (sum, d) => sum + (d.today_attendance || 0),
-            0
+            0,
         );
         const avgRate =
             data.length > 0
@@ -976,7 +976,7 @@ class ExportService {
                       data.reduce(
                           (sum, d) =>
                               sum + (parseFloat(d.attendance_rate) || 0),
-                          0
+                          0,
                       ) / data.length
                   ).toFixed(2)
                 : 0;
@@ -1078,7 +1078,7 @@ class ExportService {
         worksheet.mergeCells("A2:N2");
         const dateCell = worksheet.getCell("A2");
         dateCell.value = `Periode: ${this.formatDate(
-            dateRange.start_date
+            dateRange.start_date,
         )} - ${this.formatDate(dateRange.end_date)}`;
         dateCell.font = { size: 11, italic: true };
         worksheet.getRow(2).height = 20;
@@ -1129,10 +1129,10 @@ class ExportService {
             worksheet.getCell(row, 5).value =
                 attendance.user?.division?.name || "-";
             worksheet.getCell(row, 6).value = this.translateStatus(
-                attendance.status
+                attendance.status,
             );
             worksheet.getCell(row, 7).value = this.translateStatus(
-                attendance.approval_status
+                attendance.approval_status,
             );
             worksheet.getCell(row, 8).value = attendance.check_in_time || "-";
             worksheet.getCell(row, 9).value = attendance.check_out_time || "-";
@@ -1218,7 +1218,7 @@ class ExportService {
         worksheet.mergeCells("A2:L2");
         const dateCell = worksheet.getCell("A2");
         dateCell.value = `Periode: ${this.formatDate(
-            dateRange.start_date
+            dateRange.start_date,
         )} - ${this.formatDate(dateRange.end_date)}`;
         dateCell.font = { size: 11, italic: true };
         worksheet.getRow(2).height = 20;
@@ -1272,7 +1272,7 @@ class ExportService {
             worksheet.getCell(row, 9).value =
                 logbook.user?.sumber_magang || "-";
             worksheet.getCell(row, 10).value = this.translateStatus(
-                logbook.status
+                logbook.status,
             );
             worksheet.getCell(row, 11).value = logbook.reviewer?.name || "-";
             worksheet.getCell(row, 12).value = logbook.notes || "-";
@@ -1349,7 +1349,7 @@ class ExportService {
         worksheet.mergeCells("A2:N2");
         const dateCell = worksheet.getCell("A2");
         dateCell.value = `Periode: ${this.formatDate(
-            dateRange.start_date
+            dateRange.start_date,
         )} - ${this.formatDate(dateRange.end_date)}`;
         dateCell.font = { size: 11, italic: true };
         worksheet.getRow(2).height = 20;
@@ -1406,7 +1406,7 @@ class ExportService {
             worksheet.getCell(row, 10).value = leave.user?.periode || "-";
             worksheet.getCell(row, 11).value = leave.user?.sumber_magang || "-";
             worksheet.getCell(row, 12).value = this.translateStatus(
-                leave.status
+                leave.status,
             );
             worksheet.getCell(row, 13).value = leave.reviewer?.name || "-";
             worksheet.getCell(row, 14).value = leave.notes || "-";
@@ -1474,6 +1474,7 @@ class ExportService {
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
+            hour12: false,
         });
     }
 

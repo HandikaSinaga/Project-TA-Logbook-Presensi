@@ -21,6 +21,10 @@ const DEFAULT_SETTINGS = {
     leave_require_approval: true,
     notification_enabled: true,
     notification_late_checkout: true,
+    // Working Days & Holiday Settings
+    working_days: [1, 2, 3, 4, 5], // 0=Minggu, 1=Senin, ..., 6=Sabtu
+    check_holiday_enabled: true,
+    allow_weekend_work: false,
 };
 
 const CONSTRAINTS = {
@@ -42,6 +46,16 @@ const AdminSettings = () => {
             setLoading(true);
             const response = await axiosInstance.get("/admin/settings");
             const data = response.data.data || response.data;
+
+            // Parse working_days if it's a string
+            if (data.working_days && typeof data.working_days === "string") {
+                try {
+                    data.working_days = JSON.parse(data.working_days);
+                } catch (e) {
+                    console.error("Error parsing working_days:", e);
+                    data.working_days = [1, 2, 3, 4, 5]; // Default to weekdays
+                }
+            }
 
             // Merge with default settings to ensure all fields exist
             setSettings((prevSettings) => ({
@@ -905,7 +919,369 @@ const AdminSettings = () => {
                     </div>
                 </Tab>
 
-                {/* Tab 3: Leave & Notifications */}
+                {/* Tab 3: Working Days & Holiday */}
+                <Tab
+                    eventKey="working-days"
+                    title={
+                        <span>
+                            <i className="bi bi-calendar-week me-2"></i>Hari
+                            Kerja & Libur
+                        </span>
+                    }
+                >
+                    <div className="row g-4 mt-2">
+                        {/* Working Days Configuration */}
+                        <div className="col-12">
+                            <div className="cards">
+                                <div className="cards-title">
+                                    <h5 className="mb-0">
+                                        <i className="bi bi-calendar-week me-2"></i>
+                                        Konfigurasi Hari Kerja
+                                    </h5>
+                                </div>
+                                <div className="cards-body">
+                                    <div className="alert alert-info border-primary mb-4">
+                                        <i className="bi bi-info-circle me-2"></i>
+                                        <strong>Info:</strong> Pilih hari-hari
+                                        kerja yang berlaku di perusahaan. User
+                                        hanya dapat check-in pada hari kerja
+                                        yang dipilih (kecuali jika allow weekend
+                                        work diaktifkan).
+                                    </div>
+
+                                    <div className="row">
+                                        <div className="col-12">
+                                            <label className="form-label">
+                                                <i className="bi bi-calendar-check me-2 text-primary"></i>
+                                                <strong>
+                                                    Pilih Hari Kerja
+                                                </strong>
+                                            </label>
+                                            <div className="d-flex flex-wrap gap-3 mt-3">
+                                                {[
+                                                    {
+                                                        value: 0,
+                                                        label: "Minggu",
+                                                        color: "danger",
+                                                    },
+                                                    {
+                                                        value: 1,
+                                                        label: "Senin",
+                                                        color: "primary",
+                                                    },
+                                                    {
+                                                        value: 2,
+                                                        label: "Selasa",
+                                                        color: "primary",
+                                                    },
+                                                    {
+                                                        value: 3,
+                                                        label: "Rabu",
+                                                        color: "primary",
+                                                    },
+                                                    {
+                                                        value: 4,
+                                                        label: "Kamis",
+                                                        color: "primary",
+                                                    },
+                                                    {
+                                                        value: 5,
+                                                        label: "Jumat",
+                                                        color: "primary",
+                                                    },
+                                                    {
+                                                        value: 6,
+                                                        label: "Sabtu",
+                                                        color: "warning",
+                                                    },
+                                                ].map((day) => {
+                                                    const isChecked = (
+                                                        settings.working_days ||
+                                                        []
+                                                    ).includes(day.value);
+                                                    return (
+                                                        <div
+                                                            key={day.value}
+                                                            className={`form-check form-check-lg border rounded-3 p-3 ${
+                                                                isChecked
+                                                                    ? `bg-${day.color} bg-opacity-10 border-${day.color}`
+                                                                    : ""
+                                                            }`}
+                                                            style={{
+                                                                minWidth:
+                                                                    "120px",
+                                                            }}
+                                                        >
+                                                            <input
+                                                                className="form-check-input"
+                                                                type="checkbox"
+                                                                id={`day-${day.value}`}
+                                                                checked={
+                                                                    isChecked
+                                                                }
+                                                                onChange={(
+                                                                    e,
+                                                                ) => {
+                                                                    const workingDays =
+                                                                        [
+                                                                            ...(settings.working_days ||
+                                                                                []),
+                                                                        ];
+                                                                    if (
+                                                                        e.target
+                                                                            .checked
+                                                                    ) {
+                                                                        if (
+                                                                            !workingDays.includes(
+                                                                                day.value,
+                                                                            )
+                                                                        ) {
+                                                                            workingDays.push(
+                                                                                day.value,
+                                                                            );
+                                                                        }
+                                                                    } else {
+                                                                        const index =
+                                                                            workingDays.indexOf(
+                                                                                day.value,
+                                                                            );
+                                                                        if (
+                                                                            index >
+                                                                            -1
+                                                                        ) {
+                                                                            workingDays.splice(
+                                                                                index,
+                                                                                1,
+                                                                            );
+                                                                        }
+                                                                    }
+                                                                    // Validasi minimal 1 hari
+                                                                    if (
+                                                                        workingDays.length ===
+                                                                        0
+                                                                    ) {
+                                                                        toast.error(
+                                                                            "Minimal harus ada 1 hari kerja",
+                                                                        );
+                                                                        return;
+                                                                    }
+                                                                    workingDays.sort(
+                                                                        (
+                                                                            a,
+                                                                            b,
+                                                                        ) =>
+                                                                            a -
+                                                                            b,
+                                                                    );
+                                                                    updateSetting(
+                                                                        "working_days",
+                                                                        workingDays,
+                                                                    );
+                                                                }}
+                                                            />
+                                                            <label
+                                                                className="form-check-label ms-2"
+                                                                htmlFor={`day-${day.value}`}
+                                                            >
+                                                                <strong
+                                                                    className={`text-${day.color}`}
+                                                                >
+                                                                    {day.label}
+                                                                </strong>
+                                                            </label>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                            <small className="text-muted mt-3 d-block">
+                                                <i className="bi bi-lightbulb me-1"></i>
+                                                Default: Senin - Jumat (standar
+                                                kerja 5 hari)
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    {/* Working Days Preview */}
+                                    <div className="card bg-success bg-opacity-10 border-success mt-4">
+                                        <div className="card-body">
+                                            <h6 className="mb-2">
+                                                <i className="bi bi-eye me-2"></i>
+                                                Preview Hari Kerja
+                                            </h6>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                {(settings.working_days || [])
+                                                    .sort((a, b) => a - b)
+                                                    .map((day) => {
+                                                        const dayNames = [
+                                                            "Minggu",
+                                                            "Senin",
+                                                            "Selasa",
+                                                            "Rabu",
+                                                            "Kamis",
+                                                            "Jumat",
+                                                            "Sabtu",
+                                                        ];
+                                                        return (
+                                                            <span
+                                                                key={day}
+                                                                className="badge bg-success p-2"
+                                                            >
+                                                                {dayNames[day]}
+                                                            </span>
+                                                        );
+                                                    })}
+                                            </div>
+                                            <small className="text-muted mt-2 d-block">
+                                                Total:{" "}
+                                                <strong>
+                                                    {
+                                                        (
+                                                            settings.working_days ||
+                                                            []
+                                                        ).length
+                                                    }{" "}
+                                                    hari kerja
+                                                </strong>{" "}
+                                                per minggu
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Holiday Settings */}
+                        <div className="col-12">
+                            <div className="cards">
+                                <div className="cards-title">
+                                    <h5 className="mb-0">
+                                        <i className="bi bi-calendar-x me-2"></i>
+                                        Pengaturan Hari Libur
+                                    </h5>
+                                </div>
+                                <div className="cards-body">
+                                    <div className="row g-3">
+                                        <div className="col-12">
+                                            <div className="card bg-primary bg-opacity-10 border-0">
+                                                <div className="card-body">
+                                                    <SwitchInput
+                                                        label="Aktifkan Validasi Hari Libur"
+                                                        description="Sistem akan memblokir check-in pada hari libur nasional yang terdaftar"
+                                                        value={
+                                                            settings.check_holiday_enabled
+                                                        }
+                                                        settingKey="check_holiday_enabled"
+                                                        size="large"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="col-12">
+                                            <div className="card bg-warning bg-opacity-10 border-0">
+                                                <div className="card-body">
+                                                    <SwitchInput
+                                                        label="Izinkan Kerja di Akhir Pekan"
+                                                        description="Jika diaktifkan, user tetap dapat check-in di hari Sabtu/Minggu meskipun bukan hari kerja"
+                                                        value={
+                                                            settings.allow_weekend_work
+                                                        }
+                                                        settingKey="allow_weekend_work"
+                                                        size="large"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Info Card */}
+                                    <div className="alert alert-light border mt-4 mb-0">
+                                        <h6 className="mb-3">
+                                            <i className="bi bi-question-circle me-2"></i>
+                                            Cara Kerja Sistem
+                                        </h6>
+                                        <div className="row g-3">
+                                            <div className="col-md-6">
+                                                <div className="card h-100">
+                                                    <div className="card-body">
+                                                        <h6 className="text-success mb-2">
+                                                            <i className="bi bi-check-circle me-2"></i>
+                                                            Check-in Diizinkan
+                                                            Jika:
+                                                        </h6>
+                                                        <ul className="small mb-0 ps-3">
+                                                            <li>
+                                                                Hari ini adalah
+                                                                hari kerja
+                                                            </li>
+                                                            <li>
+                                                                Bukan hari libur
+                                                                nasional (jika
+                                                                validasi aktif)
+                                                            </li>
+                                                            <li>
+                                                                ATAU
+                                                                allow_weekend_work
+                                                                = true (untuk
+                                                                non-hari kerja)
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <div className="card h-100">
+                                                    <div className="card-body">
+                                                        <h6 className="text-danger mb-2">
+                                                            <i className="bi bi-x-circle me-2"></i>
+                                                            Check-in Diblokir
+                                                            Jika:
+                                                        </h6>
+                                                        <ul className="small mb-0 ps-3">
+                                                            <li>
+                                                                Hari libur
+                                                                nasional
+                                                                (status: aktif)
+                                                            </li>
+                                                            <li>
+                                                                Bukan hari kerja
+                                                                DAN
+                                                                allow_weekend_work
+                                                                = false
+                                                            </li>
+                                                            <li>
+                                                                Di luar jam
+                                                                check-in yang
+                                                                ditentukan
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-3 pt-3 border-top">
+                                            <small className="text-muted">
+                                                <i className="bi bi-gear me-1"></i>
+                                                <strong>Catatan:</strong> Daftar
+                                                hari libur nasional dapat
+                                                dikelola di menu
+                                                <strong className="text-primary">
+                                                    {" "}
+                                                    Admin → Hari Libur
+                                                </strong>
+                                                . Default mengikuti kalender
+                                                nasional Indonesia.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </Tab>
+
+                {/* Tab 4: Leave & Notifications */}
                 <Tab
                     eventKey="leave-notification"
                     title={

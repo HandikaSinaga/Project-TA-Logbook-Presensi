@@ -55,7 +55,7 @@ const AdminLocations = () => {
             if (editingId) {
                 await axiosInstance.put(
                     `/admin/locations/${editingId}`,
-                    formData
+                    formData,
                 );
                 toast.success("Lokasi berhasil diupdate");
             } else {
@@ -75,7 +75,7 @@ const AdminLocations = () => {
         } catch (error) {
             console.error("Error saving location:", error);
             toast.error(
-                error.response?.data?.message || "Gagal menyimpan lokasi"
+                error.response?.data?.message || "Gagal menyimpan lokasi",
             );
         }
     };
@@ -113,7 +113,7 @@ const AdminLocations = () => {
                 toast.dismiss();
                 console.error("Error getting location:", error);
                 toast.error("Gagal mengambil lokasi");
-            }
+            },
         );
     };
 
@@ -141,9 +141,14 @@ const AdminLocations = () => {
                     altitude: position.coords.altitude
                         ? position.coords.altitude.toFixed(2)
                         : "N/A",
-                    timestamp: new Date(
-                        position.timestamp
-                    ).toLocaleTimeString(),
+                    timestamp: new Date(position.timestamp).toLocaleTimeString(
+                        "id-ID",
+                        {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: false,
+                        },
+                    ),
                 };
 
                 setLocationTestResult({
@@ -189,7 +194,7 @@ const AdminLocations = () => {
                 enableHighAccuracy: true,
                 timeout: 10000,
                 maximumAge: 0,
-            }
+            },
         );
     };
 
@@ -262,7 +267,7 @@ const AdminLocations = () => {
                                                         className="btn btn-outline-primary"
                                                         onClick={() => {
                                                             setEditingId(
-                                                                location.id
+                                                                location.id,
                                                             );
                                                             setFormData({
                                                                 name: location.name,
@@ -283,7 +288,7 @@ const AdminLocations = () => {
                                                         className="btn btn-outline-danger"
                                                         onClick={() =>
                                                             handleDelete(
-                                                                location.id
+                                                                location.id,
                                                             )
                                                         }
                                                     >

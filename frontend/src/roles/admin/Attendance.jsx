@@ -158,14 +158,14 @@ const AdminAttendance = () => {
             }
             if (filters.sumber_magang) {
                 data = data.filter(
-                    (a) => a.user?.sumber_magang === filters.sumber_magang
+                    (a) => a.user?.sumber_magang === filters.sumber_magang,
                 );
             }
 
             setAttendances(data);
             setPagination(response.data.pagination);
             calculateStats(
-                response.data.pagination?.total_records || data.length
+                response.data.pagination?.total_records || data.length,
             );
 
             if (silent) {
@@ -193,7 +193,7 @@ const AdminAttendance = () => {
         const present = data.filter((a) => a.status === "present").length;
         const late = data.filter((a) => a.status === "late").length;
         const onLeave = data.filter(
-            (a) => a.status === "leave" || a.status === "sick"
+            (a) => a.status === "leave" || a.status === "sick",
         ).length;
         const onsite = data.filter((a) => a.work_type === "onsite").length;
         const offsite = data.filter((a) => a.work_type === "offsite").length;
@@ -265,7 +265,7 @@ const AdminAttendance = () => {
                 endDate = new Date(
                     today.getFullYear(),
                     today.getMonth() + 1,
-                    0
+                    0,
                 );
                 break;
             case "thisYear":
@@ -348,7 +348,8 @@ const AdminAttendance = () => {
             {
                 hour: "2-digit",
                 minute: "2-digit",
-            }
+                hour12: false,
+            },
         );
     };
 
@@ -371,7 +372,7 @@ const AdminAttendance = () => {
                     Menampilkan {(page - 1) * pagination.limit + 1} -{" "}
                     {Math.min(
                         page * pagination.limit,
-                        pagination.total_records
+                        pagination.total_records,
                     )}{" "}
                     dari {pagination.total_records} data
                 </div>
@@ -420,7 +421,7 @@ const AdminAttendance = () => {
                                         </button>
                                     </li>
                                 );
-                            }
+                            },
                         )}
 
                         <li
@@ -696,7 +697,7 @@ const AdminAttendance = () => {
                                 onChange={(e) =>
                                     handleFilterChange(
                                         "start_date",
-                                        e.target.value
+                                        e.target.value,
                                     )
                                 }
                             />
@@ -713,7 +714,7 @@ const AdminAttendance = () => {
                                 onChange={(e) =>
                                     handleFilterChange(
                                         "end_date",
-                                        e.target.value
+                                        e.target.value,
                                     )
                                 }
                                 min={filters.start_date}
@@ -729,7 +730,7 @@ const AdminAttendance = () => {
                                 onChange={(e) =>
                                     handleFilterChange(
                                         "sumber_magang",
-                                        e.target.value
+                                        e.target.value,
                                     )
                                 }
                             >
@@ -751,7 +752,7 @@ const AdminAttendance = () => {
                                 onChange={(e) =>
                                     handleFilterChange(
                                         "periode",
-                                        e.target.value
+                                        e.target.value,
                                     )
                                 }
                             >
@@ -773,7 +774,7 @@ const AdminAttendance = () => {
                                 onChange={(e) =>
                                     handleFilterChange(
                                         "division_id",
-                                        e.target.value
+                                        e.target.value,
                                     )
                                 }
                             >
@@ -814,7 +815,7 @@ const AdminAttendance = () => {
                                 onChange={(e) =>
                                     handleFilterChange(
                                         "work_type",
-                                        e.target.value
+                                        e.target.value,
                                     )
                                 }
                             >
@@ -857,19 +858,19 @@ const AdminAttendance = () => {
                                 <i className="bi bi-calendar-range me-1"></i>
                                 {filters.start_date === filters.end_date
                                     ? `Tanggal: ${new Date(
-                                          filters.start_date
+                                          filters.start_date,
                                       ).toLocaleDateString("id-ID", {
                                           day: "numeric",
                                           month: "short",
                                           year: "numeric",
                                       })}`
                                     : `${new Date(
-                                          filters.start_date
+                                          filters.start_date,
                                       ).toLocaleDateString("id-ID", {
                                           day: "numeric",
                                           month: "short",
                                       })} - ${new Date(
-                                          filters.end_date
+                                          filters.end_date,
                                       ).toLocaleDateString("id-ID", {
                                           day: "numeric",
                                           month: "short",
@@ -910,11 +911,11 @@ const AdminAttendance = () => {
                                     {attendances.length > 0 ? (
                                         attendances.map((attendance) => {
                                             const statusBadge = getStatusBadge(
-                                                attendance.status
+                                                attendance.status,
                                             );
                                             const workTypeBadge =
                                                 getWorkTypeBadge(
-                                                    attendance.work_type
+                                                    attendance.work_type,
                                                 );
 
                                             return (
@@ -922,7 +923,7 @@ const AdminAttendance = () => {
                                                     <td>
                                                         <img
                                                             src={getAvatarUrl(
-                                                                attendance.user
+                                                                attendance.user,
                                                             )}
                                                             alt={
                                                                 attendance.user
@@ -969,7 +970,7 @@ const AdminAttendance = () => {
                                                     <td>
                                                         <div className="text-nowrap">
                                                             {formatDate(
-                                                                attendance.date
+                                                                attendance.date,
                                                             )}
                                                         </div>
                                                     </td>
@@ -977,7 +978,7 @@ const AdminAttendance = () => {
                                                         <div>
                                                             <div>
                                                                 {formatTime(
-                                                                    attendance.check_in_time
+                                                                    attendance.check_in_time,
                                                                 )}
                                                             </div>
                                                             {attendance.check_in_photo && (
@@ -991,7 +992,7 @@ const AdminAttendance = () => {
                                                     <td>
                                                         <div>
                                                             {formatTime(
-                                                                attendance.check_out_time
+                                                                attendance.check_out_time,
                                                             )}
                                                         </div>
                                                     </td>
@@ -1022,7 +1023,7 @@ const AdminAttendance = () => {
                                                             className="btn btn-sm btn-outline-primary"
                                                             onClick={() =>
                                                                 handleViewDetail(
-                                                                    attendance
+                                                                    attendance,
                                                                 )
                                                             }
                                                         >
@@ -1066,10 +1067,10 @@ const AdminAttendance = () => {
                     {attendances.length > 0 ? (
                         attendances.map((attendance) => {
                             const statusBadge = getStatusBadge(
-                                attendance.status
+                                attendance.status,
                             );
                             const workTypeBadge = getWorkTypeBadge(
-                                attendance.work_type
+                                attendance.work_type,
                             );
 
                             return (
@@ -1091,7 +1092,7 @@ const AdminAttendance = () => {
                                             <div className="d-flex align-items-start mb-3">
                                                 <img
                                                     src={getAvatarUrl(
-                                                        attendance.user
+                                                        attendance.user,
                                                     )}
                                                     alt={attendance.user?.name}
                                                     className="rounded-circle me-2"
@@ -1117,7 +1118,7 @@ const AdminAttendance = () => {
                                                     <small className="text-primary">
                                                         <i className="bi bi-calendar-event me-1"></i>
                                                         {formatDate(
-                                                            attendance.date
+                                                            attendance.date,
                                                         )}
                                                     </small>
                                                 </div>
@@ -1138,7 +1139,7 @@ const AdminAttendance = () => {
                                                     </small>
                                                     <strong>
                                                         {formatTime(
-                                                            attendance.check_in_time
+                                                            attendance.check_in_time,
                                                         )}
                                                     </strong>
                                                 </div>
@@ -1148,7 +1149,7 @@ const AdminAttendance = () => {
                                                     </small>
                                                     <strong>
                                                         {formatTime(
-                                                            attendance.check_out_time
+                                                            attendance.check_out_time,
                                                         )}
                                                     </strong>
                                                 </div>
@@ -1271,7 +1272,7 @@ const AdminAttendance = () => {
                                             </h6>
                                             <p className="card-text fw-semibold">
                                                 {formatDate(
-                                                    selectedAttendance.date
+                                                    selectedAttendance.date,
                                                 )}
                                             </p>
                                         </div>
@@ -1286,7 +1287,7 @@ const AdminAttendance = () => {
                                             <Badge
                                                 bg={
                                                     getStatusBadge(
-                                                        selectedAttendance.status
+                                                        selectedAttendance.status,
                                                     ).bg
                                                 }
                                                 className="fs-6"
@@ -1294,13 +1295,13 @@ const AdminAttendance = () => {
                                                 <i
                                                     className={`bi bi-${
                                                         getStatusBadge(
-                                                            selectedAttendance.status
+                                                            selectedAttendance.status,
                                                         ).icon
                                                     } me-1`}
                                                 ></i>
                                                 {
                                                     getStatusBadge(
-                                                        selectedAttendance.status
+                                                        selectedAttendance.status,
                                                     ).text
                                                 }
                                             </Badge>
@@ -1315,7 +1316,7 @@ const AdminAttendance = () => {
                                             </h6>
                                             <p className="card-text fw-semibold">
                                                 {formatTime(
-                                                    selectedAttendance.check_in_time
+                                                    selectedAttendance.check_in_time,
                                                 )}
                                             </p>
                                         </div>
@@ -1329,7 +1330,7 @@ const AdminAttendance = () => {
                                             </h6>
                                             <p className="card-text fw-semibold">
                                                 {formatTime(
-                                                    selectedAttendance.check_out_time
+                                                    selectedAttendance.check_out_time,
                                                 )}
                                             </p>
                                         </div>
@@ -1344,7 +1345,7 @@ const AdminAttendance = () => {
                                             <Badge
                                                 bg={
                                                     getWorkTypeBadge(
-                                                        selectedAttendance.work_type
+                                                        selectedAttendance.work_type,
                                                     ).bg
                                                 }
                                                 className="fs-6"
@@ -1352,13 +1353,13 @@ const AdminAttendance = () => {
                                                 <i
                                                     className={`bi bi-${
                                                         getWorkTypeBadge(
-                                                            selectedAttendance.work_type
+                                                            selectedAttendance.work_type,
                                                         ).icon
                                                     } me-1`}
                                                 ></i>
                                                 {
                                                     getWorkTypeBadge(
-                                                        selectedAttendance.work_type
+                                                        selectedAttendance.work_type,
                                                     ).text
                                                 }
                                             </Badge>
@@ -1408,7 +1409,7 @@ const AdminAttendance = () => {
                                                 </h6>
                                                 <img
                                                     src={getImageUrl(
-                                                        selectedAttendance.check_in_photo
+                                                        selectedAttendance.check_in_photo,
                                                     )}
                                                     alt="Check In"
                                                     className="img-fluid rounded"
@@ -1419,9 +1420,9 @@ const AdminAttendance = () => {
                                                     onClick={() =>
                                                         window.open(
                                                             getImageUrl(
-                                                                selectedAttendance.check_in_photo
+                                                                selectedAttendance.check_in_photo,
                                                             ),
-                                                            "_blank"
+                                                            "_blank",
                                                         )
                                                     }
                                                     onError={(e) => {
@@ -1443,7 +1444,7 @@ const AdminAttendance = () => {
                                                 </h6>
                                                 <img
                                                     src={getImageUrl(
-                                                        selectedAttendance.check_out_photo
+                                                        selectedAttendance.check_out_photo,
                                                     )}
                                                     alt="Check Out"
                                                     className="img-fluid rounded"
@@ -1454,9 +1455,9 @@ const AdminAttendance = () => {
                                                     onClick={() =>
                                                         window.open(
                                                             getImageUrl(
-                                                                selectedAttendance.check_out_photo
+                                                                selectedAttendance.check_out_photo,
                                                             ),
-                                                            "_blank"
+                                                            "_blank",
                                                         )
                                                     }
                                                     onError={(e) => {

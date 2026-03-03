@@ -265,6 +265,19 @@ const AdminSideNav = ({ isOpen, onClose }) => {
                                 </div>
                             </Collapse>
 
+                            {/* Work Calendar */}
+                            <Nav.Link
+                                as={NavLink}
+                                to="/admin/work-calendar"
+                                className="rounded rounded-35"
+                                onClick={handleNavClick}
+                            >
+                                <i className="bi bi-calendar-week me-2"></i>
+                                <span className="text-truncate">
+                                    Work Calendar
+                                </span>
+                            </Nav.Link>
+
                             {/* Reports & Export Dropdown */}
                             <Nav.Link
                                 className={`drop-menu rounded rounded-35 d-flex justify-content-between align-items-center ${

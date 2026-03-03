@@ -103,13 +103,13 @@ const SupervisorLeave = () => {
                 rejected: leavesArray.filter((l) => l.status === "rejected")
                     .length,
                 sick: leavesArray.filter(
-                    (l) => l.type === "sick" || l.type === "izin_sakit"
+                    (l) => l.type === "sick" || l.type === "izin_sakit",
                 ).length,
                 permission: leavesArray.filter(
                     (l) =>
                         l.type === "permission" ||
                         l.type === "izin_keperluan" ||
-                        l.type === "izin"
+                        l.type === "izin",
                 ).length,
             });
         } catch (error) {
@@ -129,7 +129,7 @@ const SupervisorLeave = () => {
         } catch (error) {
             console.error("Error approving leave:", error);
             toast.error(
-                error.response?.data?.message || "Gagal menyetujui izin"
+                error.response?.data?.message || "Gagal menyetujui izin",
             );
         }
     };
@@ -149,7 +149,7 @@ const SupervisorLeave = () => {
         try {
             await axiosInstance.put(
                 `/supervisor/izin/${selectedLeave.id}/reject`,
-                { rejection_reason: rejectionReason.trim() }
+                { rejection_reason: rejectionReason.trim() },
             );
             toast.success("Izin ditolak");
             fetchLeaves();
@@ -463,7 +463,7 @@ const SupervisorLeave = () => {
                                     onChange={(e) =>
                                         handleFilterChange(
                                             "date_from",
-                                            e.target.value
+                                            e.target.value,
                                         )
                                     }
                                 />
@@ -474,7 +474,7 @@ const SupervisorLeave = () => {
                                     onChange={(e) =>
                                         handleFilterChange(
                                             "date_to",
-                                            e.target.value
+                                            e.target.value,
                                         )
                                     }
                                 />
@@ -558,14 +558,14 @@ const SupervisorLeave = () => {
                                     <tbody>
                                         {leaves.map((leave) => {
                                             const typeBadge = getTypeBadge(
-                                                leave.type
+                                                leave.type,
                                             );
                                             const statusBadge = getStatusBadge(
-                                                leave.status
+                                                leave.status,
                                             );
                                             const duration = calculateDuration(
                                                 leave.start_date,
-                                                leave.end_date
+                                                leave.end_date,
                                             );
 
                                             return (
@@ -574,7 +574,7 @@ const SupervisorLeave = () => {
                                                         <div className="d-flex align-items-center">
                                                             <img
                                                                 src={getAvatarUrl(
-                                                                    leave.user
+                                                                    leave.user,
                                                                 )}
                                                                 alt={
                                                                     leave.user
@@ -588,13 +588,13 @@ const SupervisorLeave = () => {
                                                                         "cover",
                                                                 }}
                                                                 onError={(
-                                                                    e
+                                                                    e,
                                                                 ) => {
                                                                     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
                                                                         leave
                                                                             .user
                                                                             ?.name ||
-                                                                            "User"
+                                                                            "User",
                                                                     )}&background=random&color=fff&size=128`;
                                                                 }}
                                                             />
@@ -631,27 +631,27 @@ const SupervisorLeave = () => {
                                                             <small className="text-muted d-block">
                                                                 <i className="bi bi-calendar-event me-1"></i>
                                                                 {new Date(
-                                                                    leave.start_date
+                                                                    leave.start_date,
                                                                 ).toLocaleDateString(
                                                                     "id-ID",
                                                                     {
                                                                         day: "2-digit",
                                                                         month: "short",
                                                                         year: "numeric",
-                                                                    }
+                                                                    },
                                                                 )}
                                                             </small>
                                                             <small className="text-muted">
                                                                 <i className="bi bi-arrow-down me-1"></i>
                                                                 {new Date(
-                                                                    leave.end_date
+                                                                    leave.end_date,
                                                                 ).toLocaleDateString(
                                                                     "id-ID",
                                                                     {
                                                                         day: "2-digit",
                                                                         month: "short",
                                                                         year: "numeric",
-                                                                    }
+                                                                    },
                                                                 )}
                                                             </small>
                                                         </div>
@@ -665,14 +665,14 @@ const SupervisorLeave = () => {
                                                     <td className="py-3">
                                                         <small className="text-muted">
                                                             {new Date(
-                                                                leave.created_at
+                                                                leave.created_at,
                                                             ).toLocaleDateString(
                                                                 "id-ID",
                                                                 {
                                                                     day: "2-digit",
                                                                     month: "short",
                                                                     year: "numeric",
-                                                                }
+                                                                },
                                                             )}
                                                         </small>
                                                     </td>
@@ -693,10 +693,10 @@ const SupervisorLeave = () => {
                                                                 size="sm"
                                                                 onClick={() => {
                                                                     setSelectedLeave(
-                                                                        leave
+                                                                        leave,
                                                                     );
                                                                     setShowDetailModal(
-                                                                        true
+                                                                        true,
                                                                     );
                                                                 }}
                                                             >
@@ -711,7 +711,7 @@ const SupervisorLeave = () => {
                                                                         size="sm"
                                                                         onClick={() =>
                                                                             handleApprove(
-                                                                                leave.id
+                                                                                leave.id,
                                                                             )
                                                                         }
                                                                     >
@@ -723,7 +723,7 @@ const SupervisorLeave = () => {
                                                                         size="sm"
                                                                         onClick={() =>
                                                                             openRejectModal(
-                                                                                leave
+                                                                                leave,
                                                                             )
                                                                         }
                                                                     >
@@ -749,7 +749,7 @@ const SupervisorLeave = () => {
                                         {(page - 1) * pagination.limit + 1} -{" "}
                                         {Math.min(
                                             page * pagination.limit,
-                                            pagination.total_records
+                                            pagination.total_records,
                                         )}{" "}
                                         dari {pagination.total_records} data
                                     </div>
@@ -779,7 +779,7 @@ const SupervisorLeave = () => {
                                                 {
                                                     length: Math.min(
                                                         5,
-                                                        pagination.total_pages
+                                                        pagination.total_pages,
                                                     ),
                                                 },
                                                 (_, i) => {
@@ -817,7 +817,7 @@ const SupervisorLeave = () => {
                                                                 className="page-link"
                                                                 onClick={() =>
                                                                     setPage(
-                                                                        pageNum
+                                                                        pageNum,
                                                                     )
                                                                 }
                                                             >
@@ -825,7 +825,7 @@ const SupervisorLeave = () => {
                                                             </button>
                                                         </li>
                                                     );
-                                                }
+                                                },
                                             )}
 
                                             <li
@@ -898,7 +898,7 @@ const SupervisorLeave = () => {
                                         onError={(e) => {
                                             e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
                                                 selectedLeave.user?.name ||
-                                                    "User"
+                                                    "User",
                                             )}&background=random&color=fff&size=128`;
                                         }}
                                     />
@@ -936,7 +936,7 @@ const SupervisorLeave = () => {
                                             <Badge
                                                 bg={
                                                     getTypeBadge(
-                                                        selectedLeave.type
+                                                        selectedLeave.type,
                                                     ).bg
                                                 }
                                                 className="px-3 py-2"
@@ -944,13 +944,13 @@ const SupervisorLeave = () => {
                                                 <i
                                                     className={`bi bi-${
                                                         getTypeBadge(
-                                                            selectedLeave.type
+                                                            selectedLeave.type,
                                                         ).icon
                                                     } me-2`}
                                                 ></i>
                                                 {
                                                     getTypeBadge(
-                                                        selectedLeave.type
+                                                        selectedLeave.type,
                                                     ).text
                                                 }
                                             </Badge>
@@ -964,7 +964,7 @@ const SupervisorLeave = () => {
                                             <Badge
                                                 bg={
                                                     getStatusBadge(
-                                                        selectedLeave.status
+                                                        selectedLeave.status,
                                                     ).bg
                                                 }
                                                 className="px-3 py-2"
@@ -972,13 +972,13 @@ const SupervisorLeave = () => {
                                                 <i
                                                     className={`bi bi-${
                                                         getStatusBadge(
-                                                            selectedLeave.status
+                                                            selectedLeave.status,
                                                         ).icon
                                                     } me-2`}
                                                 ></i>
                                                 {
                                                     getStatusBadge(
-                                                        selectedLeave.status
+                                                        selectedLeave.status,
                                                     ).text
                                                 }
                                             </Badge>
@@ -1000,7 +1000,7 @@ const SupervisorLeave = () => {
                                                     <div>
                                                         <div className="fw-semibold">
                                                             {formatDate(
-                                                                selectedLeave.start_date
+                                                                selectedLeave.start_date,
                                                             )}
                                                         </div>
                                                     </div>
@@ -1017,7 +1017,7 @@ const SupervisorLeave = () => {
                                                     <div>
                                                         <div className="fw-semibold">
                                                             {formatDate(
-                                                                selectedLeave.end_date
+                                                                selectedLeave.end_date,
                                                             )}
                                                         </div>
                                                     </div>
@@ -1035,7 +1035,7 @@ const SupervisorLeave = () => {
                                         <i className="bi bi-calendar3 me-2 text-primary"></i>
                                         {calculateDuration(
                                             selectedLeave.start_date,
-                                            selectedLeave.end_date
+                                            selectedLeave.end_date,
                                         )}{" "}
                                         hari
                                     </div>
@@ -1071,7 +1071,7 @@ const SupervisorLeave = () => {
                                                     <div className="bg-primary bg-opacity-10 rounded p-2 me-3">
                                                         <i
                                                             className={`bi bi-${getAttachmentIcon(
-                                                                selectedLeave.attachment
+                                                                selectedLeave.attachment,
                                                             )} text-primary fs-4`}
                                                         ></i>
                                                     </div>
@@ -1088,7 +1088,7 @@ const SupervisorLeave = () => {
                                                 </div>
                                                 <a
                                                     href={getImageUrl(
-                                                        selectedLeave.attachment
+                                                        selectedLeave.attachment,
                                                     )}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
@@ -1109,7 +1109,7 @@ const SupervisorLeave = () => {
                                     <div className="fw-semibold">
                                         <i className="bi bi-clock-history me-2 text-primary"></i>
                                         {new Date(
-                                            selectedLeave.created_at
+                                            selectedLeave.created_at,
                                         ).toLocaleDateString("id-ID", {
                                             weekday: "long",
                                             day: "2-digit",
@@ -1117,6 +1117,7 @@ const SupervisorLeave = () => {
                                             year: "numeric",
                                             hour: "2-digit",
                                             minute: "2-digit",
+                                            hour12: false,
                                         })}
                                     </div>
                                 </div>
@@ -1162,7 +1163,7 @@ const SupervisorLeave = () => {
                                             <div className="d-flex align-items-center">
                                                 <img
                                                     src={getAvatarUrl(
-                                                        selectedLeave.reviewer
+                                                        selectedLeave.reviewer,
                                                     )}
                                                     alt={
                                                         selectedLeave.reviewer
@@ -1179,7 +1180,7 @@ const SupervisorLeave = () => {
                                                             selectedLeave
                                                                 .reviewer
                                                                 .name ||
-                                                                "Reviewer"
+                                                                "Reviewer",
                                                         )}&background=28a745&color=fff&size=128`;
                                                     }}
                                                 />
@@ -1195,7 +1196,7 @@ const SupervisorLeave = () => {
                                                         <div className="small text-muted mt-1">
                                                             <i className="bi bi-clock-history me-1"></i>
                                                             {new Date(
-                                                                selectedLeave.approved_at
+                                                                selectedLeave.approved_at,
                                                             ).toLocaleDateString(
                                                                 "id-ID",
                                                                 {
@@ -1204,7 +1205,8 @@ const SupervisorLeave = () => {
                                                                     year: "numeric",
                                                                     hour: "2-digit",
                                                                     minute: "2-digit",
-                                                                }
+                                                                    hour12: false,
+                                                                },
                                                             )}
                                                         </div>
                                                     )}

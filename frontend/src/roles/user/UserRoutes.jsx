@@ -11,6 +11,7 @@ import Logbook from "./Logbook";
 import Leave from "./Leave";
 import Division from "./Division";
 import Profile from "./Profile";
+import WorkCalendar from "./WorkCalendar";
 
 const UserRoutes = () => {
     return (
@@ -25,6 +26,7 @@ const UserRoutes = () => {
                     <Route path="attendance" element={<Attendance />} />
                     <Route path="logbook" element={<Logbook />} />
                     <Route path="leave" element={<Leave />} />
+                    <Route path="work-calendar" element={<WorkCalendar />} />
                     <Route path="division" element={<Division />} />
                     <Route path="profile" element={<Profile />} />
                 </Route>

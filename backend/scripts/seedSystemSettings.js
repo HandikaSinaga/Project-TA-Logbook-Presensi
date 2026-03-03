@@ -100,6 +100,27 @@ const defaultSettings = [
         type: "boolean",
         description: "Notifikasi checkout terlambat",
     },
+    {
+        key: "working_days",
+        value: JSON.stringify([1, 2, 3, 4, 5]), // Monday-Friday
+        type: "json",
+        description:
+            "Hari kerja dalam format array angka: 0=Minggu, 1=Senin, 2=Selasa, 3=Rabu, 4=Kamis, 5=Jumat, 6=Sabtu. Default: [1,2,3,4,5] (Senin-Jumat)",
+    },
+    {
+        key: "check_holiday_enabled",
+        value: "true",
+        type: "boolean",
+        description:
+            "Aktifkan validasi hari libur nasional (block check-in di hari libur)",
+    },
+    {
+        key: "allow_weekend_work",
+        value: "false",
+        type: "boolean",
+        description:
+            "Izinkan karyawan check-in di akhir pekan (Sabtu/Minggu) jika bukan hari kerja",
+    },
 ];
 
 async function seedSystemSettings() {

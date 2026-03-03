@@ -50,9 +50,12 @@ const Attendance = () => {
         getCurrentLocation();
 
         // Refresh time settings setiap 5 menit untuk catch perubahan dari admin
-        const timeSettingsInterval = setInterval(() => {
-            fetchTimeSettings();
-        }, 5 * 60 * 1000); // 5 minutes
+        const timeSettingsInterval = setInterval(
+            () => {
+                fetchTimeSettings();
+            },
+            5 * 60 * 1000,
+        ); // 5 minutes
 
         // Update current time setiap detik
         const timeInterval = setInterval(() => {
@@ -117,7 +120,7 @@ const Attendance = () => {
 
             const response = await axiosInstance.post(
                 "/user/attendance/pre-check",
-                payload
+                payload,
             );
 
             setWorkTypeDetection(response.data);
@@ -131,7 +134,7 @@ const Attendance = () => {
                         {
                             duration: 4000,
                             id: "work-type-detection",
-                        }
+                        },
                     );
                 } else {
                     toast(`📍 OFFSITE detected: ${response.data.reason}`, {
@@ -174,7 +177,7 @@ const Attendance = () => {
                     `Lokasi terdeteksi (±${Math.round(coords.accuracy)}m)`,
                     {
                         id: "location",
-                    }
+                    },
                 );
             },
             (error) => {
@@ -199,7 +202,7 @@ const Attendance = () => {
                 enableHighAccuracy: true,
                 timeout: 10000,
                 maximumAge: 0,
-            }
+            },
         );
     };
 
@@ -230,7 +233,9 @@ const Attendance = () => {
 
     const fetchTimeSettings = async () => {
         try {
-            const response = await axiosInstance.get("/user/settings/time-validation");
+            const response = await axiosInstance.get(
+                "/user/settings/time-validation",
+            );
             setTimeSettings(response.data.data);
         } catch (error) {
             console.error("Error fetching time settings:", error);
@@ -361,16 +366,16 @@ const Attendance = () => {
                     headers: {
                         "Content-Type": "multipart/form-data",
                     },
-                }
+                },
             );
 
             const workType =
                 response.data.data?.work_type || workTypeDetection.workType;
-            
+
             // Show success with time validation info
             const timeValidation = response.data.data?.time_validation;
             let successMessage = `✅ Check-in berhasil (${workType.toUpperCase()})!`;
-            
+
             if (timeValidation) {
                 if (timeValidation.is_late) {
                     successMessage += `\n⚠️ Terlambat ${timeValidation.late_minutes} menit`;
@@ -378,7 +383,7 @@ const Attendance = () => {
                     successMessage += "\n✅ Tepat waktu";
                 }
             }
-            
+
             toast.success(successMessage, {
                 duration: 5000,
                 id: "check-in-success",
@@ -397,11 +402,11 @@ const Attendance = () => {
             console.error("Check-in error:", error);
             const errorData = error.response?.data;
             const errorMsg = errorData?.message || "Check-in gagal";
-            
+
             // Handle time validation errors specifically
             if (errorData?.validation) {
                 const validation = errorData.validation;
-                
+
                 if (validation.status === "too_early") {
                     toast.error(
                         <div>
@@ -415,7 +420,7 @@ const Attendance = () => {
                         {
                             id: "check-in-error",
                             duration: 6000,
-                        }
+                        },
                     );
                 } else if (validation.status === "too_late") {
                     toast.error(
@@ -432,7 +437,7 @@ const Attendance = () => {
                         {
                             id: "check-in-error",
                             duration: 8000,
-                        }
+                        },
                     );
                 } else {
                     toast.error(errorMsg, { id: "check-in-error" });
@@ -527,30 +532,34 @@ const Attendance = () => {
                     headers: {
                         "Content-Type": "multipart/form-data",
                     },
-                }
+                },
             );
 
             const workType =
                 response.data.data?.work_type || workTypeDetection.workType;
             const workHours = response.data.data?.work_hours || "0";
             const timeValidation = response.data.data?.time_validation;
-            
+
             // Build success message with time validation info
             let successMessage = `✅ Check-out berhasil (${workType.toUpperCase()})!\nJam kerja: ${workHours} jam`;
-            
+
             if (timeValidation) {
-                if (timeValidation.status === "early" && timeValidation.early_minutes > 0) {
+                if (
+                    timeValidation.status === "early" &&
+                    timeValidation.early_minutes > 0
+                ) {
                     successMessage += `\n⚠️ Pulang ${timeValidation.early_minutes} menit lebih awal`;
                     if (timeValidation.should_work_until) {
                         successMessage += `\n(Seharusnya sampai ${timeValidation.should_work_until} WIB)`;
                     }
                 } else if (timeValidation.status === "overtime") {
-                    successMessage += "\n⏰ Lembur (melewati batas waktu normal)";
+                    successMessage +=
+                        "\n⏰ Lembur (melewati batas waktu normal)";
                 } else if (timeValidation.status === "on_time") {
                     successMessage += "\n✅ Tepat waktu";
                 }
             }
-            
+
             toast.success(successMessage, {
                 duration: 6000,
                 id: "check-out-success",
@@ -574,7 +583,7 @@ const Attendance = () => {
             // Handle time validation errors specifically
             if (errorData?.validation) {
                 const validation = errorData.validation;
-                
+
                 if (validation.status === "too_early") {
                     toast.error(
                         <div>
@@ -583,14 +592,14 @@ const Attendance = () => {
                             <small>
                                 Waktu check-out mulai pukul{" "}
                                 {validation.can_checkout_at} WIB
-                                <br />
-                                ⏳ Tunggu {validation.wait_minutes} menit lagi
+                                <br />⏳ Tunggu {validation.wait_minutes} menit
+                                lagi
                             </small>
                         </div>,
                         {
                             id: "check-out-error",
                             duration: 8000,
-                        }
+                        },
                     );
                 } else {
                     toast.error(errorMsg, { id: "check-out-error" });
@@ -610,7 +619,7 @@ const Attendance = () => {
                     {
                         id: "check-out-error",
                         duration: 6000,
-                    }
+                    },
                 );
             } else {
                 toast.error(errorMsg, { id: "check-out-error" });
@@ -652,19 +661,19 @@ const Attendance = () => {
     // Calculate late threshold dynamically from settings
     const getLateThreshold = () => {
         if (!timeSettings) return null;
-        
+
         const workStart = timeSettings.working_hours.start; // e.g., "08:00"
         const tolerance = timeSettings.check_in.late_tolerance_minutes; // e.g., 15
-        
+
         // Parse working hours start
-        const [hours, minutes] = workStart.split(':').map(Number);
-        
+        const [hours, minutes] = workStart.split(":").map(Number);
+
         // Add tolerance to get late threshold
         const totalMinutes = hours * 60 + minutes + tolerance;
         const lateHours = Math.floor(totalMinutes / 60);
         const lateMinutes = totalMinutes % 60;
-        
-        return `${String(lateHours).padStart(2, '0')}:${String(lateMinutes).padStart(2, '0')}`;
+
+        return `${String(lateHours).padStart(2, "0")}:${String(lateMinutes).padStart(2, "0")}`;
     };
 
     // Loading state
@@ -705,7 +714,7 @@ const Attendance = () => {
                     <div className="text-end">
                         <span
                             className={`badge bg-${getWorkTypeBadge(
-                                todayAttendance.work_type
+                                todayAttendance.work_type,
                             )} fs-6 px-3 py-2`}
                         >
                             <i className="bi bi-geo-alt-fill me-2"></i>
@@ -724,32 +733,47 @@ const Attendance = () => {
                             <div className="d-flex align-items-center">
                                 <i className="bi bi-clock-fill fs-3 me-3"></i>
                                 <div>
-                                    <strong className="d-block">Waktu Saat Ini</strong>
+                                    <strong className="d-block">
+                                        Waktu Saat Ini
+                                    </strong>
                                     <h4 className="mb-0">
-                                        {currentTime.toLocaleTimeString('id-ID', { 
-                                            hour: '2-digit', 
-                                            minute: '2-digit',
-                                            second: '2-digit',
-                                            hour12: false 
-                                        })} WIB
+                                        {currentTime.toLocaleTimeString(
+                                            "id-ID",
+                                            {
+                                                hour: "2-digit",
+                                                minute: "2-digit",
+                                                second: "2-digit",
+                                                hour12: false,
+                                            },
+                                        )}{" "}
+                                        WIB
                                     </h4>
                                 </div>
                             </div>
                             <div className="text-end">
                                 {(() => {
                                     const now = currentTime;
-                                    const currentTimeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-                                    
+                                    const currentTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
                                     // Check-in status
                                     if (!todayAttendance?.check_in_time) {
-                                        if (currentTimeStr < timeSettings.check_in.start_time) {
+                                        if (
+                                            currentTimeStr <
+                                            timeSettings.check_in.start_time
+                                        ) {
                                             return (
                                                 <span className="badge bg-warning text-dark px-3 py-2">
                                                     <i className="bi bi-hourglass-split me-2"></i>
                                                     Check-in belum dibuka
                                                 </span>
                                             );
-                                        } else if (currentTimeStr >= timeSettings.check_in.start_time && currentTimeStr <= timeSettings.check_in.end_time) {
+                                        } else if (
+                                            currentTimeStr >=
+                                                timeSettings.check_in
+                                                    .start_time &&
+                                            currentTimeStr <=
+                                                timeSettings.check_in.end_time
+                                        ) {
                                             return (
                                                 <span className="badge bg-success px-3 py-2">
                                                     <i className="bi bi-check-circle me-2"></i>
@@ -767,14 +791,20 @@ const Attendance = () => {
                                     }
                                     // Check-out status
                                     else if (!todayAttendance?.check_out_time) {
-                                        if (currentTimeStr < timeSettings.check_out.start_time) {
+                                        if (
+                                            currentTimeStr <
+                                            timeSettings.check_out.start_time
+                                        ) {
                                             return (
                                                 <span className="badge bg-warning text-dark px-3 py-2">
                                                     <i className="bi bi-hourglass-split me-2"></i>
                                                     Check-out belum dibuka
                                                 </span>
                                             );
-                                        } else if (currentTimeStr >= timeSettings.check_out.start_time) {
+                                        } else if (
+                                            currentTimeStr >=
+                                            timeSettings.check_out.start_time
+                                        ) {
                                             return (
                                                 <span className="badge bg-success px-3 py-2">
                                                     <i className="bi bi-check-circle me-2"></i>
@@ -808,25 +838,43 @@ const Attendance = () => {
                                         <div className="mb-2">
                                             <span className="badge bg-success me-2 px-3 py-2">
                                                 <i className="bi bi-unlock me-1"></i>
-                                                Buka: {timeSettings.check_in.start_time}
+                                                Buka:{" "}
+                                                {
+                                                    timeSettings.check_in
+                                                        .start_time
+                                                }
                                             </span>
                                             <span className="badge bg-danger px-3 py-2">
                                                 <i className="bi bi-lock me-1"></i>
-                                                Tutup: {timeSettings.check_in.end_time}
+                                                Tutup:{" "}
+                                                {timeSettings.check_in.end_time}
                                             </span>
                                         </div>
                                         <div className="small">
                                             <div className="text-muted mb-1">
                                                 <i className="bi bi-hourglass-split me-2"></i>
-                                                <strong>Jam Kerja:</strong> {timeSettings.working_hours.start} WIB
+                                                <strong>Jam Kerja:</strong>{" "}
+                                                {
+                                                    timeSettings.working_hours
+                                                        .start
+                                                }{" "}
+                                                WIB
                                             </div>
                                             <div className="text-muted mb-1">
                                                 <i className="bi bi-clock me-2"></i>
-                                                <strong>Toleransi:</strong> {timeSettings.check_in.late_tolerance_minutes} menit
+                                                <strong>Toleransi:</strong>{" "}
+                                                {
+                                                    timeSettings.check_in
+                                                        .late_tolerance_minutes
+                                                }{" "}
+                                                menit
                                             </div>
                                             <div className="text-warning">
                                                 <i className="bi bi-exclamation-triangle me-2"></i>
-                                                <strong>Dianggap Terlambat:</strong> Setelah {getLateThreshold()} WIB
+                                                <strong>
+                                                    Dianggap Terlambat:
+                                                </strong>{" "}
+                                                Setelah {getLateThreshold()} WIB
                                             </div>
                                         </div>
                                     </div>
@@ -843,25 +891,42 @@ const Attendance = () => {
                                         <div className="mb-2">
                                             <span className="badge bg-success me-2 px-3 py-2">
                                                 <i className="bi bi-unlock me-1"></i>
-                                                Buka: {timeSettings.check_out.start_time}
+                                                Buka:{" "}
+                                                {
+                                                    timeSettings.check_out
+                                                        .start_time
+                                                }
                                             </span>
                                             <span className="badge bg-warning text-dark px-3 py-2">
                                                 <i className="bi bi-hourglass-split me-1"></i>
-                                                Normal: {timeSettings.check_out.end_time}
+                                                Normal:{" "}
+                                                {
+                                                    timeSettings.check_out
+                                                        .end_time
+                                                }
                                             </span>
                                         </div>
                                         <div className="small">
                                             <div className="text-muted mb-1">
                                                 <i className="bi bi-sunset me-2"></i>
-                                                <strong>Jam Pulang:</strong> {timeSettings.working_hours.end} WIB
+                                                <strong>Jam Pulang:</strong>{" "}
+                                                {timeSettings.working_hours.end}{" "}
+                                                WIB
                                             </div>
                                             <div className="text-info">
                                                 <i className="bi bi-info-circle me-2"></i>
-                                                <strong>Catatan:</strong> Wajib isi logbook sebelum checkout
+                                                <strong>Catatan:</strong> Wajib
+                                                isi logbook sebelum checkout
                                             </div>
                                             <div className="text-danger">
                                                 <i className="bi bi-x-circle me-2"></i>
-                                                <strong>Diblokir:</strong> Sebelum {timeSettings.check_out.start_time} WIB
+                                                <strong>Diblokir:</strong>{" "}
+                                                Sebelum{" "}
+                                                {
+                                                    timeSettings.check_out
+                                                        .start_time
+                                                }{" "}
+                                                WIB
                                             </div>
                                         </div>
                                     </div>
@@ -895,7 +960,7 @@ const Attendance = () => {
                                         </small>
                                         <h4 className="mb-0 fw-bold">
                                             {formatTime(
-                                                todayAttendance.check_in_time
+                                                todayAttendance.check_in_time,
                                             )}
                                         </h4>
                                     </div>
@@ -938,7 +1003,7 @@ const Attendance = () => {
                                         </small>
                                         <h4 className="mb-0 fw-bold">
                                             {formatTime(
-                                                todayAttendance.check_out_time
+                                                todayAttendance.check_out_time,
                                             ) || "Belum"}
                                         </h4>
                                     </div>
@@ -1041,11 +1106,11 @@ const Attendance = () => {
                                                     </small>
                                                     <strong className="text-success">
                                                         {location.latitude.toFixed(
-                                                            6
+                                                            6,
                                                         )}
                                                         ,{" "}
                                                         {location.longitude.toFixed(
-                                                            6
+                                                            6,
                                                         )}
                                                     </strong>
                                                 </div>
@@ -1366,7 +1431,7 @@ const Attendance = () => {
                                                         </small>
                                                         <h3 className="mb-0 text-success fw-bold">
                                                             {formatTime(
-                                                                todayAttendance.check_in_time
+                                                                todayAttendance.check_in_time,
                                                             )}
                                                         </h3>
                                                     </div>
@@ -1411,7 +1476,7 @@ const Attendance = () => {
                                                             }`}
                                                         >
                                                             {formatTime(
-                                                                todayAttendance.check_out_time
+                                                                todayAttendance.check_out_time,
                                                             ) || "Belum"}
                                                         </h3>
                                                     </div>
@@ -1460,7 +1525,7 @@ const Attendance = () => {
                                                 >
                                                     <img
                                                         src={getImageUrl(
-                                                            todayAttendance.check_in_photo
+                                                            todayAttendance.check_in_photo,
                                                         )}
                                                         alt="Check-in Photo"
                                                         className="img-fluid rounded shadow"
@@ -1471,9 +1536,9 @@ const Attendance = () => {
                                                         onClick={() =>
                                                             window.open(
                                                                 getImageUrl(
-                                                                    todayAttendance.check_in_photo
+                                                                    todayAttendance.check_in_photo,
                                                                 ),
-                                                                "_blank"
+                                                                "_blank",
                                                             )
                                                         }
                                                         onError={(e) => {
@@ -1530,7 +1595,7 @@ const Attendance = () => {
                                                     <div className="text-center mt-2">
                                                         <img
                                                             src={getImageUrl(
-                                                                todayAttendance.check_out_photo
+                                                                todayAttendance.check_out_photo,
                                                             )}
                                                             alt="Check-out Photo"
                                                             className="img-fluid rounded shadow"
@@ -1542,9 +1607,9 @@ const Attendance = () => {
                                                             onClick={() =>
                                                                 window.open(
                                                                     getImageUrl(
-                                                                        todayAttendance.check_out_photo
+                                                                        todayAttendance.check_out_photo,
                                                                     ),
-                                                                    "_blank"
+                                                                    "_blank",
                                                                 )
                                                             }
                                                             onError={(e) => {
@@ -1613,7 +1678,7 @@ const Attendance = () => {
                                                                 onChange={(e) =>
                                                                     setOffsiteReason(
                                                                         e.target
-                                                                            .value
+                                                                            .value,
                                                                     )
                                                                 }
                                                                 placeholder="Contoh: Selesai meeting dengan klien di lokasi proyek..."
@@ -1759,7 +1824,7 @@ const Attendance = () => {
                                                         value={offsiteReason}
                                                         onChange={(e) =>
                                                             setOffsiteReason(
-                                                                e.target.value
+                                                                e.target.value,
                                                             )
                                                         }
                                                         maxLength={1000}
@@ -2007,19 +2072,19 @@ const Attendance = () => {
                                                 <td>{formatDate(item.date)}</td>
                                                 <td>
                                                     {formatTime(
-                                                        item.check_in_time
+                                                        item.check_in_time,
                                                     )}
                                                 </td>
                                                 <td>
                                                     {formatTime(
-                                                        item.check_out_time
+                                                        item.check_out_time,
                                                     )}
                                                 </td>
                                                 <td>
                                                     {item.work_type && (
                                                         <span
                                                             className={`badge bg-${getWorkTypeBadge(
-                                                                item.work_type
+                                                                item.work_type,
                                                             )}`}
                                                         >
                                                             {item.work_type.toUpperCase()}
@@ -2029,7 +2094,7 @@ const Attendance = () => {
                                                 <td>
                                                     <span
                                                         className={`badge bg-${getStatusBadge(
-                                                            item.status
+                                                            item.status,
                                                         )}`}
                                                     >
                                                         {item.status}
@@ -2052,10 +2117,10 @@ const Attendance = () => {
                                                         className="btn btn-sm btn-outline-info"
                                                         onClick={() => {
                                                             setSelectedAttendance(
-                                                                item
+                                                                item,
                                                             );
                                                             setShowDetailModal(
-                                                                true
+                                                                true,
                                                             );
                                                         }}
                                                         title="Lihat Detail"
@@ -2092,7 +2157,7 @@ const Attendance = () => {
                                     {(page - 1) * pagination.limit + 1} -{" "}
                                     {Math.min(
                                         page * pagination.limit,
-                                        pagination.total_records
+                                        pagination.total_records,
                                     )}{" "}
                                     dari {pagination.total_records} data
                                 </div>
@@ -2119,7 +2184,7 @@ const Attendance = () => {
                                             {
                                                 length: Math.min(
                                                     pagination.total_pages,
-                                                    5
+                                                    5,
                                                 ),
                                             },
                                             (_, i) => {
@@ -2160,7 +2225,7 @@ const Attendance = () => {
                                                         </button>
                                                     </li>
                                                 );
-                                            }
+                                            },
                                         )}
                                         <li
                                             className={`page-item ${
@@ -2231,7 +2296,7 @@ const Attendance = () => {
                                             </small>
                                             <strong className="fs-6">
                                                 {formatDate(
-                                                    selectedAttendance.date
+                                                    selectedAttendance.date,
                                                 )}
                                             </strong>
                                         </div>
@@ -2245,7 +2310,7 @@ const Attendance = () => {
                                             {selectedAttendance.work_type && (
                                                 <span
                                                     className={`badge bg-${getWorkTypeBadge(
-                                                        selectedAttendance.work_type
+                                                        selectedAttendance.work_type,
                                                     )} fs-6`}
                                                 >
                                                     {selectedAttendance.work_type.toUpperCase()}
@@ -2261,7 +2326,7 @@ const Attendance = () => {
                                             </small>
                                             <span
                                                 className={`badge bg-${getStatusBadge(
-                                                    selectedAttendance.status
+                                                    selectedAttendance.status,
                                                 )} fs-6`}
                                             >
                                                 {selectedAttendance.status.toUpperCase()}
@@ -2283,7 +2348,7 @@ const Attendance = () => {
                                             </small>
                                             <strong className="fs-4 text-success">
                                                 {formatTime(
-                                                    selectedAttendance.check_in_time
+                                                    selectedAttendance.check_in_time,
                                                 )}
                                             </strong>
                                         </div>
@@ -2299,7 +2364,7 @@ const Attendance = () => {
                                             </small>
                                             <strong className="fs-4 text-danger">
                                                 {formatTime(
-                                                    selectedAttendance.check_out_time
+                                                    selectedAttendance.check_out_time,
                                                 ) || "Belum Checkout"}
                                             </strong>
                                         </div>
@@ -2390,7 +2455,7 @@ const Attendance = () => {
                                                 <div className="text-center border rounded p-3 bg-white">
                                                     <img
                                                         src={getImageUrl(
-                                                            selectedAttendance.check_in_photo
+                                                            selectedAttendance.check_in_photo,
                                                         )}
                                                         alt="Check-in Photo"
                                                         className="img-fluid rounded shadow"
@@ -2401,9 +2466,9 @@ const Attendance = () => {
                                                         onClick={() =>
                                                             window.open(
                                                                 getImageUrl(
-                                                                    selectedAttendance.check_in_photo
+                                                                    selectedAttendance.check_in_photo,
                                                                 ),
-                                                                "_blank"
+                                                                "_blank",
                                                             )
                                                         }
                                                         onError={(e) => {
@@ -2467,7 +2532,7 @@ const Attendance = () => {
                                                     <div className="text-center border rounded p-3 bg-white">
                                                         <img
                                                             src={getImageUrl(
-                                                                selectedAttendance.check_out_photo
+                                                                selectedAttendance.check_out_photo,
                                                             )}
                                                             alt="Check-out Photo"
                                                             className="img-fluid rounded shadow"
@@ -2479,9 +2544,9 @@ const Attendance = () => {
                                                             onClick={() =>
                                                                 window.open(
                                                                     getImageUrl(
-                                                                        selectedAttendance.check_out_photo
+                                                                        selectedAttendance.check_out_photo,
                                                                     ),
-                                                                    "_blank"
+                                                                    "_blank",
                                                                 )
                                                             }
                                                             onError={(e) => {

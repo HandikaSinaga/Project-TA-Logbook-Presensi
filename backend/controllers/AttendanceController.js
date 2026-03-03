@@ -17,7 +17,7 @@ import fs from "fs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const { Attendance, User, Logbook, Division } = models;
+const { Attendance, User, Logbook, Division, Holiday, AppSetting } = models;
 
 class AttendanceController {
     // Get user's attendance records
@@ -151,6 +151,102 @@ class AttendanceController {
             const userId = req.user.id;
             const { latitude, longitude, address, offsite_reason } = req.body;
             const today = getTodayJakarta();
+            const now = getJakartaDate();
+
+            // ========== VALIDATE WORKING DAY & HOLIDAY ==========
+            // Get settings for working days and holiday check
+            const settingsData = await AppSetting.findAll({
+                where: {
+                    key: [
+                        "working_days",
+                        "check_holiday_enabled",
+                        "allow_weekend_work",
+                    ],
+                },
+            });
+
+            const settings = {};
+            settingsData.forEach((s) => {
+                if (s.type === "json") {
+                    try {
+                        settings[s.key] = JSON.parse(s.value);
+                    } catch (e) {
+                        settings[s.key] = s.value;
+                    }
+                } else if (s.type === "boolean") {
+                    settings[s.key] = s.value === "true";
+                } else {
+                    settings[s.key] = s.value;
+                }
+            });
+
+            // Default values
+            const workingDays = settings.working_days || [1, 2, 3, 4, 5]; // Monday-Friday
+            const checkHolidayEnabled =
+                settings.check_holiday_enabled !== false; // Default true
+            const allowWeekendWork = settings.allow_weekend_work || false; // Default false
+
+            // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
+            const currentDayOfWeek = now.getDay();
+
+            // Check if today is a working day
+            const isWorkingDay = workingDays.includes(currentDayOfWeek);
+
+            // Check if today is a holiday (only if enabled)
+            let isHoliday = false;
+            let holidayInfo = null;
+
+            if (checkHolidayEnabled) {
+                const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
+                const holiday = await Holiday.findOne({
+                    where: {
+                        date: todayStr,
+                        is_active: true,
+                    },
+                });
+
+                if (holiday) {
+                    isHoliday = true;
+                    holidayInfo = holiday;
+                }
+            }
+
+            // Determine if check-in is allowed
+            if (isHoliday) {
+                return res.status(403).json({
+                    success: false,
+                    message: `Hari ini adalah hari libur: ${holidayInfo.name}. Check-in tidak diperbolehkan.`,
+                    reason: "holiday",
+                    holiday: {
+                        name: holidayInfo.name,
+                        type: holidayInfo.type,
+                        description: holidayInfo.description,
+                    },
+                });
+            }
+
+            if (!isWorkingDay) {
+                const dayNames = [
+                    "Minggu",
+                    "Senin",
+                    "Selasa",
+                    "Rabu",
+                    "Kamis",
+                    "Jumat",
+                    "Sabtu",
+                ];
+                const currentDayName = dayNames[currentDayOfWeek];
+
+                if (!allowWeekendWork) {
+                    return res.status(403).json({
+                        success: false,
+                        message: `Hari ${currentDayName} bukan hari kerja. Check-in tidak diperbolehkan.`,
+                        reason: "non_working_day",
+                        current_day: currentDayName,
+                        working_days: workingDays.map((d) => dayNames[d]),
+                    });
+                }
+            }
 
             // ========== VALIDATE CHECK-IN TIME ==========
             const timeValidation = await validateCheckInTime();
@@ -224,7 +320,6 @@ class AttendanceController {
             // Jika ONSITE, tidak perlu keterangan/foto - langsung check-in saja
             // GPS opsional, WiFi/IP sebagai prioritas utama
 
-            const now = getJakartaDate();
             const checkInTime = `${now
                 .getHours()
                 .toString()

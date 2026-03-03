@@ -126,6 +126,99 @@ export const formatJakartaDate = (
     return new Date(date).toLocaleString(locale, options);
 };
 
+/**
+ * Check if a date is in the future (after today in Jakarta timezone)
+ * @param {string|Date} dateInput - Date to check (YYYY-MM-DD string or Date object)
+ * @returns {boolean} True if date is after today
+ */
+export const isFutureDate = (dateInput) => {
+    const today = getTodayJakarta();
+    const checkDate = typeof dateInput === 'string' 
+        ? new Date(dateInput + 'T00:00:00')
+        : new Date(dateInput);
+    
+    checkDate.setHours(0, 0, 0, 0);
+    
+    return checkDate > today;
+};
+
+/**
+ * Check if a date is today or in the past (Jakarta timezone)
+ * @param {string|Date} dateInput - Date to check (YYYY-MM-DD string or Date object)
+ * @returns {boolean} True if date is today or before today
+ */
+export const isPastOrToday = (dateInput) => {
+    return !isFutureDate(dateInput);
+};
+
+/**
+ * Check if a date is today (Jakarta timezone)
+ * @param {string|Date} dateInput - Date to check (YYYY-MM-DD string or Date object)
+ * @returns {boolean} True if date is today
+ */
+export const isToday = (dateInput) => {
+    const today = getTodayJakarta();
+    const checkDate = typeof dateInput === 'string' 
+        ? new Date(dateInput + 'T00:00:00')
+        : new Date(dateInput);
+    
+    today.setHours(0, 0, 0, 0);
+    checkDate.setHours(0, 0, 0, 0);
+    
+    return today.getTime() === checkDate.getTime();
+};
+
+/**
+ * Validate date input format and value
+ * @param {string} dateString - Date string to validate (YYYY-MM-DD)
+ * @returns {Object} Validation result { isValid: boolean, error: string|null }
+ */
+export const validateDateInput = (dateString) => {
+    // Check format
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return {
+            isValid: false,
+            error: 'Format tanggal tidak valid. Gunakan YYYY-MM-DD'
+        };
+    }
+
+    // Check if valid date
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+        return {
+            isValid: false,
+            error: 'Tanggal tidak valid'
+        };
+    }
+
+    // Check if future date
+    if (isFutureDate(dateString)) {
+        return {
+            isValid: false,
+            error: 'Tidak dapat mengakses tanggal di masa depan'
+        };
+    }
+
+    return { isValid: true, error: null };
+};
+
+/**
+ * Format date to YYYY-MM-DD string (Jakarta timezone)
+ * @param {Date} date - Date object
+ * @returns {string} Formatted date string YYYY-MM-DD
+ */
+export const formatDateToString = (date) => {
+    const jakartaDate = new Date(
+        date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+    );
+    
+    const year = jakartaDate.getFullYear();
+    const month = String(jakartaDate.getMonth() + 1).padStart(2, '0');
+    const day = String(jakartaDate.getDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+};
+
 export default {
     getJakartaDate,
     getTodayJakarta,
@@ -135,4 +228,9 @@ export default {
     parseJakartaDate,
     getJakartaISOString,
     formatJakartaDate,
+    isFutureDate,
+    isPastOrToday,
+    isToday,
+    validateDateInput,
+    formatDateToString,
 };

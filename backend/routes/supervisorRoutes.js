@@ -7,6 +7,7 @@ import LogbookController from "../controllers/LogbookController.js";
 import LeaveController from "../controllers/LeaveController.js";
 import DivisionController from "../controllers/DivisionController.js";
 import ProfileController from "../controllers/ProfileController.js";
+import CalendarController from "../controllers/CalendarController.js";
 import { uploadAvatar } from "../config/uploadConfig.js";
 
 const router = express.Router();
@@ -48,6 +49,10 @@ router.post("/division/remove", DivisionController.removeUserFromDivision);
 router.get("/reports/attendance", AttendanceController.getAttendanceReport);
 router.get("/reports/logbook", LogbookController.getLogbookReport);
 router.get("/reports/izin", LeaveController.getLeaveReport);
+
+// Work Calendar (Supervisor role)
+router.get("/calendar", CalendarController.getSupervisorCalendar);
+router.get("/calendar/date/:date", CalendarController.getSupervisorDateDetail);
 
 // Profile Management
 router.get("/profile", ProfileController.getProfile);

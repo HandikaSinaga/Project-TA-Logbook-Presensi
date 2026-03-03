@@ -164,7 +164,7 @@ const Attendance = () => {
                                         <tr key={attendance.id}>
                                             <td>
                                                 {new Date(
-                                                    attendance.date
+                                                    attendance.date,
                                                 ).toLocaleDateString("id-ID")}
                                             </td>
                                             <td>
@@ -226,7 +226,7 @@ const Attendance = () => {
                                                                 .length > 30
                                                                 ? attendance.check_in_address.substring(
                                                                       0,
-                                                                      30
+                                                                      30,
                                                                   ) + "..."
                                                                 : attendance.check_in_address}
                                                             <br />
@@ -276,7 +276,7 @@ const Attendance = () => {
                                                                 {attendance.approved_at && (
                                                                     <span className="d-block">
                                                                         {new Date(
-                                                                            attendance.approved_at
+                                                                            attendance.approved_at,
                                                                         ).toLocaleString(
                                                                             "id-ID",
                                                                             {
@@ -284,7 +284,8 @@ const Attendance = () => {
                                                                                 month: "short",
                                                                                 hour: "2-digit",
                                                                                 minute: "2-digit",
-                                                                            }
+                                                                                hour12: false,
+                                                                            },
                                                                         )}
                                                                     </span>
                                                                 )}
@@ -316,7 +317,7 @@ const Attendance = () => {
                                                                 {attendance.rejected_at && (
                                                                     <span className="d-block">
                                                                         {new Date(
-                                                                            attendance.rejected_at
+                                                                            attendance.rejected_at,
                                                                         ).toLocaleString(
                                                                             "id-ID",
                                                                             {
@@ -324,7 +325,8 @@ const Attendance = () => {
                                                                                 month: "short",
                                                                                 hour: "2-digit",
                                                                                 minute: "2-digit",
-                                                                            }
+                                                                                hour12: false,
+                                                                            },
                                                                         )}
                                                                     </span>
                                                                 )}
@@ -352,7 +354,7 @@ const Attendance = () => {
                                                     className="btn btn-sm btn-outline-info me-2"
                                                     onClick={() =>
                                                         handleShowDetail(
-                                                            attendance
+                                                            attendance,
                                                         )
                                                     }
                                                     title="Lihat Detail"
@@ -366,7 +368,7 @@ const Attendance = () => {
                                                             className="btn btn-success"
                                                             onClick={() =>
                                                                 handleApprove(
-                                                                    attendance.id
+                                                                    attendance.id,
                                                                 )
                                                             }
                                                             title="Setujui"
@@ -378,12 +380,12 @@ const Attendance = () => {
                                                             onClick={() => {
                                                                 const reason =
                                                                     prompt(
-                                                                        "Alasan penolakan:"
+                                                                        "Alasan penolakan:",
                                                                     );
                                                                 if (reason)
                                                                     handleReject(
                                                                         attendance.id,
-                                                                        reason
+                                                                        reason,
                                                                     );
                                                             }}
                                                             title="Tolak"
@@ -465,7 +467,7 @@ const Attendance = () => {
                                         </small>
                                         <p className="mb-2">
                                             {new Date(
-                                                selectedAttendance.date
+                                                selectedAttendance.date,
                                             ).toLocaleDateString("id-ID", {
                                                 weekday: "long",
                                                 year: "numeric",
@@ -506,19 +508,19 @@ const Attendance = () => {
                                                     "present"
                                                         ? "success"
                                                         : selectedAttendance.status ===
-                                                          "late"
-                                                        ? "warning"
-                                                        : "danger"
+                                                            "late"
+                                                          ? "warning"
+                                                          : "danger"
                                                 }
                                             >
                                                 {selectedAttendance.status ===
                                                 "present"
                                                     ? "Hadir"
                                                     : selectedAttendance.status ===
-                                                      "late"
-                                                    ? "Terlambat"
-                                                    : selectedAttendance.status ||
-                                                      "-"}
+                                                        "late"
+                                                      ? "Terlambat"
+                                                      : selectedAttendance.status ||
+                                                        "-"}
                                             </Badge>
                                         </p>
                                     </div>
@@ -597,7 +599,7 @@ const Attendance = () => {
                                                 <img
                                                     src={`${API_URL.replace(
                                                         "/api",
-                                                        ""
+                                                        "",
                                                     )}/uploads/${
                                                         selectedAttendance.check_in_photo
                                                     }`}
@@ -689,7 +691,7 @@ const Attendance = () => {
                                                     <img
                                                         src={`${API_URL.replace(
                                                             "/api",
-                                                            ""
+                                                            "",
                                                         )}/uploads/${
                                                             selectedAttendance.check_out_photo
                                                         }`}
@@ -720,9 +722,9 @@ const Attendance = () => {
                                             "approved"
                                                 ? "#d1f2eb"
                                                 : selectedAttendance.approval_status ===
-                                                  "rejected"
-                                                ? "#f8d7da"
-                                                : "#fff3cd",
+                                                    "rejected"
+                                                  ? "#f8d7da"
+                                                  : "#fff3cd",
                                     }}
                                 >
                                     <div className="d-flex align-items-center mb-2">
@@ -772,13 +774,14 @@ const Attendance = () => {
                                                 <small className="text-muted">
                                                     <i className="bi bi-calendar-check me-1"></i>
                                                     {new Date(
-                                                        selectedAttendance.approved_at
+                                                        selectedAttendance.approved_at,
                                                     ).toLocaleString("id-ID", {
                                                         day: "2-digit",
                                                         month: "long",
                                                         year: "numeric",
                                                         hour: "2-digit",
                                                         minute: "2-digit",
+                                                        hour12: false,
                                                     })}
                                                 </small>
                                             )}
@@ -802,13 +805,14 @@ const Attendance = () => {
                                                 <small className="text-muted">
                                                     <i className="bi bi-calendar-x me-1"></i>
                                                     {new Date(
-                                                        selectedAttendance.rejected_at
+                                                        selectedAttendance.rejected_at,
                                                     ).toLocaleString("id-ID", {
                                                         day: "2-digit",
                                                         month: "long",
                                                         year: "numeric",
                                                         hour: "2-digit",
                                                         minute: "2-digit",
+                                                        hour12: false,
                                                     })}
                                                 </small>
                                             )}
@@ -868,7 +872,7 @@ const Attendance = () => {
                                     if (reason) {
                                         handleReject(
                                             selectedAttendance.id,
-                                            reason
+                                            reason,
                                         );
                                         handleCloseDetail();
                                     }

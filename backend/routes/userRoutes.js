@@ -10,6 +10,8 @@ import LeaveController from "../controllers/LeaveController.js";
 import DivisionController from "../controllers/DivisionController.js";
 import ProfileController from "../controllers/ProfileController.js";
 import SettingsController from "../controllers/SettingsController.js";
+import HolidayController from "../controllers/HolidayController.js";
+import CalendarController from "../controllers/CalendarController.js";
 import { uploadAvatar, uploadLeaveAttachment } from "../config/uploadConfig.js";
 
 const router = express.Router();
@@ -74,5 +76,14 @@ router.get(
     "/settings/time-validation",
     SettingsController.getTimeValidationSettings,
 );
+
+// Holidays (read-only for users)
+router.get("/holidays/check", HolidayController.checkIsHoliday);
+router.get("/holidays/upcoming", HolidayController.getUpcomingHolidays);
+router.get("/holidays", HolidayController.getAllHolidays);
+
+// Work Calendar (User role)
+router.get("/calendar", CalendarController.getUserCalendar);
+router.get("/calendar/date/:date", CalendarController.getUserDateDetail);
 
 export default router;
