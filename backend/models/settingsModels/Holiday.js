@@ -79,6 +79,42 @@ const Holiday = db.define(
     },
 );
 
+// Static helper methods
+Holiday.isHolidayDate = async function (date) {
+    const holiday = await this.findOne({
+        where: {
+            date: date,
+            is_active: true,
+        },
+        raw: true,
+    });
+    return holiday !== null;
+};
+
+Holiday.getHolidayByDate = async function (date) {
+    return await this.findOne({
+        where: {
+            date: date,
+            is_active: true,
+        },
+        raw: true,
+    });
+};
+
+Holiday.getHolidaysInRange = async function (startDate, endDate) {
+    const { Op } = await import("sequelize");
+    return await this.findAll({
+        where: {
+            date: {
+                [Op.between]: [startDate, endDate],
+            },
+            is_active: true,
+        },
+        order: [["date", "ASC"]],
+        raw: true,
+    });
+};
+
 // Note: Association with User will be defined in models/index.js to avoid circular dependency
 
 export default Holiday;

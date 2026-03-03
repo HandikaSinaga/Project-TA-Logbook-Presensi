@@ -1,6 +1,7 @@
 import models from "../models/index.js";
 import { Op } from "sequelize";
 import LocationHelper from "../utils/locationHelper.js";
+import WorkCalendarService from "../services/WorkCalendarService.js";
 import {
     createUploadMiddleware,
     getPublicPath,
@@ -145,107 +146,69 @@ class AttendanceController {
         }
     }
 
+    /**
+     * Get today's workday status
+     * Used by frontend to check if attendance is allowed today
+     *
+     * @route GET /api/user/attendance/workday-status
+     * @access Private
+     */
+    async getWorkdayStatus(req, res) {
+        try {
+            const user = req.user;
+
+            // Get comprehensive workday status
+            const status = await WorkCalendarService.getTodayWorkdayStatus();
+
+            // Get user-specific check-in eligibility
+            const eligibility = await WorkCalendarService.canUserCheckIn(user);
+
+            res.json({
+                success: true,
+                data: {
+                    ...status,
+                    canCheckIn: eligibility.canCheckIn,
+                    eligibilityReason: eligibility.reason,
+                    eligibilityMessage: eligibility.message,
+                },
+            });
+        } catch (error) {
+            console.error(
+                "[AttendanceController.getWorkdayStatus] Error:",
+                error,
+            );
+            res.status(500).json({
+                success: false,
+                message: "Gagal mendapatkan status hari kerja",
+                error: error.message,
+            });
+        }
+    }
+
     // Check-in with ONSITE/OFFSITE detection
     async checkIn(req, res) {
         try {
             const userId = req.user.id;
+            const user = req.user; // Full user object from auth middleware
             const { latitude, longitude, address, offsite_reason } = req.body;
             const today = getTodayJakarta();
             const now = getJakartaDate();
 
-            // ========== VALIDATE WORKING DAY & HOLIDAY ==========
-            // Get settings for working days and holiday check
-            const settingsData = await AppSetting.findAll({
-                where: {
-                    key: [
-                        "working_days",
-                        "check_holiday_enabled",
-                        "allow_weekend_work",
-                    ],
-                },
-            });
+            // ========== VALIDATE WORKING DAY & HOLIDAY (Using WorkCalendarService) ==========
+            // Comprehensive validation: future date, before join date, holiday, weekend
+            const workdayValidation =
+                await WorkCalendarService.canUserCheckIn(user);
 
-            const settings = {};
-            settingsData.forEach((s) => {
-                if (s.type === "json") {
-                    try {
-                        settings[s.key] = JSON.parse(s.value);
-                    } catch (e) {
-                        settings[s.key] = s.value;
-                    }
-                } else if (s.type === "boolean") {
-                    settings[s.key] = s.value === "true";
-                } else {
-                    settings[s.key] = s.value;
-                }
-            });
-
-            // Default values
-            const workingDays = settings.working_days || [1, 2, 3, 4, 5]; // Monday-Friday
-            const checkHolidayEnabled =
-                settings.check_holiday_enabled !== false; // Default true
-            const allowWeekendWork = settings.allow_weekend_work || false; // Default false
-
-            // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
-            const currentDayOfWeek = now.getDay();
-
-            // Check if today is a working day
-            const isWorkingDay = workingDays.includes(currentDayOfWeek);
-
-            // Check if today is a holiday (only if enabled)
-            let isHoliday = false;
-            let holidayInfo = null;
-
-            if (checkHolidayEnabled) {
-                const todayStr = today.toISOString().split("T")[0]; // YYYY-MM-DD
-                const holiday = await Holiday.findOne({
-                    where: {
-                        date: todayStr,
-                        is_active: true,
-                    },
-                });
-
-                if (holiday) {
-                    isHoliday = true;
-                    holidayInfo = holiday;
-                }
-            }
-
-            // Determine if check-in is allowed
-            if (isHoliday) {
+            if (!workdayValidation.canCheckIn) {
                 return res.status(403).json({
                     success: false,
-                    message: `Hari ini adalah hari libur: ${holidayInfo.name}. Check-in tidak diperbolehkan.`,
-                    reason: "holiday",
-                    holiday: {
-                        name: holidayInfo.name,
-                        type: holidayInfo.type,
-                        description: holidayInfo.description,
+                    message: workdayValidation.message,
+                    error: {
+                        code: "WORKDAY_VALIDATION_FAILED",
+                        reason: workdayValidation.reason,
+                        holiday: workdayValidation.holiday,
                     },
                 });
-            }
-
-            if (!isWorkingDay) {
-                const dayNames = [
-                    "Minggu",
-                    "Senin",
-                    "Selasa",
-                    "Rabu",
-                    "Kamis",
-                    "Jumat",
-                    "Sabtu",
-                ];
-                const currentDayName = dayNames[currentDayOfWeek];
-
-                if (!allowWeekendWork) {
-                    return res.status(403).json({
-                        success: false,
-                        message: `Hari ${currentDayName} bukan hari kerja. Check-in tidak diperbolehkan.`,
-                        reason: "non_working_day",
-                        current_day: currentDayName,
-                        working_days: workingDays.map((d) => dayNames[d]),
-                    });
-                }
             }
 
             // ========== VALIDATE CHECK-IN TIME ==========

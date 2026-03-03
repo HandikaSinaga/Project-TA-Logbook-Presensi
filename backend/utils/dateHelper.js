@@ -133,12 +133,13 @@ export const formatJakartaDate = (
  */
 export const isFutureDate = (dateInput) => {
     const today = getTodayJakarta();
-    const checkDate = typeof dateInput === 'string' 
-        ? new Date(dateInput + 'T00:00:00')
-        : new Date(dateInput);
-    
+    const checkDate =
+        typeof dateInput === "string"
+            ? new Date(dateInput + "T00:00:00")
+            : new Date(dateInput);
+
     checkDate.setHours(0, 0, 0, 0);
-    
+
     return checkDate > today;
 };
 
@@ -158,13 +159,14 @@ export const isPastOrToday = (dateInput) => {
  */
 export const isToday = (dateInput) => {
     const today = getTodayJakarta();
-    const checkDate = typeof dateInput === 'string' 
-        ? new Date(dateInput + 'T00:00:00')
-        : new Date(dateInput);
-    
+    const checkDate =
+        typeof dateInput === "string"
+            ? new Date(dateInput + "T00:00:00")
+            : new Date(dateInput);
+
     today.setHours(0, 0, 0, 0);
     checkDate.setHours(0, 0, 0, 0);
-    
+
     return today.getTime() === checkDate.getTime();
 };
 
@@ -178,7 +180,7 @@ export const validateDateInput = (dateString) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
         return {
             isValid: false,
-            error: 'Format tanggal tidak valid. Gunakan YYYY-MM-DD'
+            error: "Format tanggal tidak valid. Gunakan YYYY-MM-DD",
         };
     }
 
@@ -187,7 +189,7 @@ export const validateDateInput = (dateString) => {
     if (isNaN(date.getTime())) {
         return {
             isValid: false,
-            error: 'Tanggal tidak valid'
+            error: "Tanggal tidak valid",
         };
     }
 
@@ -195,7 +197,7 @@ export const validateDateInput = (dateString) => {
     if (isFutureDate(dateString)) {
         return {
             isValid: false,
-            error: 'Tidak dapat mengakses tanggal di masa depan'
+            error: "Tidak dapat mengakses tanggal di masa depan",
         };
     }
 
@@ -209,13 +211,13 @@ export const validateDateInput = (dateString) => {
  */
 export const formatDateToString = (date) => {
     const jakartaDate = new Date(
-        date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" })
+        date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" }),
     );
-    
+
     const year = jakartaDate.getFullYear();
-    const month = String(jakartaDate.getMonth() + 1).padStart(2, '0');
-    const day = String(jakartaDate.getDate()).padStart(2, '0');
-    
+    const month = String(jakartaDate.getMonth() + 1).padStart(2, "0");
+    const day = String(jakartaDate.getDate()).padStart(2, "0");
+
     return `${year}-${month}-${day}`;
 };
 

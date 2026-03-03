@@ -1,28 +1,25 @@
 import { Op } from "sequelize";
 import models from "../models/index.js";
 import { validateDateInput, isFutureDate } from "../utils/dateHelper.js";
+import AlphaCalculationService from "../services/AlphaCalculationService.js";
+import WorkCalendarService from "../services/WorkCalendarService.js";
 
-const {
-    Holiday,
-    Attendance,
-    Logbook,
-    Leave,
-    User,
-    Division,
-    AppSetting,
-} = models;
+const { Holiday, Attendance, Logbook, Leave, User, Division, AppSetting } =
+    models;
 
 /**
- * CalendarController - Fully Optimized Version
- * 
+ * CalendarController - Fully Optimized Version with AlphaCalculationService
+ *
  * Best Practices Implemented:
+ * - AlphaCalculationService as SINGLE SOURCE OF TRUTH for alpha calculation
+ * - User join date (created_at) validation
  * - Promise.all() for parallel queries (better performance)
  * - raw: true untuk queries yang tidak perlu Sequelize instances
  * - Attributes filtering untuk minimal data transfer
  * - Proper error handling dengan descriptive messages in Bahasa Indonesia
  * - Consistent response structure untuk semua endpoints
  * - Helper methods untuk reusable logic
- * 
+ *
  * @class CalendarController
  */
 class CalendarController {
@@ -56,18 +53,27 @@ class CalendarController {
         const firstDay = new Date(targetYear, targetMonth, 1);
         const lastDay = new Date(targetYear, targetMonth + 1, 0);
 
+        // FIX: Use local date formatting to avoid timezone conversion
+        // .toISOString() converts to UTC which causes off-by-one errors in WIB (UTC+7)
+        const formatLocalDate = (date) => {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, "0");
+            const d = String(date.getDate()).padStart(2, "0");
+            return `${y}-${m}-${d}`;
+        };
+
         return {
             year: targetYear,
             month: targetMonth + 1,
-            firstDay: firstDay.toISOString().split("T")[0],
-            lastDay: lastDay.toISOString().split("T")[0],
+            firstDay: formatLocalDate(firstDay),
+            lastDay: formatLocalDate(lastDay),
         };
     }
 
     /**
      * USER ROLE: Get calendar data for current user
-     * Optimized dengan Promise.all() untuk parallel queries
-     * 
+     * Uses AlphaCalculationService as single source of truth
+     *
      * @route GET /api/user/calendar
      * @access Private (User)
      */
@@ -80,157 +86,159 @@ class CalendarController {
             const period = CalendarController.getMonthDateRange(year, month);
             const { firstDay, lastDay } = period;
 
-            // Parallel queries untuk performance optimal
-            const [workingDays, holidays, attendances, logbooks, leaves] =
-                await Promise.all([
-                    CalendarController.getWorkingDaysConfig(),
-                    Holiday.findAll({
-                        where: {
-                            date: { [Op.between]: [firstDay, lastDay] },
-                            is_active: true,
-                        },
-                        attributes: [
-                            "id",
-                            "date",
-                            "name",
-                            "description",
-                            "type",
-                            "is_national",
-                        ],
-                        order: [["date", "ASC"]],
-                        raw: true,
-                    }),
-                    Attendance.findAll({
-                        where: {
-                            user_id: userId,
-                            date: { [Op.between]: [firstDay, lastDay] },
-                        },
-                        attributes: [
-                            "id",
-                            "date",
-                            "check_in_time",
-                            "check_out_time",
-                            "status",
-                            "work_type",
-                            "check_in_address",
-                            "notes",
-                        ],
-                        order: [["date", "ASC"]],
-                        raw: true,
-                    }),
-                    Logbook.findAll({
-                        where: {
-                            user_id: userId,
-                            date: { [Op.between]: [firstDay, lastDay] },
-                        },
-                        attributes: ["id", "date", "activity", "description", "created_at"],
-                        order: [["date", "ASC"]],
-                        raw: true,
-                    }),
-                    Leave.findAll({
-                        where: {
-                            user_id: userId,
-                            status: "approved", // Only show approved leaves
-                            [Op.or]: [
-                                { start_date: { [Op.between]: [firstDay, lastDay] } },
-                                { end_date: { [Op.between]: [firstDay, lastDay] } },
-                                {
-                                    [Op.and]: [
-                                        { start_date: { [Op.lte]: firstDay } },
-                                        { end_date: { [Op.gte]: lastDay } },
-                                    ],
-                                },
-                            ],
-                        },
-                        attributes: [
-                            "id",
-                            "start_date",
-                            "end_date",
-                            "type",
-                            "reason",
-                            "status",
-                            "reviewed_by",
-                            "reviewed_at",
-                        ],
-                        order: [["start_date", "ASC"]],
-                        raw: true,
-                    }),
-                ]);
-
-            // Calculate summary statistics with proper absent calculation
-            // Get working days in the period (excluding weekends and holidays)
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            // Calculate expected working days up to today
-            let expectedWorkingDays = 0;
-            const periodStart = new Date(firstDay);
-            const periodEnd = new Date(lastDay);
-            const checkUntil = periodEnd < today ? periodEnd : new Date(today);
-            checkUntil.setHours(0, 0, 0, 0);
-            
-            // Count working days excluding holidays
-            const holidayDates = new Set(holidays.map(h => h.date));
-            for (let d = new Date(periodStart); d <= checkUntil; d.setDate(d.getDate() + 1)) {
-                const dayOfWeek = d.getDay();
-                const dateStr = d.toISOString().split('T')[0];
-                
-                // CRITICAL: Only count if it's a working day (exclude weekend: 0=Sunday, 6=Saturday)
-                // Count if: NOT WEEKEND AND working day AND not holiday
-                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                if (!isWeekend && workingDays.includes(dayOfWeek) && !holidayDates.has(dateStr)) {
-                    expectedWorkingDays++;
-                }
-            }
-            
-            // Calculate leave days (count individual days, not leave records)
-            const leaveDates = new Set();
-            leaves.forEach(leave => {
-                const start = new Date(leave.start_date);
-                const end = new Date(leave.end_date);
-                
-                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-                    const dayOfWeek = d.getDay();
-                    const dateStr = d.toISOString().split('T')[0];
-                    
-                    // CRITICAL: Only count working days (exclude weekend: 0=Sunday, 6=Saturday)
-                    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                    if (!isWeekend && 
-                        workingDays.includes(dayOfWeek) && 
-                        !holidayDates.has(dateStr) && 
-                        d <= checkUntil) {
-                        leaveDates.add(dateStr);
-                    }
-                }
+            // Get user info (needed for join date validation)
+            const user = await User.findByPk(userId, {
+                attributes: ["id", "name", "email", "created_at"],
+                raw: true,
             });
-            
-            const attendanceDates = new Set(attendances.map(att => att.date));
-            
-            // Absent = Expected working days - Attendance days - Leave days
-            const absentCount = expectedWorkingDays - attendanceDates.size - leaveDates.size;
-            
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User tidak ditemukan",
+                });
+            }
+
+            // Parallel queries untuk performance optimal
+            const [
+                workingDays,
+                holidays,
+                attendances,
+                logbooks,
+                leaves,
+                alphaStats,
+            ] = await Promise.all([
+                CalendarController.getWorkingDaysConfig(),
+                Holiday.findAll({
+                    where: {
+                        date: { [Op.between]: [firstDay, lastDay] },
+                        is_active: true,
+                    },
+                    attributes: [
+                        "id",
+                        "date",
+                        "name",
+                        "description",
+                        "type",
+                        "is_national",
+                    ],
+                    order: [["date", "ASC"]],
+                    raw: true,
+                }),
+                Attendance.findAll({
+                    where: {
+                        user_id: userId,
+                        date: { [Op.between]: [firstDay, lastDay] },
+                    },
+                    attributes: [
+                        "id",
+                        "date",
+                        "check_in_time",
+                        "check_out_time",
+                        "status",
+                        "work_type",
+                        "check_in_address",
+                        "notes",
+                    ],
+                    order: [["date", "ASC"]],
+                    raw: true,
+                }),
+                Logbook.findAll({
+                    where: {
+                        user_id: userId,
+                        date: { [Op.between]: [firstDay, lastDay] },
+                    },
+                    attributes: [
+                        "id",
+                        "date",
+                        "activity",
+                        "description",
+                        "created_at",
+                    ],
+                    order: [["date", "ASC"]],
+                    raw: true,
+                }),
+                Leave.findAll({
+                    where: {
+                        user_id: userId,
+                        status: "approved", // Only show approved leaves
+                        [Op.or]: [
+                            {
+                                start_date: {
+                                    [Op.between]: [firstDay, lastDay],
+                                },
+                            },
+                            {
+                                end_date: {
+                                    [Op.between]: [firstDay, lastDay],
+                                },
+                            },
+                            {
+                                [Op.and]: [
+                                    { start_date: { [Op.lte]: firstDay } },
+                                    { end_date: { [Op.gte]: lastDay } },
+                                ],
+                            },
+                        ],
+                    },
+                    attributes: [
+                        "id",
+                        "start_date",
+                        "end_date",
+                        "type",
+                        "reason",
+                        "status",
+                        "reviewed_by",
+                        "reviewed_at",
+                    ],
+                    order: [["start_date", "ASC"]],
+                    raw: true,
+                }),
+                // Use AlphaCalculationService as SINGLE SOURCE OF TRUTH
+                AlphaCalculationService.calculateMonthlyAlpha(
+                    userId,
+                    period.year,
+                    period.month,
+                ),
+            ]);
+
+            // Build summary from AlphaCalculationService + other counts
             const summary = {
                 totalAttendances: attendances.length,
-                lateCount: attendances.filter((att) => att.status === 'late').length,
-                offsiteCount: attendances.filter((att) => att.work_type === 'offsite').length,
+                lateCount: attendances.filter((att) => att.status === "late")
+                    .length,
+                offsiteCount: attendances.filter(
+                    (att) => att.work_type === "offsite",
+                ).length,
                 totalLogbooks: logbooks.length,
                 totalLeaves: leaves.length,
-                leaveCount: leaveDates.size, // Actual leave days, not leave records
-                absentCount: Math.max(0, absentCount), // Ensure non-negative
-                expectedWorkingDays,
+                // Alpha stats from centralized service
+                absentCount: alphaStats.alphaCount,
+                expectedWorkingDays: alphaStats.expectedWorkingDays,
+                attendanceDays: alphaStats.attendanceDays,
+                leaveDays: alphaStats.leaveDays,
             };
+
+            console.log(`[Calendar] Summary for user ${userId}:`, summary);
 
             return res.status(200).json({
                 success: true,
                 message: "Data kalender berhasil dimuat",
                 data: {
                     period,
+                    user: {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        created_at: user.created_at,
+                    },
                     workingDays,
                     holidays,
                     attendances,
                     logbooks,
                     leaves,
                     summary,
+                    alphaDetails: alphaStats.details, // Include calculation details
                 },
             });
         } catch (error) {
@@ -238,7 +246,10 @@ class CalendarController {
             return res.status(500).json({
                 success: false,
                 message: "Gagal memuat data kalender",
-                error: process.env.NODE_ENV === "development" ? error.message : undefined,
+                error:
+                    process.env.NODE_ENV === "development"
+                        ? error.message
+                        : undefined,
             });
         }
     }
@@ -246,7 +257,7 @@ class CalendarController {
     /**
      * USER ROLE: Get detail data for specific date
      * Optimized dengan parallel queries
-     * 
+     *
      * @route GET /api/user/calendar/:date
      * @access Private (User)
      */
@@ -282,7 +293,14 @@ class CalendarController {
             const [holiday, attendance, logbook, leave] = await Promise.all([
                 Holiday.findOne({
                     where: { date, is_active: true },
-                    attributes: ["id", "date", "name", "description", "type", "is_national"],
+                    attributes: [
+                        "id",
+                        "date",
+                        "name",
+                        "description",
+                        "type",
+                        "is_national",
+                    ],
                     raw: true,
                 }),
                 Attendance.findOne({
@@ -304,7 +322,14 @@ class CalendarController {
                 }),
                 Logbook.findOne({
                     where: { user_id: userId, date },
-                    attributes: ["id", "date", "activity", "description", "created_at", "updated_at"],
+                    attributes: [
+                        "id",
+                        "date",
+                        "activity",
+                        "description",
+                        "created_at",
+                        "updated_at",
+                    ],
                 }),
                 Leave.findOne({
                     where: {
@@ -352,7 +377,10 @@ class CalendarController {
             return res.status(500).json({
                 success: false,
                 message: "Gagal memuat detail tanggal",
-                error: process.env.NODE_ENV === "development" ? error.message : undefined,
+                error:
+                    process.env.NODE_ENV === "development"
+                        ? error.message
+                        : undefined,
             });
         }
     }
@@ -360,7 +388,7 @@ class CalendarController {
     /**
      * SUPERVISOR ROLE: Get calendar data for team
      * Optimized dengan parallel queries dan proper grouping
-     * 
+     *
      * @route GET /api/supervisor/calendar
      * @access Private (Supervisor)
      */
@@ -417,7 +445,8 @@ class CalendarController {
                     message: "Data kalender tim berhasil dimuat",
                     data: {
                         period,
-                        workingDays: await CalendarController.getWorkingDaysConfig(),
+                        workingDays:
+                            await CalendarController.getWorkingDaysConfig(),
                         holidays: [],
                         teamMembers: [],
                         attendances: [],
@@ -434,105 +463,122 @@ class CalendarController {
             }
 
             // Parallel queries untuk semua data
-            const [workingDays, holidays, attendances, leaves, validationHistory] =
-                await Promise.all([
-                    CalendarController.getWorkingDaysConfig(),
-                    Holiday.findAll({
-                        where: {
-                            date: { [Op.between]: [firstDay, lastDay] },
-                            is_active: true,
+            const [
+                workingDays,
+                holidays,
+                attendances,
+                leaves,
+                validationHistory,
+            ] = await Promise.all([
+                CalendarController.getWorkingDaysConfig(),
+                Holiday.findAll({
+                    where: {
+                        date: { [Op.between]: [firstDay, lastDay] },
+                        is_active: true,
+                    },
+                    attributes: [
+                        "id",
+                        "date",
+                        "name",
+                        "description",
+                        "type",
+                        "is_national",
+                    ],
+                    order: [["date", "ASC"]],
+                    raw: true,
+                }),
+                Attendance.findAll({
+                    where: {
+                        user_id: { [Op.in]: teamMemberIds },
+                        date: { [Op.between]: [firstDay, lastDay] },
+                    },
+                    include: [
+                        {
+                            model: User,
+                            as: "user",
+                            attributes: ["id", "name"],
                         },
-                        attributes: ["id", "date", "name", "description", "type", "is_national"],
-                        order: [["date", "ASC"]],
-                        raw: true,
-                    }),
-                    Attendance.findAll({
-                        where: {
-                            user_id: { [Op.in]: teamMemberIds },
-                            date: { [Op.between]: [firstDay, lastDay] },
-                        },
-                        include: [
+                    ],
+                    attributes: [
+                        "id",
+                        "user_id",
+                        "date",
+                        "check_in_time",
+                        "check_out_time",
+                        "status",
+                        "work_type",
+                    ],
+                    order: [["date", "ASC"]],
+                }),
+                Leave.findAll({
+                    where: {
+                        user_id: { [Op.in]: teamMemberIds },
+                        [Op.or]: [
                             {
-                                model: User,
-                                as: "user",
-                                attributes: ["id", "name"],
-                            },
-                        ],
-                        attributes: [
-                            "id",
-                            "user_id",
-                            "date",
-                            "check_in_time",
-                            "check_out_time",
-                            "status",
-                            "work_type",
-                        ],
-                        order: [["date", "ASC"]],
-                    }),
-                    Leave.findAll({
-                        where: {
-                            user_id: { [Op.in]: teamMemberIds },
-                            [Op.or]: [
-                                { start_date: { [Op.between]: [firstDay, lastDay] } },
-                                { end_date: { [Op.between]: [firstDay, lastDay] } },
-                                {
-                                    [Op.and]: [
-                                        { start_date: { [Op.lte]: firstDay } },
-                                        { end_date: { [Op.gte]: lastDay } },
-                                    ],
+                                start_date: {
+                                    [Op.between]: [firstDay, lastDay],
                                 },
-                            ],
-                        },
-                        include: [
+                            },
+                            { end_date: { [Op.between]: [firstDay, lastDay] } },
                             {
-                                model: User,
-                                as: "user",
-                                attributes: ["id", "name"],
+                                [Op.and]: [
+                                    { start_date: { [Op.lte]: firstDay } },
+                                    { end_date: { [Op.gte]: lastDay } },
+                                ],
                             },
                         ],
-                        attributes: [
-                            "id",
-                            "user_id",
-                            "start_date",
-                            "end_date",
-                            "type",
-                            "reason",
-                            "status",
-                        ],
-                        order: [["start_date", "ASC"]],
-                    }),
-                    Leave.findAll({
-                        where: {
-                            reviewed_by: supervisorId,
-                            reviewed_at: { [Op.between]: [firstDay, lastDay] },
+                    },
+                    include: [
+                        {
+                            model: User,
+                            as: "user",
+                            attributes: ["id", "name"],
                         },
-                        include: [
-                            {
-                                model: User,
-                                as: "user",
-                                attributes: ["id", "name"],
-                            },
-                        ],
-                        attributes: [
-                            "id",
-                            "user_id",
-                            "start_date",
-                            "end_date",
-                            "type",
-                            "status",
-                            "reviewed_at",
-                            "review_notes",
-                        ],
-                        order: [["reviewed_at", "DESC"]],
-                    }),
-                ]);
+                    ],
+                    attributes: [
+                        "id",
+                        "user_id",
+                        "start_date",
+                        "end_date",
+                        "type",
+                        "reason",
+                        "status",
+                    ],
+                    order: [["start_date", "ASC"]],
+                }),
+                Leave.findAll({
+                    where: {
+                        reviewed_by: supervisorId,
+                        reviewed_at: { [Op.between]: [firstDay, lastDay] },
+                    },
+                    include: [
+                        {
+                            model: User,
+                            as: "user",
+                            attributes: ["id", "name"],
+                        },
+                    ],
+                    attributes: [
+                        "id",
+                        "user_id",
+                        "start_date",
+                        "end_date",
+                        "type",
+                        "status",
+                        "reviewed_at",
+                        "review_notes",
+                    ],
+                    order: [["reviewed_at", "DESC"]],
+                }),
+            ]);
 
             // Calculate summary
             const summary = {
                 totalTeamMembers: teamMembers.length,
                 totalAttendances: attendances.length,
                 totalLeaves: leaves.length,
-                pendingValidations: leaves.filter((l) => l.status === "pending").length,
+                pendingValidations: leaves.filter((l) => l.status === "pending")
+                    .length,
             };
 
             return res.status(200).json({
@@ -554,7 +600,10 @@ class CalendarController {
             return res.status(500).json({
                 success: false,
                 message: "Gagal memuat data kalender tim",
-                error: process.env.NODE_ENV === "development" ? error.message : undefined,
+                error:
+                    process.env.NODE_ENV === "development"
+                        ? error.message
+                        : undefined,
             });
         }
     }
@@ -562,7 +611,7 @@ class CalendarController {
     /**
      * SUPERVISOR ROLE: Get date detail for team
      * Optimized dengan parallel queries
-     * 
+     *
      * @route GET /api/supervisor/calendar/:date
      * @access Private (Supervisor)
      */
@@ -620,7 +669,14 @@ class CalendarController {
                 await Promise.all([
                     Holiday.findOne({
                         where: { date, is_active: true },
-                        attributes: ["id", "date", "name", "description", "type", "is_national"],
+                        attributes: [
+                            "id",
+                            "date",
+                            "name",
+                            "description",
+                            "type",
+                            "is_national",
+                        ],
                         raw: true,
                     }),
                     Attendance.findAll({
@@ -695,7 +751,8 @@ class CalendarController {
             const summary = {
                 totalTeamMembers: teamMembers.length,
                 presentCount: attendances.length,
-                onLeaveCount: leaves.filter((l) => l.status === "approved").length,
+                onLeaveCount: leaves.filter((l) => l.status === "approved")
+                    .length,
                 validationsToday: validations.length,
             };
 
@@ -719,7 +776,10 @@ class CalendarController {
             return res.status(500).json({
                 success: false,
                 message: "Gagal memuat detail tanggal tim",
-                error: process.env.NODE_ENV === "development" ? error.message : undefined,
+                error:
+                    process.env.NODE_ENV === "development"
+                        ? error.message
+                        : undefined,
             });
         }
     }
@@ -727,7 +787,7 @@ class CalendarController {
     /**
      * ADMIN ROLE: Get system-wide calendar data
      * Optimized dengan parallel queries dan statistics
-     * 
+     *
      * @route GET /api/admin/calendar
      * @access Private (Admin)
      */
@@ -762,75 +822,84 @@ class CalendarController {
             const userIds = users.map((user) => user.id);
 
             // Parallel queries untuk semua data
-            const [workingDays, holidays, attendances, leaves] = await Promise.all([
-                CalendarController.getWorkingDaysConfig(),
-                Holiday.findAll({
-                    where: {
-                        date: { [Op.between]: [firstDay, lastDay] },
-                        is_active: true,
-                    },
-                    include: [
-                        {
-                            model: User,
-                            as: "creator",
-                            attributes: ["id", "name"],
+            const [workingDays, holidays, attendances, leaves] =
+                await Promise.all([
+                    CalendarController.getWorkingDaysConfig(),
+                    Holiday.findAll({
+                        where: {
+                            date: { [Op.between]: [firstDay, lastDay] },
+                            is_active: true,
                         },
-                    ],
-                    order: [["date", "ASC"]],
-                }),
-                Attendance.findAll({
-                    where: {
-                        user_id: { [Op.in]: userIds },
-                        date: { [Op.between]: [firstDay, lastDay] },
-                    },
-                    include: [
-                        {
-                            model: User,
-                            as: "user",
-                            attributes: ["id", "name"],
-                            include: [
-                                {
-                                    model: Division,
-                                    as: "division",
-                                    attributes: ["id", "name"],
-                                },
-                            ],
-                        },
-                    ],
-                    attributes: [
-                        "id",
-                        "user_id",
-                        "date",
-                        "check_in_time",
-                        "check_out_time",
-                        "status",
-                    ],
-                    order: [["date", "ASC"]],
-                }),
-                Leave.findAll({
-                    where: {
-                        user_id: { [Op.in]: userIds },
-                        [Op.or]: [
-                            { start_date: { [Op.between]: [firstDay, lastDay] } },
-                            { end_date: { [Op.between]: [firstDay, lastDay] } },
+                        include: [
                             {
-                                [Op.and]: [
-                                    { start_date: { [Op.lte]: firstDay } },
-                                    { end_date: { [Op.gte]: lastDay } },
+                                model: User,
+                                as: "creator",
+                                attributes: ["id", "name"],
+                            },
+                        ],
+                        order: [["date", "ASC"]],
+                    }),
+                    Attendance.findAll({
+                        where: {
+                            user_id: { [Op.in]: userIds },
+                            date: { [Op.between]: [firstDay, lastDay] },
+                        },
+                        include: [
+                            {
+                                model: User,
+                                as: "user",
+                                attributes: ["id", "name"],
+                                include: [
+                                    {
+                                        model: Division,
+                                        as: "division",
+                                        attributes: ["id", "name"],
+                                    },
                                 ],
                             },
                         ],
-                    },
-                    include: [
-                        {
-                            model: User,
-                            as: "user",
-                            attributes: ["id", "name"],
+                        attributes: [
+                            "id",
+                            "user_id",
+                            "date",
+                            "check_in_time",
+                            "check_out_time",
+                            "status",
+                        ],
+                        order: [["date", "ASC"]],
+                    }),
+                    Leave.findAll({
+                        where: {
+                            user_id: { [Op.in]: userIds },
+                            [Op.or]: [
+                                {
+                                    start_date: {
+                                        [Op.between]: [firstDay, lastDay],
+                                    },
+                                },
+                                {
+                                    end_date: {
+                                        [Op.between]: [firstDay, lastDay],
+                                    },
+                                },
+                                {
+                                    [Op.and]: [
+                                        { start_date: { [Op.lte]: firstDay } },
+                                        { end_date: { [Op.gte]: lastDay } },
+                                    ],
+                                },
+                            ],
                         },
-                    ],
-                    order: [["start_date", "ASC"]],
-                }),
-            ]);
+                        include: [
+                            {
+                                model: User,
+                                as: "user",
+                                attributes: ["id", "name"],
+                            },
+                        ],
+                        order: [["start_date", "ASC"]],
+                    }),
+                ]);
 
             // Group attendances by date untuk calendar view
             const attendancesByDate = attendances.reduce((acc, att) => {
@@ -844,12 +913,16 @@ class CalendarController {
             const summary = {
                 totalUsers: users.length,
                 totalAttendances: attendances.length,
-                lateCount: attendances.filter((att) => att.status === 'late').length,
+                lateCount: attendances.filter((att) => att.status === "late")
+                    .length,
                 totalHolidays: holidays.length,
                 leaveStats: {
-                    pending: leaves.filter((l) => l.status === "pending").length,
-                    approved: leaves.filter((l) => l.status === "approved").length,
-                    rejected: leaves.filter((l) => l.status === "rejected").length,
+                    pending: leaves.filter((l) => l.status === "pending")
+                        .length,
+                    approved: leaves.filter((l) => l.status === "approved")
+                        .length,
+                    rejected: leaves.filter((l) => l.status === "rejected")
+                        .length,
                 },
             };
 
@@ -872,7 +945,10 @@ class CalendarController {
             return res.status(500).json({
                 success: false,
                 message: "Gagal memuat data kalender sistem",
-                error: process.env.NODE_ENV === "development" ? error.message : undefined,
+                error:
+                    process.env.NODE_ENV === "development"
+                        ? error.message
+                        : undefined,
             });
         }
     }
@@ -880,7 +956,7 @@ class CalendarController {
     /**
      * ADMIN ROLE: Get comprehensive date detail for all users
      * Optimized dengan parallel queries
-     * 
+     *
      * @route GET /api/admin/calendar/:date
      * @access Private (Admin)
      */
@@ -1001,12 +1077,15 @@ class CalendarController {
             ]);
 
             // Calculate statistics
-            const approvedLeaves = leaves.filter((l) => l.status === "approved");
+            const approvedLeaves = leaves.filter(
+                (l) => l.status === "approved",
+            );
             const summary = {
                 totalUsers: users.length,
                 presentCount: attendances.length,
                 leaveCount: approvedLeaves.length,
-                absentCount: users.length - attendances.length - approvedLeaves.length,
+                absentCount:
+                    users.length - attendances.length - approvedLeaves.length,
                 logbookCount: logbooks.length,
             };
 
@@ -1029,7 +1108,10 @@ class CalendarController {
             return res.status(500).json({
                 success: false,
                 message: "Gagal memuat detail tanggal sistem",
-                error: process.env.NODE_ENV === "development" ? error.message : undefined,
+                error:
+                    process.env.NODE_ENV === "development"
+                        ? error.message
+                        : undefined,
             });
         }
     }

@@ -1,6 +1,7 @@
 import express from "express";
 import authMiddleware from "../middlewares/auth.js";
 import roleCheck from "../middlewares/roleCheck.js";
+import { validateWorkday } from "../middlewares/validateWorkday.js";
 import DashboardController from "../controllers/DashboardController.js";
 import AttendanceController, {
     uploadAttendancePhoto,
@@ -27,9 +28,11 @@ router.get("/dashboard", DashboardController.getUserDashboard);
 router.get("/attendance", AttendanceController.getUserAttendance);
 router.get("/attendance/today", AttendanceController.getTodayAttendance);
 router.get("/attendance/recent", AttendanceController.getRecentAttendance);
+router.get("/attendance/workday-status", AttendanceController.getWorkdayStatus);
 router.post("/attendance/pre-check", AttendanceController.preCheckWorkType);
 router.post(
     "/attendance/check-in",
+    validateWorkday, // Validate workday before allowing check-in
     uploadAttendancePhoto,
     AttendanceController.checkIn,
 );

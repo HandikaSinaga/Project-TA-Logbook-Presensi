@@ -9,6 +9,10 @@ const Attendance = () => {
     const [attendanceHistory, setAttendanceHistory] = useState([]);
     const [isProcessing, setIsProcessing] = useState(false);
 
+    // Workday status state
+    const [workdayStatus, setWorkdayStatus] = useState(null);
+    const [isWorkday, setIsWorkday] = useState(true); // Default true until checked
+
     // Pagination state for history
     const [page, setPage] = useState(1);
     const [pagination, setPagination] = useState(null);
@@ -47,12 +51,14 @@ const Attendance = () => {
     useEffect(() => {
         fetchAttendanceData();
         fetchTimeSettings();
+        fetchWorkdayStatus(); // Check if today is workday
         getCurrentLocation();
 
         // Refresh time settings setiap 5 menit untuk catch perubahan dari admin
         const timeSettingsInterval = setInterval(
             () => {
                 fetchTimeSettings();
+                fetchWorkdayStatus(); // Also refresh workday status
             },
             5 * 60 * 1000,
         ); // 5 minutes
@@ -240,6 +246,45 @@ const Attendance = () => {
         } catch (error) {
             console.error("Error fetching time settings:", error);
             // Non-critical, just log it
+        }
+    };
+
+    const fetchWorkdayStatus = async () => {
+        try {
+            const response = await axiosInstance.get(
+                "/user/attendance/workday-status",
+            );
+            const status = response.data.data;
+
+            setWorkdayStatus(status);
+            setIsWorkday(status.canCheckIn);
+
+            console.log("[Workday Status]", status);
+
+            // Show notification if not a workday
+            if (!status.canCheckIn) {
+                if (status.isHoliday) {
+                    toast.error(
+                        `🎉 Hari Libur: ${status.holiday?.name || "Tidak ada presensi hari ini"}`,
+                        { duration: 6000, id: "holiday-notice" },
+                    );
+                } else if (status.isWeekend) {
+                    toast(`📅 Akhir Pekan: Presensi tidak tersedia`, {
+                        icon: "🏖️",
+                        duration: 6000,
+                        id: "weekend-notice",
+                    });
+                } else {
+                    toast.error(
+                        status.message || "Presensi tidak tersedia hari ini",
+                        { duration: 6000, id: "workday-notice" },
+                    );
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching workday status:", error);
+            // Default to allow (fail-open for better UX, backend will still validate)
+            setIsWorkday(true);
         }
     };
 
@@ -1385,12 +1430,49 @@ const Attendance = () => {
             {/* Check-in/Check-out Card - Enhanced Design */}
             <div className="row mb-4">
                 <div className="col-lg-8 mx-auto">
+                    {/* Holiday/Weekend Banner */}
+                    {!isWorkday && workdayStatus && (
+                        <div
+                            className={`alert ${workdayStatus.isHoliday ? "alert-danger" : "alert-warning"} d-flex align-items-center mb-3`}
+                        >
+                            <i
+                                className={`bi ${workdayStatus.isHoliday ? "bi-calendar-x-fill" : "bi-calendar2-week-fill"} fs-3 me-3`}
+                            ></i>
+                            <div className="flex-grow-1">
+                                <h6 className="alert-heading mb-1">
+                                    {workdayStatus.isHoliday
+                                        ? "🎉 Hari Libur"
+                                        : workdayStatus.isWeekend
+                                          ? "📅 Akhir Pekan"
+                                          : "⚠️ Bukan Hari Kerja"}
+                                </h6>
+                                <p className="mb-0">
+                                    {workdayStatus.message}
+                                    {workdayStatus.holiday && (
+                                        <>
+                                            <br />
+                                            <small className="text-muted">
+                                                {workdayStatus.holiday
+                                                    .description || ""}
+                                            </small>
+                                        </>
+                                    )}
+                                </p>
+                            </div>
+                            <span className="badge bg-danger fs-6">
+                                Presensi Tidak Tersedia
+                            </span>
+                        </div>
+                    )}
+
                     <div className="card border-0 shadow-lg">
                         <div
                             className={`card-header border-0 ${
                                 todayAttendance?.check_in_time
                                     ? "bg-success"
-                                    : "bg-primary"
+                                    : !isWorkday
+                                      ? "bg-secondary"
+                                      : "bg-primary"
                             } bg-opacity-10`}
                         >
                             <h5 className="mb-0">
@@ -1398,6 +1480,11 @@ const Attendance = () => {
                                     <>
                                         <i className="bi bi-check-circle-fill text-success me-2"></i>
                                         Status Presensi Hari Ini
+                                    </>
+                                ) : !isWorkday ? (
+                                    <>
+                                        <i className="bi bi-slash-circle text-secondary me-2"></i>
+                                        Presensi Tidak Tersedia
                                     </>
                                 ) : (
                                     <>
@@ -1882,20 +1969,32 @@ const Attendance = () => {
 
                                     <button
                                         className={`btn w-100 ${
-                                            workTypeDetection &&
-                                            !workTypeDetection.isOnsite
-                                                ? "btn-warning"
-                                                : "btn-primary"
+                                            !isWorkday
+                                                ? "btn-secondary"
+                                                : workTypeDetection &&
+                                                    !workTypeDetection.isOnsite
+                                                  ? "btn-warning"
+                                                  : "btn-primary"
                                         }`}
                                         onClick={handleCheckIn}
                                         disabled={
+                                            !isWorkday ||
                                             isProcessing ||
                                             !location ||
                                             !workTypeDetection ||
                                             isDetectingWorkType
                                         }
                                     >
-                                        {isProcessing ? (
+                                        {!isWorkday ? (
+                                            <>
+                                                <i className="bi bi-slash-circle me-2"></i>
+                                                Presensi Tidak Tersedia
+                                                {workdayStatus?.isHoliday &&
+                                                    " (Hari Libur)"}
+                                                {workdayStatus?.isWeekend &&
+                                                    " (Akhir Pekan)"}
+                                            </>
+                                        ) : isProcessing ? (
                                             <>
                                                 <span className="spinner-border spinner-border-sm me-2"></span>
                                                 Processing...

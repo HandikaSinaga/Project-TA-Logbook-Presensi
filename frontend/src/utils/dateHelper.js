@@ -3,17 +3,17 @@
  * Synchronized with backend date validation logic
  */
 
-import moment from 'moment-timezone';
+import moment from "moment-timezone";
 
 // Set default timezone to Jakarta
-moment.tz.setDefault('Asia/Jakarta');
+moment.tz.setDefault("Asia/Jakarta");
 
 /**
  * Get current date in Jakarta timezone
  * @returns {Date} Current date in Jakarta
  */
 export const getJakartaDate = () => {
-    return moment.tz('Asia/Jakarta').toDate();
+    return moment.tz("Asia/Jakarta").toDate();
 };
 
 /**
@@ -21,7 +21,7 @@ export const getJakartaDate = () => {
  * @returns {Date} Today at midnight
  */
 export const getTodayJakarta = () => {
-    return moment.tz('Asia/Jakarta').startOf('day').toDate();
+    return moment.tz("Asia/Jakarta").startOf("day").toDate();
 };
 
 /**
@@ -30,9 +30,9 @@ export const getTodayJakarta = () => {
  * @returns {boolean} True if date is after today
  */
 export const isFutureDate = (dateInput) => {
-    const today = moment.tz('Asia/Jakarta').startOf('day');
-    const checkDate = moment.tz(dateInput, 'Asia/Jakarta').startOf('day');
-    
+    const today = moment.tz("Asia/Jakarta").startOf("day");
+    const checkDate = moment.tz(dateInput, "Asia/Jakarta").startOf("day");
+
     return checkDate.isAfter(today);
 };
 
@@ -51,9 +51,9 @@ export const isPastOrToday = (dateInput) => {
  * @returns {boolean} True if date is today
  */
 export const isToday = (dateInput) => {
-    const today = moment.tz('Asia/Jakarta').startOf('day');
-    const checkDate = moment.tz(dateInput, 'Asia/Jakarta').startOf('day');
-    
+    const today = moment.tz("Asia/Jakarta").startOf("day");
+    const checkDate = moment.tz(dateInput, "Asia/Jakarta").startOf("day");
+
     return checkDate.isSame(today);
 };
 
@@ -63,7 +63,7 @@ export const isToday = (dateInput) => {
  * @returns {string} Formatted date string YYYY-MM-DD
  */
 export const formatDateToString = (date) => {
-    return moment.tz(date, 'Asia/Jakarta').format('YYYY-MM-DD');
+    return moment.tz(date, "Asia/Jakarta").format("YYYY-MM-DD");
 };
 
 /**
@@ -76,16 +76,16 @@ export const validateDateInput = (dateString) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
         return {
             isValid: false,
-            error: 'Format tanggal tidak valid. Gunakan YYYY-MM-DD'
+            error: "Format tanggal tidak valid. Gunakan YYYY-MM-DD",
         };
     }
 
     // Check if valid date
-    const date = moment(dateString, 'YYYY-MM-DD', true);
+    const date = moment(dateString, "YYYY-MM-DD", true);
     if (!date.isValid()) {
         return {
             isValid: false,
-            error: 'Tanggal tidak valid'
+            error: "Tanggal tidak valid",
         };
     }
 
@@ -93,7 +93,7 @@ export const validateDateInput = (dateString) => {
     if (isFutureDate(dateString)) {
         return {
             isValid: false,
-            error: 'Tidak dapat mengakses tanggal di masa depan'
+            error: "Tidak dapat mengakses tanggal di masa depan",
         };
     }
 
@@ -106,10 +106,10 @@ export const validateDateInput = (dateString) => {
  * @returns {Object} { month: number (1-12), year: number }
  */
 export const getMonthYear = (date) => {
-    const momentDate = moment.tz(date, 'Asia/Jakarta');
+    const momentDate = moment.tz(date, "Asia/Jakarta");
     return {
         month: momentDate.month() + 1, // moment months are 0-indexed
-        year: momentDate.year()
+        year: momentDate.year(),
     };
 };
 
@@ -120,7 +120,10 @@ export const getMonthYear = (date) => {
  * @returns {Date} First day of month
  */
 export const getFirstDayOfMonth = (year, month) => {
-    return moment.tz(`${year}-${String(month).padStart(2, '0')}-01`, 'Asia/Jakarta').startOf('day').toDate();
+    return moment
+        .tz(`${year}-${String(month).padStart(2, "0")}-01`, "Asia/Jakarta")
+        .startOf("day")
+        .toDate();
 };
 
 /**
@@ -130,7 +133,11 @@ export const getFirstDayOfMonth = (year, month) => {
  * @returns {Date} Last day of month
  */
 export const getLastDayOfMonth = (year, month) => {
-    return moment.tz(`${year}-${String(month).padStart(2, '0')}-01`, 'Asia/Jakarta').endOf('month').startOf('day').toDate();
+    return moment
+        .tz(`${year}-${String(month).padStart(2, "0")}-01`, "Asia/Jakarta")
+        .endOf("month")
+        .startOf("day")
+        .toDate();
 };
 
 export default {

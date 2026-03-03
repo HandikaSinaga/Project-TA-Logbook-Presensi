@@ -66,16 +66,16 @@
         height: 400px !important;
         padding: 0.5rem !important;
     }
-    
+
     .rbc-toolbar {
         flex-direction: column;
         gap: 0.5rem;
     }
-    
+
     .rbc-toolbar-label {
         font-size: 0.9rem;
     }
-    
+
     .rbc-event {
         font-size: 0.65rem !important;
     }
@@ -94,7 +94,7 @@
 /* Better hover effects */
 .rbc-event:hover {
     opacity: 1 !important;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     cursor: pointer;
 }
 
