@@ -553,7 +553,11 @@ const UserWorkCalendar = () => {
         // Close detail if open
         setSelectedDate(null);
         setDateDetail(null);
-    }, [selectedMonth, selectedYear, setSearchParams]);
+
+        // Directly fetch data for the new date
+        // (do not rely solely on useEffect which may not trigger if object ref doesn't change)
+        fetchCalendarData(newDate);
+    }, [selectedMonth, selectedYear, setSearchParams, fetchCalendarData]);
 
     const handleResetFilter = useCallback(() => {
         const today = new Date();
@@ -569,7 +573,10 @@ const UserWorkCalendar = () => {
 
         setSelectedDate(null);
         setDateDetail(null);
-    }, [setSearchParams]);
+
+        // Directly fetch data for today's month
+        fetchCalendarData(today);
+    }, [setSearchParams, fetchCalendarData]);
 
     useEffect(() => {
         fetchCalendarData(currentDate);
@@ -1083,6 +1090,7 @@ const UserWorkCalendar = () => {
                         startAccessor="start"
                         endAccessor="end"
                         style={{ height: "100%" }}
+                        date={currentDate}
                         onSelectSlot={handleSelectSlot}
                         onSelectEvent={handleSelectEvent}
                         onNavigate={handleNavigate}

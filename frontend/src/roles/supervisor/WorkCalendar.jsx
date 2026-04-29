@@ -77,6 +77,8 @@ const SupervisorWorkCalendar = () => {
         const urlYear = searchParams.get("year");
         return urlYear || String(new Date().getFullYear());
     });
+    // Team view: status filter (all | hasAbsent | hasLate | hasLeave)
+    const [statusFilter, setStatusFilter] = useState("all");
 
     const detailRef = useRef(null);
 
@@ -296,153 +298,185 @@ const SupervisorWorkCalendar = () => {
                     }
                 });
             } else {
-                // BRANCH 2: TEAM VIEW (when no selectedUserId or it's empty)
-                // Aggregated supervisor view
-                console.log("👨‍💼 SUPERVISOR VIEWING TEAM CALENDAR", {
-                    teamMemberCount: data.teamMembers?.length || 0,
+                // ============================================================
+                // BRANCH 2: TEAM VIEW — Supervisor monitoring all team members
+                // Strategy: Show ALL relevant event types per day (no suppression)
+                // Each day can show: holiday, onTime count, late count, leave count, logbook count
+                // ============================================================
+
+                const teamSize = data.teamMembers?.length || 0;
+
+                // Build lookup maps for O(1) access
+                const attendancesByDate = {};
+                data.attendances?.forEach((att) => {
+                    if (!attendancesByDate[att.date]) attendancesByDate[att.date] = { onTime: [], late: [], all: [] };
+                    attendancesByDate[att.date].all.push(att);
+                    if (att.status === "late") attendancesByDate[att.date].late.push(att);
+                    else attendancesByDate[att.date].onTime.push(att);
                 });
 
-                // 1. Holidays - Red for national, Orange for custom (Highest Priority)
-                data.holidays?.forEach((holiday) => {
-                    const date = holiday.date;
-                    addEvent(
-                        date,
-                        {
-                            id: `holiday-${holiday.id}`,
-                            title: `🎉 ${holiday.name}`,
-                            start: new Date(date + "T00:00:00"),
-                            end: new Date(date + "T23:59:59"),
-                            allDay: true,
-                            type: "holiday",
-                            color: holiday.is_national
-                                ? COLORS.holiday
-                                : COLORS.holidayCustom,
-                            resource: holiday,
-                        },
-                        EVENT_PRIORITY.holiday,
-                    );
-                });
-
-                // 2. Team attendances - Aggregated view
-                if (data.attendances) {
-                    const attendancesByDate = {};
-                    data.attendances.forEach((attendance) => {
-                        const date = attendance.date;
-                        if (!attendancesByDate[date]) {
-                            attendancesByDate[date] = { all: [], late: [] };
-                        }
-                        attendancesByDate[date].all.push(attendance);
-                        if (attendance.status === "late") {
-                            attendancesByDate[date].late.push(attendance);
-                        }
-                    });
-
-                    Object.keys(attendancesByDate).forEach((date) => {
-                        const count = attendancesByDate[date].all.length;
-                        const lateCount = attendancesByDate[date].late.length;
-                        const isLate = lateCount > 0;
-
-                        addEvent(
-                            date,
-                            {
-                                id: `attendance-${date}`,
-                                title:
-                                    lateCount > 0
-                                        ? `⏰ ${lateCount} Terlambat`
-                                        : `✓ ${count} Hadir`,
-                                start: new Date(date + "T00:00:00"),
-                                end: new Date(date + "T23:59:59"),
-                                allDay: true,
-                                type: "attendance",
-                                color: isLate ? COLORS.late : COLORS.present,
-                                resource: attendancesByDate[date],
-                            },
-                            isLate
-                                ? EVENT_PRIORITY.late
-                                : EVENT_PRIORITY.present,
-                        );
-                    });
-                }
-
-                // 3. Team leaves - Purple color
-                data.leaves?.forEach((leave) => {
-                    const userName = leave.user?.name || "User";
-                    const shortName =
-                        userName.length > 15
-                            ? `${userName.substring(0, 15)}...`
-                            : userName;
-
-                    const leaveStart = moment(leave.start_date);
-                    const leaveEnd = moment(leave.end_date);
-
-                    for (
-                        let date = leaveStart.clone();
-                        date.isSameOrBefore(leaveEnd);
-                        date.add(1, "day")
-                    ) {
-                        const dateStr = date.format("YYYY-MM-DD");
-                        addEvent(
-                            dateStr,
-                            {
-                                id: `leave-${leave.id}-${dateStr}`,
-                                title: `🏖️ ${shortName}`,
-                                start: new Date(dateStr + "T00:00:00"),
-                                end: new Date(dateStr + "T23:59:59"),
-                                allDay: true,
-                                type: "leave",
-                                color: COLORS.leave,
-                                resource: leave,
-                            },
-                            EVENT_PRIORITY.leave,
-                        );
+                const leaveDateMap = {};
+                data.leaves?.filter(l => l.status === "approved").forEach((leave) => {
+                    const s = moment(leave.start_date), e = moment(leave.end_date);
+                    for (let d = s.clone(); d.isSameOrBefore(e); d.add(1, "day")) {
+                        const ds = d.format("YYYY-MM-DD");
+                        if (!leaveDateMap[ds]) leaveDateMap[ds] = [];
+                        leaveDateMap[ds].push(leave);
                     }
                 });
 
-                // 4. Team logbooks
-                if (data.logbooks) {
-                    const logbooksByDate = {};
-                    data.logbooks.forEach((logbook) => {
-                        const date = logbook.date;
-                        if (!logbooksByDate[date]) {
-                            logbooksByDate[date] = [];
-                        }
-                        logbooksByDate[date].push(logbook);
-                    });
+                const logbooksByDate = {};
+                data.logbooks?.forEach((lb) => {
+                    if (!logbooksByDate[lb.date]) logbooksByDate[lb.date] = [];
+                    logbooksByDate[lb.date].push(lb);
+                });
 
-                    Object.keys(logbooksByDate).forEach((date) => {
-                        const count = logbooksByDate[date].length;
-                        if (
-                            !eventsByDate[date] ||
-                            eventsByDate[date].length === 0
-                        ) {
-                            addEvent(
-                                date,
-                                {
-                                    id: `logbook-${date}`,
-                                    title: `📝 ${count} Logbook`,
-                                    start: new Date(date + "T00:00:00"),
-                                    end: new Date(date + "T23:59:59"),
-                                    allDay: true,
-                                    type: "logbook",
-                                    color: COLORS.logbook,
-                                    resource: logbooksByDate[date],
-                                },
-                                6,
-                            );
-                        }
-                    });
+                // Collect all unique working dates in the period
+                const startDate = moment(data.period?.firstDay);
+                const endDate = moment(data.period?.lastDay);
+                const today = moment().startOf("day");
+
+                const allDates = new Set([
+                    ...Object.keys(attendancesByDate),
+                    ...Object.keys(leaveDateMap),
+                    ...Object.keys(logbooksByDate),
+                ]);
+
+                // Also add working days to detect full-absence days
+                for (let d = startDate.clone(); d.isSameOrBefore(endDate); d.add(1, "day")) {
+                    if (data.workingDays?.includes(d.day()) && !d.isAfter(today)) {
+                        allDates.add(d.format("YYYY-MM-DD"));
+                    }
                 }
+
+                // 1. Holidays (override everything, shown as single event)
+                data.holidays?.forEach((holiday) => {
+                    addEvent(holiday.date, {
+                        id: `holiday-${holiday.id}`,
+                        title: `🎉 ${holiday.name}`,
+                        start: new Date(holiday.date + "T00:00:00"),
+                        end: new Date(holiday.date + "T23:59:59"),
+                        allDay: true,
+                        type: "holiday",
+                        color: holiday.is_national ? COLORS.holiday : COLORS.holidayCustom,
+                        resource: holiday,
+                    }, EVENT_PRIORITY.holiday);
+                });
+
+                // Build holiday date set for exclusion
+                const holidayDates = new Set(data.holidays?.map(h => h.date) || []);
+
+                // 2. Per-date: show multiple event chips
+                allDates.forEach((dateStr) => {
+                    if (holidayDates.has(dateStr)) return; // Skip holidays
+                    const dateMoment = moment(dateStr);
+                    if (dateMoment.isAfter(today)) return; // Skip future
+                    if (!data.workingDays?.includes(dateMoment.day())) return; // Skip weekends
+
+                    const attDay = attendancesByDate[dateStr];
+                    const onTimeCount = attDay?.onTime?.length || 0;
+                    const lateCount = attDay?.late?.length || 0;
+                    const totalPresent = (attDay?.all?.length || 0);
+                    const leaveCount = leaveDateMap[dateStr]?.length || 0;
+                    const logbookCount = logbooksByDate[dateStr]?.length || 0;
+                    const absentCount = Math.max(0, teamSize - totalPresent - leaveCount);
+
+                    // Event: On-time attendances
+                    if (onTimeCount > 0) {
+                        addEvent(dateStr, {
+                            id: `present-${dateStr}`,
+                            title: `✓ ${onTimeCount} Tepat`,
+                            start: new Date(dateStr + "T00:00:00"),
+                            end: new Date(dateStr + "T23:59:59"),
+                            allDay: true,
+                            type: "present",
+                            color: COLORS.present,
+                            resource: { date: dateStr, count: onTimeCount, type: "present", members: attDay?.onTime },
+                        }, 50); // no priority suppression in team view, use high value
+                    }
+
+                    // Event: Late attendances
+                    if (lateCount > 0) {
+                        addEvent(dateStr, {
+                            id: `late-${dateStr}`,
+                            title: `⏰ ${lateCount} Terlambat`,
+                            start: new Date(dateStr + "T00:00:00"),
+                            end: new Date(dateStr + "T23:59:59"),
+                            allDay: true,
+                            type: "late",
+                            color: COLORS.late,
+                            resource: { date: dateStr, count: lateCount, type: "late", members: attDay?.late },
+                        }, 51);
+                    }
+
+                    // Event: Approved leaves
+                    if (leaveCount > 0) {
+                        addEvent(dateStr, {
+                            id: `leave-${dateStr}`,
+                            title: `🏖️ ${leaveCount} Izin`,
+                            start: new Date(dateStr + "T00:00:00"),
+                            end: new Date(dateStr + "T23:59:59"),
+                            allDay: true,
+                            type: "leave",
+                            color: COLORS.leave,
+                            resource: { date: dateStr, count: leaveCount, type: "leave", members: leaveDateMap[dateStr] },
+                        }, 52);
+                    }
+
+                    // Event: Absences (alpha)
+                    if (absentCount > 0) {
+                        addEvent(dateStr, {
+                            id: `absent-${dateStr}`,
+                            title: `❌ ${absentCount} Alpha`,
+                            start: new Date(dateStr + "T00:00:00"),
+                            end: new Date(dateStr + "T23:59:59"),
+                            allDay: true,
+                            type: "absent",
+                            color: COLORS.absent,
+                            resource: { date: dateStr, count: absentCount, type: "absent" },
+                        }, 53);
+                    }
+
+                    // Event: Logbooks (only if no other events on that day)
+                    if (logbookCount > 0 && onTimeCount === 0 && lateCount === 0 && leaveCount === 0 && absentCount === 0) {
+                        addEvent(dateStr, {
+                            id: `logbook-${dateStr}`,
+                            title: `📝 ${logbookCount} Logbook`,
+                            start: new Date(dateStr + "T00:00:00"),
+                            end: new Date(dateStr + "T23:59:59"),
+                            allDay: true,
+                            type: "logbook",
+                            color: COLORS.logbook,
+                            resource: { date: dateStr, count: logbookCount, type: "logbook" },
+                        }, 54);
+                    }
+                });
             }
 
-            // Resolve conflicts: Keep only highest priority event per date
+            // For team view: show ALL events (no priority suppression).
+            // For user view: keep priority-based resolution (single event per date).
             const finalEvents = [];
+            const isTeamView = !selectedUserId;
+
             Object.keys(eventsByDate).forEach((dateKey) => {
                 const dateEvents = eventsByDate[dateKey];
                 dateEvents.sort((a, b) => a.priority - b.priority);
-                const topEvent = dateEvents[0];
-                if (topEvent) {
-                    const { priority, ...eventData } = topEvent;
-                    finalEvents.push(eventData);
+
+                if (isTeamView) {
+                    // Show all events for team view (holidays still suppress others)
+                    const hasHoliday = dateEvents.some(e => e.type === "holiday");
+                    const toShow = hasHoliday ? dateEvents.filter(e => e.type === "holiday") : dateEvents;
+                    toShow.forEach(ev => {
+                        const { priority, ...evData } = ev;
+                        finalEvents.push(evData);
+                    });
+                } else {
+                    // User view: keep single highest-priority event
+                    const topEvent = dateEvents[0];
+                    if (topEvent) {
+                        const { priority, ...eventData } = topEvent;
+                        finalEvents.push(eventData);
+                    }
                 }
             });
 
@@ -622,7 +656,10 @@ const SupervisorWorkCalendar = () => {
 
         setSelectedDate(null);
         setDateDetail(null);
-    }, [setSearchParams]);
+
+        // Directly fetch data for today's month
+        fetchCalendarData(today);
+    }, [setSearchParams, fetchCalendarData]);
 
     // Close detail section
     const handleCloseDetail = useCallback(() => {
@@ -649,8 +686,22 @@ const SupervisorWorkCalendar = () => {
         };
     }, []);
 
-    // Day cell styling with future date handling and today highlight
-    // When filter to single user, use user view styling logic
+    // Build per-date attendance stats for heatmap (team view only)
+    const teamDateStats = useMemo(() => {
+        if (selectedUserId || !calendarData?.attendances) return {};
+        const stats = {};
+        const teamSize = calendarData.teamMembers?.length || 0;
+        calendarData.attendances.forEach((att) => {
+            if (!stats[att.date]) stats[att.date] = { present: 0, late: 0 };
+            stats[att.date].present++;
+            if (att.status === "late") stats[att.date].late++;
+        });
+        // Attach team size for rate calculation
+        Object.keys(stats).forEach(d => { stats[d].teamSize = teamSize; });
+        return stats;
+    }, [calendarData, selectedUserId]);
+
+    // Day cell styling: heatmap for team view, priority style for user view
     const dayPropGetter = useCallback(
         (date) => {
             const dayOfWeek = date.getDay();
@@ -662,55 +713,25 @@ const SupervisorWorkCalendar = () => {
             let style = {};
             let className = "";
 
-            // When filter to single user, use user view logic
+            // USER-SPECIFIC VIEW styling
             if (selectedUserId && calendarData?.user?.created_at) {
-                // Use user view styling when filtered to single user
-                const userJoinDate = calendarData.user?.created_at
-                    ? moment(calendarData.user.created_at).startOf("day")
-                    : null;
-                const isBeforeJoin =
-                    userJoinDate && moment(date).isBefore(userJoinDate);
+                const userJoinDate = moment(calendarData.user.created_at).startOf("day");
+                const isBeforeJoin = moment(date).isBefore(userJoinDate);
 
                 if (isBeforeJoin) {
-                    // Before join date - disabled with gray style
-                    style = {
-                        backgroundColor: "#e9ecef",
-                        color: "#adb5bd",
-                        opacity: 0.4,
-                        cursor: "not-allowed",
-                        pointerEvents: "none",
-                        textDecoration: "line-through",
-                    };
+                    style = { backgroundColor: "#e9ecef", color: "#adb5bd", opacity: 0.4, cursor: "not-allowed", pointerEvents: "none", textDecoration: "line-through" };
                     className = "pre-join-date-disabled";
                 } else if (isFuture) {
-                    // Future dates - disabled style
-                    style = {
-                        backgroundColor: "#f8f9fa",
-                        color: "#adb5bd",
-                        opacity: 0.5,
-                        cursor: "not-allowed",
-                        pointerEvents: "none",
-                    };
+                    style = { backgroundColor: "#f8f9fa", color: "#adb5bd", opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" };
                     className = "future-date-disabled";
                 } else if (isTodayDate) {
-                    // Today - highlighted
-                    style = {
-                        backgroundColor: "#e3f2fd",
-                        fontWeight: "bold",
-                        border: "2px solid #2196f3",
-                        borderRadius: "4px",
-                    };
+                    style = { backgroundColor: "#e3f2fd", fontWeight: "bold", border: "2px solid #2196f3", borderRadius: "4px" };
                     className = "today-date";
                 } else if (!isWorkingDay) {
-                    // Weekend
-                    style = {
-                        backgroundColor: COLORS.weekend,
-                        color: "#6c757d",
-                    };
+                    style = { backgroundColor: COLORS.weekend, color: "#6c757d" };
                 }
             } else {
-                // Team view styling (default supervisor view)
-                // Check if date is before supervisor was assigned to division
+                // TEAM VIEW — heatmap coloring based on attendance rate
                 let isBeforeAssigned = false;
                 if (supervisorAssignedAt) {
                     const assignedDate = new Date(supervisorAssignedAt);
@@ -721,45 +742,49 @@ const SupervisorWorkCalendar = () => {
                 }
 
                 if (isFuture) {
-                    // Future dates - disabled style
-                    style = {
-                        backgroundColor: "#f8f9fa",
-                        color: "#adb5bd",
-                        opacity: 0.6,
-                        cursor: "not-allowed",
-                    };
+                    style = { backgroundColor: "#f8f9fa", color: "#adb5bd", opacity: 0.6, cursor: "not-allowed" };
                     className = "future-date-disabled";
                 } else if (isBeforeAssigned) {
-                    // Dates before supervisor assignment - disabled style
-                    style = {
-                        backgroundColor: "#ffe5e5",
-                        color: "#999",
-                        opacity: 0.5,
-                        cursor: "not-allowed",
-                        textDecoration: "line-through",
-                    };
+                    style = { backgroundColor: "#fff3cd", color: "#856404", opacity: 0.5, cursor: "not-allowed" };
                     className = "before-assigned-disabled";
-                } else if (isTodayDate) {
-                    // Today - highlight with blue
-                    style = {
-                        backgroundColor: "#e3f2fd",
-                        fontWeight: "bold",
-                        border: "2px solid #2196f3",
-                    };
-                    className = "today-highlight";
                 } else if (!isWorkingDay) {
-                    // Weekend - light gray
-                    style = {
-                        backgroundColor: COLORS.weekend,
-                        color: "#adb5bd",
-                    };
+                    style = { backgroundColor: "#f0f0f0", color: "#adb5bd" };
                     className = "weekend";
+                } else if (isTodayDate) {
+                    style = { backgroundColor: "#e3f2fd", fontWeight: "bold", border: "2px solid #2196f3" };
+                    className = "today-highlight";
+                } else {
+                    // Heatmap: color based on attendance rate
+                    const dayStats = teamDateStats[dateStr];
+                    const teamSize = calendarData?.teamMembers?.length || 0;
+                    if (dayStats && teamSize > 0) {
+                        const rate = dayStats.present / teamSize;
+                        const hasLate = dayStats.late > 0;
+                        if (rate >= 0.9) {
+                            // 90%+ present — light green
+                            style = { backgroundColor: hasLate ? "#fff9c4" : "#e8f5e9" };
+                        } else if (rate >= 0.7) {
+                            // 70-89% present — light yellow-green
+                            style = { backgroundColor: "#fff9c4" };
+                        } else if (rate >= 0.5) {
+                            // 50-69% present — light orange
+                            style = { backgroundColor: "#fff3e0" };
+                        } else {
+                            // <50% present — light red (attendance concern)
+                            style = { backgroundColor: "#ffebee" };
+                        }
+                        className = `heatmap-day attendance-rate-${Math.round(rate * 100)}`;
+                    } else {
+                        // Working day but no data
+                        style = { backgroundColor: "#fff3e0", opacity: 0.8 };
+                        className = "heatmap-day no-data";
+                    }
                 }
             }
 
             return { style, className };
         },
-        [calendarData, supervisorAssignedAt, selectedUserId],
+        [calendarData, supervisorAssignedAt, selectedUserId, teamDateStats],
     );
 
     useEffect(() => {
@@ -837,431 +862,362 @@ const SupervisorWorkCalendar = () => {
                 </div>
             </div>
 
-            {/* Filter - User Selection */}
-            <Card className="mb-3 border-0 shadow-sm">
+            {/* ===== ENHANCED FILTER PANEL ===== */}
+            <Card className="mb-4 border-0 shadow-sm">
                 <Card.Body className="p-3">
-                    <Row className="g-2 align-items-center">
-                        <Col xs={12} md={6}>
-                            <div className="d-flex align-items-center gap-2">
-                                <i
-                                    className="bi bi-funnel text-primary"
-                                    style={{ fontSize: "1.2rem" }}
-                                ></i>
-                                <div className="flex-grow-1">
-                                    <Form.Select
-                                        value={selectedUserId}
-                                        onChange={handleUserFilterChange}
-                                        style={{ fontWeight: "500" }}
-                                    >
-                                        <option value="">
-                                            📋 Semua Anggota Tim
-                                        </option>
-                                        {calendarData?.teamMembers?.map(
-                                            (member) => (
-                                                <option
-                                                    key={member.id}
-                                                    value={member.id}
-                                                >
-                                                    {member.name}
-                                                </option>
-                                            ),
-                                        )}
-                                    </Form.Select>
-                                </div>
-                            </div>
+                    <div className="d-flex align-items-center mb-3">
+                        <i className="bi bi-funnel-fill text-primary me-2" style={{ fontSize: "1rem" }}></i>
+                        <span className="fw-semibold text-dark">Filter Kalender</span>
+                    </div>
+                    <Row className="g-2 align-items-end">
+                        {/* Member filter */}
+                        <Col xs={12} md={4}>
+                            <Form.Label className="small text-muted mb-1 fw-semibold">👤 Anggota Tim</Form.Label>
+                            <Form.Select
+                                value={selectedUserId}
+                                onChange={handleUserFilterChange}
+                                size="sm"
+                            >
+                                <option value="">📋 Semua Anggota</option>
+                                {calendarData?.teamMembers?.map((member) => (
+                                    <option key={member.id} value={member.id}>
+                                        {member.name}
+                                    </option>
+                                ))}
+                            </Form.Select>
+                        </Col>
+
+                        {/* Month filter */}
+                        <Col xs={6} md={2}>
+                            <Form.Label className="small text-muted mb-1 fw-semibold">📅 Bulan</Form.Label>
+                            <Form.Select
+                                value={selectedMonth}
+                                onChange={(e) => setSelectedMonth(e.target.value)}
+                                size="sm"
+                            >
+                                {Array.from({ length: 12 }, (_, i) => (
+                                    <option key={i + 1} value={String(i + 1).padStart(2, "0")}>
+                                        {moment().month(i).format("MMMM")}
+                                    </option>
+                                ))}
+                            </Form.Select>
+                        </Col>
+
+                        {/* Year filter */}
+                        <Col xs={6} md={2}>
+                            <Form.Label className="small text-muted mb-1 fw-semibold">🗓️ Tahun</Form.Label>
+                            <Form.Select
+                                value={selectedYear}
+                                onChange={(e) => setSelectedYear(e.target.value)}
+                                size="sm"
+                            >
+                                {Array.from({ length: 5 }, (_, i) => {
+                                    const y = new Date().getFullYear() - 2 + i;
+                                    return <option key={y} value={String(y)}>{y}</option>;
+                                })}
+                            </Form.Select>
+                        </Col>
+
+                        {/* Status filter (team view only) */}
+                        {!selectedUserId && (
+                            <Col xs={12} md={2}>
+                                <Form.Label className="small text-muted mb-1 fw-semibold">🔍 Tampilkan</Form.Label>
+                                <Form.Select
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    size="sm"
+                                >
+                                    <option value="all">Semua Hari</option>
+                                    <option value="hasAbsent">Ada Alpha</option>
+                                    <option value="hasLate">Ada Terlambat</option>
+                                    <option value="hasLeave">Ada Izin</option>
+                                </Form.Select>
+                            </Col>
+                        )}
+
+                        {/* Action buttons */}
+                        <Col xs={12} md={selectedUserId ? 4 : 2} className="d-flex gap-2">
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                className="flex-grow-1"
+                                onClick={handleApplyFilter}
+                            >
+                                <i className="bi bi-search me-1"></i>Terapkan
+                            </Button>
+                            <Button
+                                variant="outline-secondary"
+                                size="sm"
+                                onClick={handleResetFilter}
+                                title="Reset ke bulan ini"
+                            >
+                                <i className="bi bi-arrow-counterclockwise"></i>
+                            </Button>
                         </Col>
                     </Row>
+
+                    {/* Active filter badges */}
+                    <div className="mt-2 d-flex flex-wrap gap-1">
+                        {selectedUserId && (
+                            <Badge bg="primary" className="fw-normal">
+                                👤 {calendarData?.teamMembers?.find(m => String(m.id) === String(selectedUserId))?.name || "User"}
+                                <span
+                                    className="ms-1"
+                                    style={{ cursor: "pointer" }}
+                                    onClick={() => setSelectedUserId("")}
+                                >✕</span>
+                            </Badge>
+                        )}
+                        {statusFilter !== "all" && (
+                            <Badge bg="warning" text="dark" className="fw-normal">
+                                🔍 {statusFilter === "hasAbsent" ? "Ada Alpha" : statusFilter === "hasLate" ? "Ada Terlambat" : "Ada Izin"}
+                                <span
+                                    className="ms-1"
+                                    style={{ cursor: "pointer" }}
+                                    onClick={() => setStatusFilter("all")}
+                                >✕</span>
+                            </Badge>
+                        )}
+                        <Badge bg="light" text="dark" className="fw-normal border">
+                            📅 {moment().month(parseInt(selectedMonth) - 1).format("MMMM")} {selectedYear}
+                        </Badge>
+                    </div>
                 </Card.Body>
             </Card>
 
             {/* CONDITIONAL RENDERING BASED ON VIEW TYPE */}
             {!selectedUserId ? (
-                // TEAM VIEW - Show monitoring cards and team statistics
+                // TEAM VIEW
                 <>
-                    {/* Summary Cards - Team Overview */}
-                    {calendarData?.summary && (
-                        <Row className="g-3 mb-4">
-                            <Col xs={6} md={3}>
-                                <Card
-                                    className="border-0 shadow-sm h-100"
-                                    style={{
-                                        background:
-                                            "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                                        color: "white",
-                                    }}
-                                >
-                                    <Card.Body className="p-3 text-center">
-                                        <div className="mb-2">
-                                            <i
-                                                className="bi bi-people"
-                                                style={{ fontSize: "2rem" }}
-                                            ></i>
-                                        </div>
-                                        <h3 className="mb-1 fw-bold">
-                                            {calendarData.teamMembers?.length ||
-                                                0}
-                                        </h3>
-                                        <small className="text-white-50 fw-medium">
-                                            Anggota Tim
-                                        </small>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                            <Col xs={6} md={3}>
-                                <Card
-                                    className="border-0 shadow-sm h-100"
-                                    style={{
-                                        background:
-                                            "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-                                        color: "white",
-                                    }}
-                                >
-                                    <Card.Body className="p-3 text-center">
-                                        <div className="mb-2">
-                                            <i
-                                                className="bi bi-check-circle"
-                                                style={{ fontSize: "2rem" }}
-                                            ></i>
-                                        </div>
-                                        <h3 className="mb-1 fw-bold">
-                                            {calendarData.summary
-                                                .totalAttendances || 0}
-                                        </h3>
-                                        <small className="text-white-50 fw-medium">
-                                            Hadir
-                                        </small>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                            <Col xs={6} md={3}>
-                                <Card
-                                    className="border-0 shadow-sm h-100"
-                                    style={{
-                                        background:
-                                            "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-                                        color: "white",
-                                    }}
-                                >
-                                    <Card.Body className="p-3 text-center">
-                                        <div className="mb-2">
-                                            <i
-                                                className="bi bi-clock-history"
-                                                style={{ fontSize: "2rem" }}
-                                            ></i>
-                                        </div>
-                                        <h3 className="mb-1 fw-bold">
-                                            {calendarData.summary.lateCount ||
-                                                0}
-                                        </h3>
-                                        <small className="text-white-50 fw-medium">
-                                            Terlambat
-                                        </small>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                            <Col xs={6} md={3}>
-                                <Card
-                                    className="border-0 shadow-sm h-100"
-                                    style={{
-                                        background:
-                                            "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-                                        color: "white",
-                                    }}
-                                >
-                                    <Card.Body className="p-3 text-center">
-                                        <div className="mb-2">
-                                            <i
-                                                className="bi bi-journal-text"
-                                                style={{ fontSize: "2rem" }}
-                                            ></i>
-                                        </div>
-                                        <h3 className="mb-1 fw-bold">
-                                            {calendarData.summary
-                                                .logbookCount || 0}
-                                        </h3>
-                                        <small className="text-white-50 fw-medium">
-                                            Logbook
-                                        </small>
-                                    </Card.Body>
-                                </Card>
-                            </Col>
-                        </Row>
+                    {/* Summary Cards - enriched with attendance rate */}
+                    {calendarData?.summary && (() => {
+                        const teamSize = calendarData.teamMembers?.length || 0;
+                        const totalAttendances = calendarData.summary.totalAttendances || 0;
+                        const lateCount = calendarData.summary.lateCount || calendarData.summary.attendance?.late || 0;
+                        const workingDaysElapsed = calendarData.summary.workingDays || 1;
+                        const attendanceRate = teamSize > 0 && workingDaysElapsed > 0
+                            ? Math.round((totalAttendances / (teamSize * workingDaysElapsed)) * 100)
+                            : 0;
+                        const absentTotal = Math.max(0, (teamSize * workingDaysElapsed) - totalAttendances - (calendarData.summary.leave?.approved || 0));
+
+                        return (
+                            <Row className="g-3 mb-4">
+                                {/* Anggota Tim */}
+                                <Col xs={6} md={2}>
+                                    <Card className="border-0 shadow-sm h-100 text-center"
+                                        style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white" }}>
+                                        <Card.Body className="p-3">
+                                            <i className="bi bi-people" style={{ fontSize: "1.8rem" }}></i>
+                                            <h3 className="mb-0 mt-1 fw-bold">{teamSize}</h3>
+                                            <small className="text-white-50">Anggota Tim</small>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                                {/* Attendance Rate */}
+                                <Col xs={6} md={2}>
+                                    <Card className="border-0 shadow-sm h-100 text-center"
+                                        style={{ background: attendanceRate >= 80 ? "linear-gradient(135deg, #28a745 0%, #20c997 100%)" : attendanceRate >= 60 ? "linear-gradient(135deg, #ffc107 0%, #fd7e14 100%)" : "linear-gradient(135deg, #dc3545 0%, #c82333 100%)", color: "white" }}>
+                                        <Card.Body className="p-3">
+                                            <i className="bi bi-graph-up" style={{ fontSize: "1.8rem" }}></i>
+                                            <h3 className="mb-0 mt-1 fw-bold">{attendanceRate}%</h3>
+                                            <small className="text-white-50">Rate Hadir</small>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                                {/* Hadir */}
+                                <Col xs={6} md={2}>
+                                    <Card className="border-0 shadow-sm h-100 text-center"
+                                        style={{ background: "linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)", color: "white" }}>
+                                        <Card.Body className="p-3">
+                                            <i className="bi bi-check-circle" style={{ fontSize: "1.8rem" }}></i>
+                                            <h3 className="mb-0 mt-1 fw-bold">{totalAttendances}</h3>
+                                            <small className="text-white-50">Presensi</small>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                                {/* Terlambat */}
+                                <Col xs={6} md={2}>
+                                    <Card className="border-0 shadow-sm h-100 text-center"
+                                        style={{ background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", color: "white" }}>
+                                        <Card.Body className="p-3">
+                                            <i className="bi bi-clock-history" style={{ fontSize: "1.8rem" }}></i>
+                                            <h3 className="mb-0 mt-1 fw-bold">{lateCount}</h3>
+                                            <small className="text-white-50">Terlambat</small>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                                {/* Alpha */}
+                                <Col xs={6} md={2}>
+                                    <Card className="border-0 shadow-sm h-100 text-center"
+                                        style={{ background: "linear-gradient(135deg, #6c757d 0%, #495057 100%)", color: "white" }}>
+                                        <Card.Body className="p-3">
+                                            <i className="bi bi-x-circle" style={{ fontSize: "1.8rem" }}></i>
+                                            <h3 className="mb-0 mt-1 fw-bold">{absentTotal}</h3>
+                                            <small className="text-white-50">Alpha</small>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                                {/* Izin */}
+                                <Col xs={6} md={2}>
+                                    <Card className="border-0 shadow-sm h-100 text-center"
+                                        style={{ background: "linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%)", color: "white" }}>
+                                        <Card.Body className="p-3">
+                                            <i className="bi bi-calendar-x" style={{ fontSize: "1.8rem" }}></i>
+                                            <h3 className="mb-0 mt-1 fw-bold">{calendarData.summary.leave?.approved || 0}</h3>
+                                            <small className="text-white-50">Izin Disetujui</small>
+                                        </Card.Body>
+                                    </Card>
+                                </Col>
+                            </Row>
+                        );
+                    })()}
+
+                    {/* ===== MEMBER SCORECARD ===== */}
+                    {calendarData?.memberStats && calendarData.memberStats.length > 0 && (
+                        <Card className="mb-4 border-0 shadow-sm">
+                            <Card.Body className="p-3">
+                                <div className="d-flex align-items-center mb-3">
+                                    <i className="bi bi-bar-chart-line text-primary me-2" style={{ fontSize: "1rem" }}></i>
+                                    <span className="fw-semibold">Performa Anggota Tim</span>
+                                    <small className="text-muted ms-2">— {moment().month(parseInt(selectedMonth) - 1).format("MMMM")} {selectedYear}</small>
+                                </div>
+                                <div className="table-responsive">
+                                    <table className="table table-sm table-hover mb-0">
+                                        <thead className="table-light">
+                                            <tr>
+                                                <th style={{ fontSize: "0.8rem" }}>Anggota</th>
+                                                <th className="text-center" style={{ fontSize: "0.8rem" }}>Hadir</th>
+                                                <th className="text-center" style={{ fontSize: "0.8rem" }}>Terlambat</th>
+                                                <th className="text-center" style={{ fontSize: "0.8rem" }}>Alpha</th>
+                                                <th className="text-center" style={{ fontSize: "0.8rem" }}>Izin</th>
+                                                <th className="text-center" style={{ fontSize: "0.8rem" }}>Rate Hadir</th>
+                                                <th className="text-center" style={{ fontSize: "0.8rem" }}>Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {calendarData.memberStats.map((member) => {
+                                                const rate = member.attendanceRate ?? 0;
+                                                const rateColor = rate >= 80 ? "success" : rate >= 60 ? "warning" : "danger";
+                                                const isLowAttendance = rate < 70;
+                                                return (
+                                                    <tr key={member.id} className={isLowAttendance ? "table-danger" : ""}>
+                                                        <td style={{ fontSize: "0.85rem" }}>
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <div
+                                                                    className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                                                    style={{
+                                                                        width: "28px", height: "28px",
+                                                                        background: isLowAttendance ? "#dc3545" : "#667eea",
+                                                                        fontSize: "0.7rem",
+                                                                    }}
+                                                                >
+                                                                    {member.name?.charAt(0).toUpperCase()}
+                                                                </div>
+                                                                <span className="fw-medium">{member.name}</span>
+                                                                {isLowAttendance && (
+                                                                    <Badge bg="danger" pill style={{ fontSize: "0.65rem" }}>
+                                                                        ⚠️ Rendah
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="text-center">
+                                                            <Badge bg="success" className="fw-normal">{member.attendanceDays ?? 0}</Badge>
+                                                        </td>
+                                                        <td className="text-center">
+                                                            <Badge bg={member.lateDays > 0 ? "warning" : "light"} text={member.lateDays > 0 ? "dark" : "muted"} className="fw-normal">
+                                                                {member.lateDays ?? 0}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="text-center">
+                                                            <Badge bg={member.absentDays > 0 ? "secondary" : "light"} text={member.absentDays > 0 ? "white" : "muted"} className="fw-normal">
+                                                                {member.absentDays ?? 0}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="text-center">
+                                                            <Badge bg={member.leaveDays > 0 ? "primary" : "light"} text={member.leaveDays > 0 ? "white" : "muted"} className="fw-normal">
+                                                                {member.leaveDays ?? 0}
+                                                            </Badge>
+                                                        </td>
+                                                        <td className="text-center" style={{ minWidth: "100px" }}>
+                                                            <div className="d-flex align-items-center gap-1">
+                                                                <div className="flex-grow-1 bg-light rounded" style={{ height: "6px" }}>
+                                                                    <div
+                                                                        className={`bg-${rateColor} rounded`}
+                                                                        style={{ height: "6px", width: `${Math.min(rate, 100)}%`, transition: "width 0.5s ease" }}
+                                                                    ></div>
+                                                                </div>
+                                                                <small className={`text-${rateColor} fw-bold`} style={{ fontSize: "0.75rem", minWidth: "34px" }}>
+                                                                    {rate}%
+                                                                </small>
+                                                            </div>
+                                                        </td>
+                                                        <td className="text-center">
+                                                            <Button
+                                                                variant="outline-primary"
+                                                                size="sm"
+                                                                style={{ fontSize: "0.7rem", padding: "2px 8px" }}
+                                                                onClick={() => setSelectedUserId(String(member.id))}
+                                                            >
+                                                                Detail
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {calendarData.memberStats.some(m => (m.attendanceRate ?? 0) < 70) && (
+                                    <Alert variant="warning" className="mt-3 mb-0 py-2">
+                                        <i className="bi bi-exclamation-triangle me-2"></i>
+                                        <strong>Perhatian:</strong> Beberapa anggota memiliki tingkat kehadiran di bawah 70%.
+                                    </Alert>
+                                )}
+                            </Card.Body>
+                        </Card>
                     )}
 
-                    {/* Legend - Team Monitoring Cards */}
-                    <Card
-                        className="mb-4 border-0"
-                        style={{
-                            background: "rgba(255, 255, 255, 0.7)",
-                            backdropFilter: "blur(10px)",
-                            boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
-                            border: "1px solid rgba(255, 255, 255, 0.18)",
-                        }}
-                    >
-                        <Card.Body className="p-4">
+                    {/* Legend & Heatmap Guide */}
+                    <Card className="mb-4 border-0 shadow-sm">
+                        <Card.Body className="p-3">
                             <div className="d-flex align-items-center mb-3">
-                                <div
-                                    className="d-flex align-items-center justify-content-center"
-                                    style={{
-                                        width: "40px",
-                                        height: "40px",
-                                        borderRadius: "10px",
-                                        background:
-                                            "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                                        marginRight: "12px",
-                                    }}
-                                >
-                                    <i className="bi bi-people text-white"></i>
-                                </div>
-                                <div>
-                                    <h6 className="mb-0 fw-bold">
-                                        Status Monitoring Tim
-                                    </h6>
-                                    <small className="text-muted">
-                                        Ringkasan kehadiran tim dalam periode
-                                        ini
-                                    </small>
-                                </div>
+                                <i className="bi bi-palette text-primary me-2"></i>
+                                <span className="fw-semibold">Panduan Warna Kalender</span>
                             </div>
-
-                            <Row className="g-3">
+                            <Row className="g-2">
                                 {[
-                                    {
-                                        color: COLORS.holiday,
-                                        label: "Libur Nasional",
-                                        icon: "🎉",
-                                        count:
-                                            calendarData?.summary?.holidays
-                                                ?.national || 0,
-                                    },
-                                    {
-                                        color: COLORS.holidayCustom,
-                                        label: "Hari Libur",
-                                        icon: "📅",
-                                        count:
-                                            calendarData?.summary?.holidays
-                                                ?.custom || 0,
-                                    },
-                                    {
-                                        color: COLORS.present,
-                                        label: "Hadir On-Time",
-                                        icon: "✓",
-                                        count:
-                                            calendarData?.summary?.attendance
-                                                ?.onTime || 0,
-                                    },
-                                    {
-                                        color: COLORS.late,
-                                        label: "Terlambat",
-                                        icon: "⏰",
-                                        count:
-                                            calendarData?.summary?.attendance
-                                                ?.late || 0,
-                                    },
-                                    {
-                                        color: COLORS.leave,
-                                        label: "Izin Disetujui",
-                                        icon: "🏖️",
-                                        count:
-                                            calendarData?.summary?.leave
-                                                ?.approved || 0,
-                                    },
-                                    {
-                                        color: COLORS.logbook,
-                                        label: "Logbook",
-                                        icon: "📝",
-                                        count:
-                                            calendarData?.summary?.logbook
-                                                ?.total || 0,
-                                    },
-                                ].map((item, index) => (
-                                    <Col xs={6} md={4} lg={2} key={index}>
-                                        <div
-                                            className="monitoring-card d-flex flex-column align-items-center p-3 rounded-3 h-100"
-                                            style={{
-                                                background: "white",
-                                                border: "1px solid rgba(0,0,0,0.08)",
-                                                boxShadow:
-                                                    "0 2px 8px rgba(0,0,0,0.05)",
-                                                transition: "all 0.3s ease",
-                                                cursor: "default",
-                                            }}
-                                        >
-                                            <div
-                                                style={{
-                                                    display: "inline-flex",
-                                                    width: "40px",
-                                                    height: "40px",
-                                                    backgroundColor: item.color,
-                                                    borderRadius: "8px",
-                                                    alignItems: "center",
-                                                    justifyContent: "center",
-                                                    fontSize: "1.2rem",
-                                                    marginBottom: "8px",
-                                                    boxShadow: `0 2px 8px ${item.color}40`,
-                                                }}
-                                            >
-                                                {item.icon}
-                                            </div>
-                                            <div className="text-center">
-                                                <div
-                                                    style={{
-                                                        fontSize: "0.8rem",
-                                                        lineHeight: "1.2",
-                                                        color: "#6c757d",
-                                                        marginBottom: "6px",
-                                                        minHeight: "32px",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent:
-                                                            "center",
-                                                    }}
-                                                >
-                                                    {item.label}
-                                                </div>
-                                                <Badge
-                                                    bg="primary"
-                                                    style={{
-                                                        fontSize: "0.85rem",
-                                                        fontWeight: "600",
-                                                        padding: "4px 8px",
-                                                    }}
-                                                >
-                                                    {item.count}
-                                                </Badge>
-                                            </div>
+                                    { color: COLORS.holiday, label: "Libur Nasional", icon: "🎉" },
+                                    { color: COLORS.holidayCustom, label: "Hari Libur", icon: "📅" },
+                                    { color: COLORS.present, label: "Hadir Tepat Waktu", icon: "✓" },
+                                    { color: COLORS.late, label: "Terlambat", icon: "⏰" },
+                                    { color: COLORS.leave, label: "Izin Disetujui", icon: "🏖️" },
+                                    { color: COLORS.absent, label: "Alpha (Tidak Hadir)", icon: "❌" },
+                                ].map((item, i) => (
+                                    <Col xs={6} md={4} lg={2} key={i}>
+                                        <div className="d-flex align-items-center gap-2 p-2 rounded border">
+                                            <span style={{ display: "inline-block", width: "16px", height: "16px", backgroundColor: item.color, borderRadius: "4px", flexShrink: 0 }}></span>
+                                            <small style={{ fontSize: "0.78rem" }}>{item.icon} {item.label}</small>
                                         </div>
                                     </Col>
                                 ))}
                             </Row>
-
-                            {/* Team Statistics Summary */}
-                            <Row className="g-3 mt-3">
-                                <Col md={6}>
-                                    <Card
-                                        className="stats-card border h-100"
-                                        style={{
-                                            background:
-                                                "linear-gradient(135deg, rgba(40, 167, 69, 0.15) 0%, rgba(40, 167, 69, 0.08) 100%)",
-                                        }}
-                                    >
-                                        <Card.Body>
-                                            <h6 className="mb-3 text-success">
-                                                <i className="bi bi-check-circle me-2"></i>
-                                                Statistik Presensi
-                                            </h6>
-                                            <div className="small">
-                                                <div className="d-flex justify-content-between mb-2 pb-2 border-bottom">
-                                                    <span className="text-muted">
-                                                        Total Tim:
-                                                    </span>
-                                                    <strong>
-                                                        {calendarData?.summary
-                                                            ?.totalTeamMembers ||
-                                                            0}
-                                                    </strong>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-2 pb-2 border-bottom">
-                                                    <span className="text-muted">
-                                                        On-Time:
-                                                    </span>
-                                                    <strong className="text-success">
-                                                        {calendarData?.summary
-                                                            ?.attendance
-                                                            ?.onTime || 0}
-                                                    </strong>
-                                                </div>
-                                                <div className="d-flex justify-content-between">
-                                                    <span className="text-muted">
-                                                        Terlambat:
-                                                    </span>
-                                                    <strong className="text-warning">
-                                                        {calendarData?.summary
-                                                            ?.attendance
-                                                            ?.late || 0}
-                                                    </strong>
-                                                </div>
-                                            </div>
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                                <Col md={6}>
-                                    <Card
-                                        className="stats-card border h-100"
-                                        style={{
-                                            background:
-                                                "linear-gradient(135deg, rgba(23, 162, 184, 0.15) 0%, rgba(23, 162, 184, 0.08) 100%)",
-                                        }}
-                                    >
-                                        <Card.Body>
-                                            <h6 className="mb-3 text-info">
-                                                <i className="bi bi-file-earmark-text me-2"></i>
-                                                Statistik Logbook
-                                            </h6>
-                                            <div className="small">
-                                                <div className="d-flex justify-content-between mb-2 pb-2 border-bottom">
-                                                    <span className="text-muted">
-                                                        Total:
-                                                    </span>
-                                                    <strong>
-                                                        {calendarData?.summary
-                                                            ?.logbook?.total ||
-                                                            0}
-                                                    </strong>
-                                                </div>
-                                                <div className="d-flex justify-content-between mb-2 pb-2 border-bottom">
-                                                    <span className="text-muted">
-                                                        Disetujui:
-                                                    </span>
-                                                    <strong className="text-success">
-                                                        {calendarData?.summary
-                                                            ?.logbook
-                                                            ?.approved || 0}
-                                                    </strong>
-                                                </div>
-                                                <div className="d-flex justify-content-between">
-                                                    <span className="text-muted">
-                                                        Pending:
-                                                    </span>
-                                                    <strong className="text-warning">
-                                                        {calendarData?.summary
-                                                            ?.logbook
-                                                            ?.pending || 0}
-                                                    </strong>
-                                                </div>
-                                            </div>
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                            </Row>
-
-                            <Alert
-                                variant="info"
-                                className="mt-4 mb-0 border-0"
-                                style={{
-                                    background:
-                                        "linear-gradient(135deg, #667eea15 0%, #764ba215 100%)",
-                                    borderLeft: "4px solid #667eea",
-                                }}
-                            >
-                                <div className="d-flex align-items-start">
-                                    <i
-                                        className="bi bi-lightbulb me-2 text-primary"
-                                        style={{ fontSize: "1.2rem" }}
-                                    ></i>
-                                    <div>
-                                        <strong className="text-primary">
-                                            Tips:
-                                        </strong>
-                                        <span className="ms-2">
-                                            Jika satu tanggal memiliki beberapa
-                                            status, hanya status dengan
-                                            prioritas tertinggi yang ditampilkan
-                                            di kalender.
-                                        </span>
-                                    </div>
+                            <div className="mt-3">
+                                <small className="text-muted fw-semibold d-block mb-2">Warna Background Hari (Heatmap Kehadiran Tim):</small>
+                                <div className="d-flex flex-wrap gap-2">
+                                    {[
+                                        { bg: "#e8f5e9", label: "≥90% Hadir (Sangat Baik)" },
+                                        { bg: "#fff9c4", label: "70–89% Hadir (Baik)" },
+                                        { bg: "#fff3e0", label: "50–69% Hadir (Perlu Perhatian)" },
+                                        { bg: "#ffebee", label: "<50% Hadir (Kritis)" },
+                                    ].map((h, i) => (
+                                        <div key={i} className="d-flex align-items-center gap-1 border rounded px-2 py-1">
+                                            <span style={{ display: "inline-block", width: "14px", height: "14px", backgroundColor: h.bg, border: "1px solid #dee2e6", borderRadius: "3px" }}></span>
+                                            <small style={{ fontSize: "0.75rem" }}>{h.label}</small>
+                                        </div>
+                                    ))}
                                 </div>
-                            </Alert>
+                            </div>
                         </Card.Body>
                     </Card>
                 </>
@@ -1724,6 +1680,7 @@ const SupervisorWorkCalendar = () => {
                         startAccessor="start"
                         endAccessor="end"
                         style={{ height: "100%" }}
+                        date={currentDate}
                         onSelectSlot={handleSelectSlot}
                         onSelectEvent={handleSelectEvent}
                         onNavigate={handleNavigate}

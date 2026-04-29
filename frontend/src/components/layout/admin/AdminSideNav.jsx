@@ -262,21 +262,16 @@ const AdminSideNav = ({ isOpen, onClose }) => {
                                     >
                                         Leave Requests
                                     </Nav.Link>
+                                    <Nav.Link
+                                        as={NavLink}
+                                        to="/admin/work-calendar"
+                                        className="rounded rounded-35"
+                                        onClick={handleNavClick}
+                                    >
+                                        Work Calendar
+                                    </Nav.Link>
                                 </div>
                             </Collapse>
-
-                            {/* Work Calendar */}
-                            <Nav.Link
-                                as={NavLink}
-                                to="/admin/work-calendar"
-                                className="rounded rounded-35"
-                                onClick={handleNavClick}
-                            >
-                                <i className="bi bi-calendar-week me-2"></i>
-                                <span className="text-truncate">
-                                    Work Calendar
-                                </span>
-                            </Nav.Link>
 
                             {/* Reports & Export Dropdown */}
                             <Nav.Link
