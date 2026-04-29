@@ -51,7 +51,7 @@ const UserModel = (DataTypes) => {
                     "swasta",
                     "internal",
                     "kampus",
-                    "umum"
+                    "umum",
                 ),
                 allowNull: true,
                 comment:
@@ -60,6 +60,12 @@ const UserModel = (DataTypes) => {
             supervisor_id: {
                 type: DataTypes.INTEGER,
                 allowNull: true,
+            },
+            supervisor_division_assigned_at: {
+                type: DataTypes.DATE,
+                allowNull: true,
+                comment:
+                    "Date when supervisor was assigned to division. Used to restrict calendar data access.",
             },
             avatar: {
                 type: DataTypes.STRING(255),
@@ -131,7 +137,7 @@ const UserModel = (DataTypes) => {
             createdAt: "created_at",
             updatedAt: "updated_at",
             tableName: "users",
-        }
+        },
     );
     return User;
 };

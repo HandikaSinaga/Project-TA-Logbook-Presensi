@@ -19,29 +19,121 @@
     margin: 0 auto;
 }
 
+/* Monitoring Status Cards */
+.monitoring-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.monitoring-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.monitoring-card:hover::before {
+    opacity: 1;
+}
+
+.monitoring-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12) !important;
+}
+
 /* Compact calendar styling */
 .rbc-calendar {
     font-size: 0.9rem;
 }
 
 .rbc-event {
-    padding: 1px 3px !important;
+    padding: 2px 4px !important;
     font-size: 0.75rem !important;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
+.rbc-event:hover {
+    opacity: 1 !important;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25) !important;
+    cursor: pointer;
+    transform: scale(1.02);
 }
 
 .rbc-toolbar button {
     padding: 0.375rem 0.75rem;
     font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.rbc-toolbar button:hover {
+    background-color: #f0f0f0;
+}
+
+.rbc-toolbar button.rbc-active {
+    background-color: #667eea;
+    color: white;
 }
 
 .rbc-header {
-    padding: 0.5rem 0.25rem;
+    padding: 0.75rem 0.25rem;
     font-size: 0.85rem;
     font-weight: 600;
+    background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+    border-bottom: 2px solid #e9ecef;
 }
 
 .rbc-date-cell {
-    padding: 0.25rem;
+    padding: 0.5rem 0.25rem;
+}
+
+.rbc-month-view {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.rbc-day-bg,
+.rbc-today {
+    transition: background-color 0.2s ease;
+}
+
+.rbc-day-bg:hover {
+    background-color: #f8f9fa;
+}
+
+.rbc-today {
+    background-color: #f0f7ff;
+}
+
+/* Calendar cell improvements */
+.rbc-date-cell a {
+    transition: color 0.2s ease;
+}
+
+.rbc-date-cell:hover a {
+    color: #667eea;
+    font-weight: 600;
+}
+
+.rbc-show-more {
+    font-size: 0.75rem;
+    padding: 2px 5px;
+    background-color: #e9ecef;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.rbc-show-more:hover {
+    background-color: #667eea;
+    color: white;
 }
 
 /* Detail section smooth entrance */
@@ -60,11 +152,23 @@
     }
 }
 
+/* Statistics Summary Cards */
+.stats-card {
+    background: white;
+    border-left: 4px solid #667eea;
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .work-calendar-container .card-body {
-        height: 400px !important;
-        padding: 0.5rem !important;
+        height: auto;
+        padding: 0.75rem !important;
     }
 
     .rbc-toolbar {
@@ -74,40 +178,61 @@
 
     .rbc-toolbar-label {
         font-size: 0.9rem;
+        order: -1;
     }
 
     .rbc-event {
         font-size: 0.65rem !important;
     }
-}
 
-/* Improve readability */
-.rbc-event-label {
-    font-size: 0.7rem;
-}
+    .monitoring-card {
+        padding: 1rem !important;
+    }
 
-.rbc-show-more {
-    font-size: 0.75rem;
-    padding: 2px 5px;
-}
-
-/* Better hover effects */
-.rbc-event:hover {
-    opacity: 1 !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-}
-
-.rbc-day-bg:hover {
-    background-color: #f8f9fa;
+    .rbc-header {
+        padding: 0.5rem 0.1rem;
+        font-size: 0.75rem;
+    }
 }
 
 /* Improve button styling */
 .btn-close-white {
     filter: brightness(0) invert(1);
     opacity: 0.8;
+    transition: opacity 0.2s ease;
 }
 
 .btn-close-white:hover {
     opacity: 1;
+}
+
+/* Calendar event label improvements */
+.rbc-event-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+/* Better scrolling for event details */
+.event-details-scroll {
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ccc white;
+}
+
+.event-details-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+
+.event-details-scroll::-webkit-scrollbar-track {
+    background: white;
+}
+
+.event-details-scroll::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.event-details-scroll::-webkit-scrollbar-thumb:hover {
+    background: #999;
 }

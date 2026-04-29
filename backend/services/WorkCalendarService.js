@@ -89,6 +89,44 @@ class WorkCalendarService {
     }
 
     /**
+     * Check if date is before supervisor's division assignment date
+     *
+     * @param {Object} supervisor - Supervisor user object with supervisor_division_assigned_at field
+     * @param {Date|string} date - Date to check
+     * @returns {boolean} True if date is before supervisor was assigned to division
+     */
+    static isBeforeSupervisorAssigned(supervisor, date) {
+        if (!supervisor || !supervisor.supervisor_division_assigned_at) {
+            return false; // If no assigned_at date, assume no restriction
+        }
+
+        const assignedDate = new Date(
+            supervisor.supervisor_division_assigned_at,
+        );
+        assignedDate.setHours(0, 0, 0, 0);
+
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+
+        return checkDate < assignedDate;
+    }
+
+    /**
+     * Check if date is valid for supervisor calendar viewing
+     * Valid = on/after supervisor assignment date AND on/before today
+     *
+     * @param {Object} supervisor - Supervisor user object with supervisor_division_assigned_at
+     * @param {Date|string} date - Date to check
+     * @returns {boolean} True if date is valid for supervisor to view
+     */
+    static isValidSupervisorDate(supervisor, date) {
+        return (
+            !this.isBeforeSupervisorAssigned(supervisor, date) &&
+            !this.isAfterToday(date)
+        );
+    }
+
+    /**
      * Get working days configuration from settings
      * Default: [1, 2, 3, 4, 5] = Monday to Friday
      *

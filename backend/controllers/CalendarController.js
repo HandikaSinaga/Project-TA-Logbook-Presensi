@@ -401,9 +401,13 @@ class CalendarController {
             const period = CalendarController.getMonthDateRange(year, month);
             const { firstDay, lastDay } = period;
 
-            // Get supervisor's division
+            // Get supervisor with assignment date
             const supervisor = await User.findByPk(supervisorId, {
-                attributes: ["division_id"],
+                attributes: [
+                    "id",
+                    "division_id",
+                    "supervisor_division_assigned_at",
+                ],
                 raw: true,
             });
 
@@ -412,6 +416,63 @@ class CalendarController {
                     success: false,
                     message: "Divisi supervisor tidak ditemukan",
                 });
+            }
+
+            // Calculate effective first day based on supervisor assignment date
+            let effectiveFirstDay = firstDay;
+            if (supervisor.supervisor_division_assigned_at) {
+                const assignedDate = new Date(
+                    supervisor.supervisor_division_assigned_at,
+                );
+                assignedDate.setHours(0, 0, 0, 0);
+                const firstDayDate = new Date(firstDay);
+                firstDayDate.setHours(0, 0, 0, 0);
+
+                // If supervisor was assigned after the month started, use assigned date
+                if (assignedDate > firstDayDate) {
+                    effectiveFirstDay =
+                        WorkCalendarService.formatLocalDate(assignedDate);
+                }
+
+                // If supervisor was assigned after the month ended, return empty data
+                const lastDayDate = new Date(lastDay);
+                lastDayDate.setHours(0, 0, 0, 0);
+                if (assignedDate > lastDayDate) {
+                    return res.status(200).json({
+                        success: true,
+                        message: "Data kalender tim berhasil dimuat",
+                        data: {
+                            period,
+                            supervisorAssignedAt:
+                                supervisor.supervisor_division_assigned_at,
+                            workingDays:
+                                await CalendarController.getWorkingDaysConfig(),
+                            holidays: [],
+                            teamMembers: [],
+                            attendances: [],
+                            logbooks: [],
+                            leaves: [],
+                            validationHistory: [],
+                            summary: {
+                                totalTeamMembers: 0,
+                                totalAttendances: 0,
+                                totalLogbooks: 0,
+                                totalLeaves: 0,
+                                pendingValidations: 0,
+                            },
+                        },
+                    });
+                }
+            }
+
+            // Apply today constraint (don't show future dates)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const lastDayDate = new Date(lastDay);
+            lastDayDate.setHours(0, 0, 0, 0);
+            let effectiveLastDay = lastDay;
+            if (lastDayDate > today) {
+                effectiveLastDay = WorkCalendarService.formatLocalDate(today);
             }
 
             // Build user filter
@@ -445,16 +506,20 @@ class CalendarController {
                     message: "Data kalender tim berhasil dimuat",
                     data: {
                         period,
+                        supervisorAssignedAt:
+                            supervisor.supervisor_division_assigned_at,
                         workingDays:
                             await CalendarController.getWorkingDaysConfig(),
                         holidays: [],
                         teamMembers: [],
                         attendances: [],
+                        logbooks: [],
                         leaves: [],
                         validationHistory: [],
                         summary: {
                             totalTeamMembers: 0,
                             totalAttendances: 0,
+                            totalLogbooks: 0,
                             totalLeaves: 0,
                             pendingValidations: 0,
                         },
@@ -462,18 +527,21 @@ class CalendarController {
                 });
             }
 
-            // Parallel queries untuk semua data
+            // Parallel queries with date restrictions
             const [
                 workingDays,
                 holidays,
                 attendances,
                 leaves,
+                logbooks,
                 validationHistory,
             ] = await Promise.all([
                 CalendarController.getWorkingDaysConfig(),
                 Holiday.findAll({
                     where: {
-                        date: { [Op.between]: [firstDay, lastDay] },
+                        date: {
+                            [Op.between]: [effectiveFirstDay, effectiveLastDay],
+                        },
                         is_active: true,
                     },
                     attributes: [
@@ -490,7 +558,9 @@ class CalendarController {
                 Attendance.findAll({
                     where: {
                         user_id: { [Op.in]: teamMemberIds },
-                        date: { [Op.between]: [firstDay, lastDay] },
+                        date: {
+                            [Op.between]: [effectiveFirstDay, effectiveLastDay],
+                        },
                     },
                     include: [
                         {
@@ -516,14 +586,32 @@ class CalendarController {
                         [Op.or]: [
                             {
                                 start_date: {
-                                    [Op.between]: [firstDay, lastDay],
+                                    [Op.between]: [
+                                        effectiveFirstDay,
+                                        effectiveLastDay,
+                                    ],
                                 },
                             },
-                            { end_date: { [Op.between]: [firstDay, lastDay] } },
+                            {
+                                end_date: {
+                                    [Op.between]: [
+                                        effectiveFirstDay,
+                                        effectiveLastDay,
+                                    ],
+                                },
+                            },
                             {
                                 [Op.and]: [
-                                    { start_date: { [Op.lte]: firstDay } },
-                                    { end_date: { [Op.gte]: lastDay } },
+                                    {
+                                        start_date: {
+                                            [Op.lte]: effectiveFirstDay,
+                                        },
+                                    },
+                                    {
+                                        end_date: {
+                                            [Op.gte]: effectiveLastDay,
+                                        },
+                                    },
                                 ],
                             },
                         ],
@@ -546,10 +634,36 @@ class CalendarController {
                     ],
                     order: [["start_date", "ASC"]],
                 }),
+                Logbook.findAll({
+                    where: {
+                        user_id: { [Op.in]: teamMemberIds },
+                        date: {
+                            [Op.between]: [effectiveFirstDay, effectiveLastDay],
+                        },
+                    },
+                    include: [
+                        {
+                            model: User,
+                            as: "user",
+                            attributes: ["id", "name"],
+                        },
+                    ],
+                    attributes: [
+                        "id",
+                        "user_id",
+                        "date",
+                        "description",
+                        "status",
+                        "created_at",
+                    ],
+                    order: [["date", "ASC"]],
+                }),
                 Leave.findAll({
                     where: {
                         reviewed_by: supervisorId,
-                        reviewed_at: { [Op.between]: [firstDay, lastDay] },
+                        reviewed_at: {
+                            [Op.between]: [effectiveFirstDay, effectiveLastDay],
+                        },
                     },
                     include: [
                         {
@@ -572,24 +686,115 @@ class CalendarController {
                 }),
             ]);
 
+            // Calculate detailed summary for supervisor view
+            // Attendance breakdown
+            const attendanceStats = {
+                total: attendances.length,
+                onTime: attendances.filter((a) => a.status === "on-time")
+                    .length,
+                late: attendances.filter((a) => a.status === "late").length,
+            };
+
+            // Logbook breakdown
+            const logbookStats = {
+                total: logbooks.length,
+                pending: logbooks.filter((l) => l.status === "pending").length,
+                approved: logbooks.filter((l) => l.status === "approved")
+                    .length,
+                rejected: logbooks.filter((l) => l.status === "rejected")
+                    .length,
+            };
+
+            // Leave breakdown
+            const leaveStats = {
+                total: leaves.length,
+                approved: leaves.filter((l) => l.status === "approved").length,
+                pending: leaves.filter((l) => l.status === "pending").length,
+                rejected: leaves.filter((l) => l.status === "rejected").length,
+            };
+
             // Calculate summary
             const summary = {
                 totalTeamMembers: teamMembers.length,
-                totalAttendances: attendances.length,
-                totalLeaves: leaves.length,
-                pendingValidations: leaves.filter((l) => l.status === "pending")
-                    .length,
+                attendance: attendanceStats,
+                logbook: logbookStats,
+                leave: leaveStats,
+                holidays: {
+                    national: holidays.filter((h) => h.is_national).length,
+                    custom: holidays.filter((h) => !h.is_national).length,
+                },
+                pendingValidations: validationHistory.filter(
+                    (v) => v.status === "pending",
+                ).length,
+                // Keep backward compatibility
+                totalAttendances: attendanceStats.total,
+                totalLogbooks: logbookStats.total,
+                totalLeaves: leaveStats.total,
             };
+
+            // If user_id filter is applied, add user-specific summary fields
+            if (user_id) {
+                const userAttendances = attendances.filter(
+                    (a) => a.user_id === parseInt(user_id),
+                );
+                const lateCount = userAttendances.filter(
+                    (a) => a.status === "late",
+                ).length;
+                const userLeaves = leaves.filter(
+                    (l) =>
+                        l.user_id === parseInt(user_id) &&
+                        l.status === "approved",
+                );
+
+                // Get selected user info for user-specific view
+                const selectedUser = teamMembers.find(
+                    (m) => m.id === parseInt(user_id),
+                );
+
+                summary.lateCount = lateCount;
+                summary.leaveCount = userLeaves.length;
+                summary.expectedWorkingDays = workingDays.length;
+                summary.absentCount = 0; // Will be calculated by frontend
+
+                // Add user field to response for frontend to identify user-specific view
+                return res.status(200).json({
+                    success: true,
+                    message: "Data kalender tim berhasil dimuat",
+                    data: {
+                        period,
+                        user: selectedUser, // Include user info
+                        supervisorAssignedAt:
+                            supervisor.supervisor_division_assigned_at,
+                        workingDays,
+                        holidays,
+                        teamMembers,
+                        attendances: attendances.filter(
+                            (a) => a.user_id === parseInt(user_id),
+                        ),
+                        logbooks: logbooks.filter(
+                            (l) => l.user_id === parseInt(user_id),
+                        ),
+                        leaves: leaves.filter(
+                            (l) => l.user_id === parseInt(user_id),
+                        ),
+                        validationHistory,
+                        summary,
+                    },
+                });
+            }
 
             return res.status(200).json({
                 success: true,
                 message: "Data kalender tim berhasil dimuat",
                 data: {
                     period,
+                    supervisorAssignedAt:
+                        supervisor.supervisor_division_assigned_at,
                     workingDays,
                     holidays,
                     teamMembers,
                     attendances,
+                    logbooks,
                     leaves,
                     validationHistory,
                     summary,
@@ -747,12 +952,49 @@ class CalendarController {
                     }),
                 ]);
 
+            // Calculate comprehensive summary for supervisor view
+            // Group attendance by status
+            const attendanceStats = {
+                total: attendances.length,
+                onTime: attendances.filter((a) => a.status === "on-time")
+                    .length,
+                late: attendances.filter((a) => a.status === "late").length,
+                absent:
+                    teamMembers.length -
+                    attendances.length -
+                    leaves.filter((l) => l.status === "approved").length,
+            };
+
+            // Group logbooks by status
+            const logbookStats = {
+                total: logbooks.length,
+                pending: logbooks.filter((l) => l.status === "pending").length,
+                approved: logbooks.filter((l) => l.status === "approved")
+                    .length,
+                rejected: logbooks.filter((l) => l.status === "rejected")
+                    .length,
+            };
+
+            // Calculate leave stats
+            const leaveStats = {
+                approved: leaves.filter((l) => l.status === "approved").length,
+                pending: leaves.filter((l) => l.status === "pending").length,
+                rejected: leaves.filter((l) => l.status === "rejected").length,
+            };
+
+            // Get working days config to determine if it's a working day
+            const workingDays = await CalendarController.getWorkingDaysConfig();
+            const isWorkingDay = workingDays.includes(dayOfWeek);
+
             // Calculate summary
             const summary = {
+                date,
+                dayOfWeek,
+                isWorkingDay,
                 totalTeamMembers: teamMembers.length,
-                presentCount: attendances.length,
-                onLeaveCount: leaves.filter((l) => l.status === "approved")
-                    .length,
+                attendance: attendanceStats,
+                logbook: logbookStats,
+                leave: leaveStats,
                 validationsToday: validations.length,
             };
 
@@ -762,13 +1004,17 @@ class CalendarController {
                 data: {
                     date,
                     dayOfWeek,
+                    isWorkingDay,
                     holiday,
-                    teamMembers,
-                    attendances,
-                    logbooks,
-                    leaves,
-                    validations,
                     summary,
+                    // Keep detailed data but mark as optional for frontend
+                    _details: {
+                        teamMembers,
+                        attendances,
+                        logbooks,
+                        leaves,
+                        validations,
+                    },
                 },
             });
         } catch (error) {
