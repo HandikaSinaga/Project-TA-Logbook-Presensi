@@ -78,6 +78,13 @@ const AdminWorkCalendar = () => {
     });
     const [statusFilter, setStatusFilter] = useState("all");
 
+    // Search states for typeahead filter
+    const [searchDivision, setSearchDivision] = useState("");
+    const [searchUser, setSearchUser] = useState("");
+    // Pagination for member scorecard (handle large data)
+    const [memberPage, setMemberPage] = useState(1);
+    const MEMBER_PAGE_SIZE = 20;
+
     const detailRef = useRef(null);
 
     // Fetch calendar data
@@ -364,6 +371,9 @@ const AdminWorkCalendar = () => {
         setCurrentDate(today);
         setSelectedDivisionId("");
         setSelectedUserId("");
+        setSearchDivision("");
+        setSearchUser("");
+        setMemberPage(1);
         setSearchParams({});
         setSelectedDate(null);
         setDateDetail(null);
@@ -395,7 +405,43 @@ const AdminWorkCalendar = () => {
         };
     }, []);
 
-    // Build per-date attendance stats for heatmap (org/team view only)
+    // ── Derived/memoized data for large-data performance ──────────────────
+
+    // Filtered divisions for search
+    const filteredDivisions = useMemo(() => {
+        const all = calendarData?.allDivisions || [];
+        if (!searchDivision.trim()) return all;
+        return all.filter(d => d.name.toLowerCase().includes(searchDivision.toLowerCase()));
+    }, [calendarData?.allDivisions, searchDivision]);
+
+    // Filtered users: exclude supervisors, apply division filter + search
+    const filteredUsers = useMemo(() => {
+        const all = (calendarData?.users || []).filter(u => u.role !== "supervisor");
+        const byDiv = selectedDivisionId
+            ? all.filter(u => String(u.division_id) === String(selectedDivisionId))
+            : all;
+        if (!searchUser.trim()) return byDiv;
+        return byDiv.filter(u => u.name.toLowerCase().includes(searchUser.toLowerCase()));
+    }, [calendarData?.users, selectedDivisionId, searchUser]);
+
+    // Member scorecard: exclude supervisors, apply search, sort by rate
+    const filteredMembers = useMemo(() => {
+        const all = (calendarData?.memberStats || []).filter(m => m.role !== "supervisor");
+        if (!searchUser.trim()) return [...all].sort((a, b) => b.attendanceRate - a.attendanceRate);
+        return [...all]
+            .filter(m => m.name.toLowerCase().includes(searchUser.toLowerCase()) ||
+                         m.divisionName?.toLowerCase().includes(searchUser.toLowerCase()))
+            .sort((a, b) => b.attendanceRate - a.attendanceRate);
+    }, [calendarData?.memberStats, searchUser]);
+
+    // Paginated member list
+    const paginatedMembers = useMemo(() => {
+        const start = (memberPage - 1) * MEMBER_PAGE_SIZE;
+        return filteredMembers.slice(start, start + MEMBER_PAGE_SIZE);
+    }, [filteredMembers, memberPage]);
+
+    const totalMemberPages = Math.ceil(filteredMembers.length / MEMBER_PAGE_SIZE);
+
     const orgDateStats = useMemo(() => {
         if (selectedUserId || !calendarData?.attendances) return {};
         const stats = {};
@@ -541,7 +587,7 @@ const AdminWorkCalendar = () => {
                 </div>
             </div>
 
-            {/* Filter Panel - Full Featured */}
+            {/* Filter Panel - Full Featured with Search */}
             <Card className="mb-3 border-0 shadow-sm">
                 <Card.Body className="p-3">
                     <div className="d-flex align-items-center mb-2 gap-2">
@@ -554,28 +600,90 @@ const AdminWorkCalendar = () => {
                         )}
                     </div>
                     <Row className="g-2 align-items-end">
+                        {/* Division search filter */}
                         <Col xs={12} md={3}>
                             <Form.Label className="small fw-medium mb-1">Divisi</Form.Label>
-                            <Form.Select size="sm" value={selectedDivisionId} onChange={handleDivisionFilterChange}>
-                                <option value="">📋 Semua Divisi</option>
-                                {(calendarData?.allDivisions || []).map(div => (
-                                    <option key={div.id} value={div.id}>{div.name}</option>
-                                ))}
-                            </Form.Select>
+                            <div style={{ position: "relative" }}>
+                                <Form.Control
+                                    size="sm"
+                                    placeholder="🔍 Cari atau pilih divisi..."
+                                    value={searchDivision}
+                                    onChange={e => setSearchDivision(e.target.value)}
+                                    onFocus={e => e.target.select()}
+                                />
+                                {searchDivision && filteredDivisions.length > 0 && (
+                                    <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:1000, background:"#fff", border:"1px solid #dee2e6", borderRadius:4, maxHeight:180, overflowY:"auto", boxShadow:"0 4px 12px rgba(0,0,0,0.1)" }}>
+                                        <div
+                                            className="px-2 py-1 small text-muted"
+                                            style={{ cursor:"pointer", borderBottom:"1px solid #f0f0f0" }}
+                                            onClick={() => { setSelectedDivisionId(""); setSearchDivision(""); setSelectedUserId(""); setSearchUser(""); }}
+                                        >📋 Semua Divisi</div>
+                                        {filteredDivisions.map(div => (
+                                            <div
+                                                key={div.id}
+                                                className="px-2 py-1 small"
+                                                style={{ cursor:"pointer", background: String(selectedDivisionId) === String(div.id) ? "#e3f2fd" : "transparent" }}
+                                                onMouseOver={e => e.currentTarget.style.background="#f5f5f5"}
+                                                onMouseOut={e => e.currentTarget.style.background = String(selectedDivisionId) === String(div.id) ? "#e3f2fd" : "transparent"}
+                                                onClick={() => { setSelectedDivisionId(String(div.id)); setSearchDivision(div.name); setSelectedUserId(""); setSearchUser(""); }}
+                                            >{div.name}</div>
+                                        ))}
+                                    </div>
+                                )}
+                                {selectedDivisionId && !searchDivision && (
+                                    <div className="small text-primary mt-1">
+                                        <i className="bi bi-check-circle-fill me-1"></i>
+                                        {calendarData?.allDivisions?.find(d => String(d.id) === String(selectedDivisionId))?.name}
+                                        <span className="ms-2 text-muted" style={{cursor:"pointer"}} onClick={() => { setSelectedDivisionId(""); setSelectedUserId(""); setSearchUser(""); }}>✕ hapus</span>
+                                    </div>
+                                )}
+                            </div>
                         </Col>
+
+                        {/* User search filter (no supervisors) */}
                         <Col xs={12} md={3}>
-                            <Form.Label className="small fw-medium mb-1">User</Form.Label>
-                            <Form.Select size="sm" value={selectedUserId} onChange={handleUserFilterChange}>
-                                <option value="">👥 Semua User</option>
-                                {(calendarData?.users || [])
-                                    .filter(u => !selectedDivisionId || String(u.division_id) === String(selectedDivisionId))
-                                    .map(u => (
-                                        <option key={u.id} value={u.id}>
-                                            {u.name} {u.role === "supervisor" ? "⭐" : ""}
-                                        </option>
-                                    ))}
-                            </Form.Select>
+                            <Form.Label className="small fw-medium mb-1">User (Anggota)</Form.Label>
+                            <div style={{ position: "relative" }}>
+                                <Form.Control
+                                    size="sm"
+                                    placeholder="🔍 Cari nama user..."
+                                    value={searchUser}
+                                    onChange={e => { setSearchUser(e.target.value); if (!e.target.value) setSelectedUserId(""); }}
+                                    onFocus={e => e.target.select()}
+                                />
+                                {searchUser && filteredUsers.length > 0 && (
+                                    <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:1000, background:"#fff", border:"1px solid #dee2e6", borderRadius:4, maxHeight:200, overflowY:"auto", boxShadow:"0 4px 12px rgba(0,0,0,0.1)" }}>
+                                        <div
+                                            className="px-2 py-1 small text-muted"
+                                            style={{ cursor:"pointer", borderBottom:"1px solid #f0f0f0" }}
+                                            onClick={() => { setSelectedUserId(""); setSearchUser(""); }}
+                                        >👥 Semua Anggota</div>
+                                        {filteredUsers.slice(0, 50).map(u => (
+                                            <div
+                                                key={u.id}
+                                                className="px-2 py-1 small"
+                                                style={{ cursor:"pointer", background: String(selectedUserId) === String(u.id) ? "#e3f2fd" : "transparent" }}
+                                                onMouseOver={e => e.currentTarget.style.background="#f5f5f5"}
+                                                onMouseOut={e => e.currentTarget.style.background = String(selectedUserId) === String(u.id) ? "#e3f2fd" : "transparent"}
+                                                onClick={() => { setSelectedUserId(String(u.id)); setSearchUser(u.name); }}
+                                            >
+                                                <span>{u.name}</span>
+                                                <small className="text-muted ms-2">{u.divisionName || ""}</small>
+                                            </div>
+                                        ))}
+                                        {filteredUsers.length > 50 && <div className="px-2 py-1 small text-muted">+{filteredUsers.length - 50} lainnya, ketik lebih spesifik</div>}
+                                    </div>
+                                )}
+                                {selectedUserId && (
+                                    <div className="small text-primary mt-1">
+                                        <i className="bi bi-person-check-fill me-1"></i>
+                                        {calendarData?.users?.find(u => String(u.id) === String(selectedUserId))?.name}
+                                        <span className="ms-2 text-muted" style={{cursor:"pointer"}} onClick={() => { setSelectedUserId(""); setSearchUser(""); }}>✕ hapus</span>
+                                    </div>
+                                )}
+                            </div>
                         </Col>
+
                         <Col xs={6} md={2}>
                             <Form.Label className="small fw-medium mb-1">Bulan</Form.Label>
                             <Form.Select size="sm" value={selectedMonth} onChange={handleMonthChange}>
@@ -611,179 +719,6 @@ const AdminWorkCalendar = () => {
                     )}
                 </Card.Body>
             </Card>
-
-
-            {/* KPI Summary Cards - 6 metrics */}
-            {calendarData?.summary && (
-                <Row className="g-3 mb-4">
-                    {[
-                        { gradient: "linear-gradient(135deg,#667eea,#764ba2)", icon: "bi-people", label: selectedUserId ? "User Dipilih" : "Total User", value: calendarData.summary.totalUsers || 0 },
-                        { gradient: "linear-gradient(135deg,#43e97b,#38f9d7)", icon: "bi-check-circle", label: "Kehadiran", value: calendarData.summary.totalAttendances || 0 },
-                        { gradient: "linear-gradient(135deg,#f6d365,#fda085)", icon: "bi-clock-history", label: "Terlambat", value: calendarData.summary.lateCount || 0 },
-                        { gradient: "linear-gradient(135deg,#f093fb,#f5576c)", icon: "bi-x-circle", label: "Alpha/Absen", value: (() => { const exp = (calendarData.summary.totalUsers || 0) * (calendarData.summary.workingDaysElapsed || 0); return Math.max(0, exp - (calendarData.summary.totalAttendances || 0) - (calendarData.summary.leaveStats?.approved || 0)); })() },
-                        { gradient: "linear-gradient(135deg,#6f42c1,#a855f7)", icon: "bi-briefcase", label: "Izin Disetujui", value: calendarData.summary.leaveStats?.approved || 0 },
-                        { gradient: "linear-gradient(135deg,#17a2b8,#4facfe)", icon: "bi-journal-text", label: "Logbook", value: calendarData.summary.totalLogbooks || 0 },
-                    ].map((card, i) => (
-                        <Col xs={6} md={2} key={i}>
-                            <Card className="border-0 shadow-sm h-100" style={{ background: card.gradient, color: "white" }}>
-                                <Card.Body className="p-3 text-center">
-                                    <div className="mb-1"><i className={`bi ${card.icon}`} style={{ fontSize: "1.8rem" }}></i></div>
-                                    <h4 className="mb-0 fw-bold">{card.value}</h4>
-                                    <small className="text-white-50 fw-medium" style={{ fontSize: "0.75rem" }}>{card.label}</small>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-                    ))}
-                </Row>
-            )}
-
-            {/* Legend */}
-            <Card className="mb-4 border-0 shadow-sm">
-                <Card.Body className="p-3">
-                    <div className="d-flex align-items-center gap-2 mb-3">
-                        <i className="bi bi-palette text-primary"></i>
-                        <strong className="small">Keterangan Warna Kalender</strong>
-                        <span className="text-muted small ms-auto">
-                            {selectedUserId ? "Mode individual — 1 event/hari" : "Mode tim — multi event/hari + heatmap"}
-                        </span>
-                    </div>
-                    <Row className="g-2">
-                        {[
-                            { color: COLORS.holiday, label: "Libur Nasional", icon: "🎉" },
-                            { color: COLORS.holidayCustom, label: "Hari Libur", icon: "📅" },
-                            { color: COLORS.present, label: "Hadir Tepat", icon: "✓" },
-                            { color: COLORS.late, label: "Terlambat", icon: "⏰" },
-                            { color: COLORS.leave, label: "Izin/Cuti", icon: "🏖️" },
-                            { color: COLORS.absent, label: "Alpha", icon: "❌" },
-                        ].map((item, i) => (
-                            <Col xs={6} md={4} lg={2} key={i}>
-                                <div className="d-flex align-items-center gap-2 p-2 rounded" style={{ background: "#f8f9fa" }}>
-                                    <span style={{ display: "inline-block", width: 16, height: 16, borderRadius: 4, backgroundColor: item.color, flexShrink: 0 }}></span>
-                                    <span style={{ fontSize: "0.8rem" }}>{item.icon} {item.label}</span>
-                                </div>
-                            </Col>
-                        ))}
-                    </Row>
-                    {!selectedUserId && (
-                        <div className="mt-2 d-flex gap-3 flex-wrap">
-                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#e8f5e9",border:"1px solid #ccc",marginRight:4 }}></span>≥90% hadir</small>
-                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#fff9c4",border:"1px solid #ccc",marginRight:4 }}></span>70–89%</small>
-                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#fff3e0",border:"1px solid #ccc",marginRight:4 }}></span>50–69%</small>
-                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#ffebee",border:"1px solid #ccc",marginRight:4 }}></span>&lt;50%</small>
-                        </div>
-                    )}
-                </Card.Body>
-            </Card>
-
-            {/* Division Scorecard — only in org/division view */}
-            {!selectedUserId && calendarData?.divisionStats?.length > 0 && (
-                <Card className="border-0 shadow-sm mb-4">
-                    <Card.Header className="bg-white border-0 py-3">
-                        <div className="d-flex align-items-center gap-2">
-                            <i className="bi bi-diagram-3 text-primary"></i>
-                            <strong>Scorecard per Divisi</strong>
-                            <Badge bg="secondary" pill>{calendarData.divisionStats.length} divisi</Badge>
-                        </div>
-                    </Card.Header>
-                    <Card.Body className="p-0">
-                        <div className="table-responsive">
-                            <table className="table table-hover table-sm mb-0">
-                                <thead style={{ background: "#f8f9fa" }}>
-                                    <tr>
-                                        <th className="ps-3 py-2 small">Divisi</th>
-                                        <th className="text-center py-2 small">Anggota</th>
-                                        <th className="text-center py-2 small">Hadir</th>
-                                        <th className="text-center py-2 small">Terlambat</th>
-                                        <th className="text-center py-2 small">Alpha</th>
-                                        <th className="text-center py-2 small">Logbook</th>
-                                        <th className="text-center py-2 small" style={{ minWidth: 120 }}>Attendance Rate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {calendarData.divisionStats.map(div => (
-                                        <tr key={div.id} style={{ cursor: "pointer" }} onClick={() => { setSelectedDivisionId(String(div.id)); handleApplyFilter(); }}>
-                                            <td className="ps-3 py-2 fw-medium small">{div.name}</td>
-                                            <td className="text-center py-2 small">{div.memberCount}</td>
-                                            <td className="text-center py-2 small"><span className="text-success fw-bold">{div.attendanceDays}</span></td>
-                                            <td className="text-center py-2 small"><span className="text-warning fw-bold">{div.lateDays}</span></td>
-                                            <td className="text-center py-2 small"><span className="text-danger fw-bold">{div.absentDays}</span></td>
-                                            <td className="text-center py-2 small"><span className="text-info fw-bold">{div.logbookCount}</span></td>
-                                            <td className="text-center py-2">
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <div className="flex-grow-1" style={{ height: 6, background: "#e9ecef", borderRadius: 3 }}>
-                                                        <div style={{ width: `${div.attendanceRate}%`, height: "100%", borderRadius: 3, background: div.attendanceRate >= 90 ? "#28a745" : div.attendanceRate >= 70 ? "#ffc107" : "#dc3545" }}></div>
-                                                    </div>
-                                                    <small className="fw-bold" style={{ fontSize: "0.75rem", minWidth: 32 }}>{div.attendanceRate}%</small>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </Card.Body>
-                </Card>
-            )}
-
-            {/* Member Scorecard — shown when memberStats exist */}
-            {calendarData?.memberStats?.length > 0 && (
-                <Card className="border-0 shadow-sm mb-4">
-                    <Card.Header className="bg-white border-0 py-3">
-                        <div className="d-flex align-items-center gap-2">
-                            <i className="bi bi-person-lines-fill text-primary"></i>
-                            <strong>Scorecard per Anggota</strong>
-                            <Badge bg="secondary" pill>{calendarData.memberStats.length} user</Badge>
-                            {selectedDivisionId && <Badge bg="info" pill>{calendarData?.allDivisions?.find(d => String(d.id) === String(selectedDivisionId))?.name || "Divisi"}</Badge>}
-                        </div>
-                    </Card.Header>
-                    <Card.Body className="p-0">
-                        <div className="table-responsive">
-                            <table className="table table-hover table-sm mb-0">
-                                <thead style={{ background: "#f8f9fa" }}>
-                                    <tr>
-                                        <th className="ps-3 py-2 small">Nama</th>
-                                        <th className="py-2 small">Divisi</th>
-                                        <th className="text-center py-2 small">Role</th>
-                                        <th className="text-center py-2 small">Hadir</th>
-                                        <th className="text-center py-2 small">Terlambat</th>
-                                        <th className="text-center py-2 small">Alpha</th>
-                                        <th className="text-center py-2 small">Izin</th>
-                                        <th className="text-center py-2 small">Logbook</th>
-                                        <th className="text-center py-2 small" style={{ minWidth: 110 }}>Rate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {calendarData.memberStats
-                                        .sort((a, b) => b.attendanceRate - a.attendanceRate)
-                                        .map(m => (
-                                        <tr key={m.id} style={{ cursor: "pointer" }} onClick={() => setSelectedUserId(String(m.id))}>
-                                            <td className="ps-3 py-2 small fw-medium">{m.name}</td>
-                                            <td className="py-2 small text-muted">{m.divisionName}</td>
-                                            <td className="text-center py-2">
-                                                <Badge bg={m.role === "supervisor" ? "warning" : "secondary"} className="small">{m.role === "supervisor" ? "⭐ SPV" : "User"}</Badge>
-                                            </td>
-                                            <td className="text-center py-2 small text-success fw-bold">{m.attendanceDays}</td>
-                                            <td className="text-center py-2 small text-warning fw-bold">{m.lateDays}</td>
-                                            <td className="text-center py-2 small text-danger fw-bold">{m.absentDays}</td>
-                                            <td className="text-center py-2 small text-purple fw-bold">{m.leaveDays}</td>
-                                            <td className="text-center py-2 small text-info fw-bold">{m.logbookDays}</td>
-                                            <td className="text-center py-2">
-                                                <div className="d-flex align-items-center gap-1">
-                                                    <div className="flex-grow-1" style={{ height: 5, background: "#e9ecef", borderRadius: 3 }}>
-                                                        <div style={{ width: `${m.attendanceRate}%`, height: "100%", borderRadius: 3, background: m.attendanceRate >= 80 ? "#28a745" : m.attendanceRate >= 60 ? "#ffc107" : "#dc3545" }}></div>
-                                                    </div>
-                                                    <small className="fw-bold" style={{ fontSize: "0.7rem", minWidth: 28 }}>{m.attendanceRate}%</small>
-                                                </div>
-                                                {m.attendanceRate < 70 && <small className="text-danger d-block" style={{ fontSize: "0.65rem" }}>⚠ Rendah</small>}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </Card.Body>
-                </Card>
-            )}
 
 
             {/* Calendar - Modern Design with Integrated Filter */}
