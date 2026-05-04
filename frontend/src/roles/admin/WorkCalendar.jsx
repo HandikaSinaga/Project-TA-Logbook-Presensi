@@ -1845,7 +1845,7 @@ const AdminWorkCalendar = () => {
                                     className="px-3 py-2"
                                 >
                                     <i className="bi bi-people me-1"></i>
-                                    {calendarData.memberStats?.length || 0} User
+                                    {calendarData.memberStats?.filter(m => m.role === "user").length || 0} Anggota
                                 </Badge>
                             </div>
                         </Card.Header>
@@ -1873,7 +1873,7 @@ const AdminWorkCalendar = () => {
                                                         }}
                                                     >
                                                         <i className="bi bi-person-circle me-2"></i>
-                                                        User / Role
+                                                        Nama Anggota
                                                     </th>
                                                     <th
                                                         className="text-center"
@@ -1955,7 +1955,8 @@ const AdminWorkCalendar = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {calendarData.memberStats
+                                                {(calendarData.memberStats || [])
+                                                    .filter(m => m.role === "user")
                                                     .sort(
                                                         (a, b) =>
                                                             b.attendanceRate -
@@ -1972,11 +1973,6 @@ const AdminWorkCalendar = () => {
                                                                     75
                                                                   ? "#ffc107"
                                                                   : "#dc3545";
-                                                        const roleEmoji =
-                                                            member.role ===
-                                                            "supervisor"
-                                                                ? "👨‍💼"
-                                                                : "👤";
 
                                                         return (
                                                             <tr
@@ -2010,16 +2006,8 @@ const AdminWorkCalendar = () => {
                                                                         color: "#667eea",
                                                                     }}
                                                                 >
-                                                                    {roleEmoji}{" "}
-                                                                    {
-                                                                        member.name
-                                                                    }
-                                                                    <br />
-                                                                    <small className="text-muted text-uppercase">
-                                                                        {
-                                                                            member.role
-                                                                        }
-                                                                    </small>
+                                                                    <i className="bi bi-person-circle me-1"></i>
+                                                                    {member.name}
                                                                 </td>
                                                                 <td className="text-center">
                                                                     <small

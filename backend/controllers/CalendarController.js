@@ -1182,8 +1182,8 @@ class CalendarController {
             const period = CalendarController.getMonthDateRange(year, month);
             const { firstDay, lastDay } = period;
 
-            // Build user filter
-            const userWhereClause = { role: { [Op.ne]: "admin" } };
+            // Build user filter — only role:user (exclude admin and supervisor)
+            const userWhereClause = { role: "user" };
             if (division_id) userWhereClause.division_id = parseInt(division_id);
             if (user_id) userWhereClause.id = parseInt(user_id);
 
@@ -1416,8 +1416,8 @@ class CalendarController {
             const targetDate = new Date(date + "T00:00:00");
             const dayOfWeek = targetDate.getDay();
 
-            // Build user filter
-            const userWhereClause = {};
+            // Build user filter — only role:user (exclude admin and supervisor)
+            const userWhereClause = { role: "user" };
             if (division_id) {
                 userWhereClause.division_id = parseInt(division_id);
             }
