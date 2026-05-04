@@ -175,13 +175,28 @@ const AdminWorkCalendar = () => {
         return urlYear || String(new Date().getFullYear());
     });
     const [statusFilter, setStatusFilter] = useState("all");
-    // Pagination for member scorecard (handle large data)
+    // Pagination + sorting + filtering for member scorecard
     const [memberPage, setMemberPage] = useState(1);
-    const MEMBER_PAGE_SIZE = 20;
-    // Inline search for member scorecard table
+    const MEMBER_PAGE_SIZE = 25;
     const [memberSearch, setMemberSearch] = useState("");
+    const [memberSearchInput, setMemberSearchInput] = useState(""); // debounced
+    const [memberSort, setMemberSort] = useState({ col: "attendanceRate", dir: "desc" });
+    const [memberStatusFilter, setMemberStatusFilter] = useState("all"); // all | low | medium | high
+    // Sorting for division stats
+    const [divSort, setDivSort] = useState({ col: "attendanceRate", dir: "desc" });
 
     const detailRef = useRef(null);
+    const memberSearchTimer = useRef(null);
+
+    // Debounce member search
+    const handleMemberSearchChange = useCallback((val) => {
+        setMemberSearchInput(val);
+        clearTimeout(memberSearchTimer.current);
+        memberSearchTimer.current = setTimeout(() => {
+            setMemberSearch(val);
+            setMemberPage(1);
+        }, 300);
+    }, []);
 
     // Fetch calendar data
     const fetchCalendarData = useCallback(
@@ -502,7 +517,7 @@ const AdminWorkCalendar = () => {
 
     // ── Derived/memoized data for large-data performance ──────────────────
 
-    // Divisions list (all, no filter — ComboSelect handles its own filtering)
+    // Divisions list
     const allDivisions = useMemo(() => calendarData?.allDivisions || [], [calendarData?.allDivisions]);
 
     // Users list: only role:user, filtered by selected division
@@ -513,15 +528,45 @@ const AdminWorkCalendar = () => {
             : all;
     }, [calendarData?.users, selectedDivisionId]);
 
-    // Member scorecard: only role:user, apply memberSearch, sort by rate
+    // Division stats: sorted by divSort
+    const sortedDivisionStats = useMemo(() => {
+        const stats = calendarData?.divisionStats || [];
+        return [...stats].sort((a, b) => {
+            const v = divSort.col;
+            const aVal = a[v] ?? 0;
+            const bVal = b[v] ?? 0;
+            if (typeof aVal === "string") return divSort.dir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            return divSort.dir === "asc" ? aVal - bVal : bVal - aVal;
+        });
+    }, [calendarData?.divisionStats, divSort]);
+
+    // Division insight
+    const divisionInsight = useMemo(() => {
+        if (!sortedDivisionStats.length) return null;
+        const sorted = [...sortedDivisionStats].sort((a, b) => b.attendanceRate - a.attendanceRate);
+        return { best: sorted[0], worst: sorted[sorted.length - 1] };
+    }, [sortedDivisionStats]);
+
+    // Member scorecard: filter by search + status tab, then sort
     const filteredMembers = useMemo(() => {
-        const all = (calendarData?.memberStats || []).filter(m => m.role !== "supervisor");
-        if (!memberSearch.trim()) return [...all].sort((a, b) => b.attendanceRate - a.attendanceRate);
-        const q = memberSearch.toLowerCase();
-        return [...all]
-            .filter(m => m.name.toLowerCase().includes(q) || m.divisionName?.toLowerCase().includes(q))
-            .sort((a, b) => b.attendanceRate - a.attendanceRate);
-    }, [calendarData?.memberStats, memberSearch]);
+        let all = (calendarData?.memberStats || []).filter(m => m.role !== "supervisor");
+        // Status filter
+        if (memberStatusFilter === "high") all = all.filter(m => m.attendanceRate >= 80);
+        else if (memberStatusFilter === "medium") all = all.filter(m => m.attendanceRate >= 60 && m.attendanceRate < 80);
+        else if (memberStatusFilter === "low") all = all.filter(m => m.attendanceRate < 60);
+        // Search
+        if (memberSearch.trim()) {
+            const q = memberSearch.toLowerCase();
+            all = all.filter(m => m.name.toLowerCase().includes(q) || m.divisionName?.toLowerCase().includes(q));
+        }
+        // Sort
+        return [...all].sort((a, b) => {
+            const aVal = a[memberSort.col] ?? 0;
+            const bVal = b[memberSort.col] ?? 0;
+            if (typeof aVal === "string") return memberSort.dir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            return memberSort.dir === "asc" ? aVal - bVal : bVal - aVal;
+        });
+    }, [calendarData?.memberStats, memberSearch, memberStatusFilter, memberSort]);
 
     // Paginated member list
     const paginatedMembers = useMemo(() => {
@@ -530,6 +575,23 @@ const AdminWorkCalendar = () => {
     }, [filteredMembers, memberPage]);
 
     const totalMemberPages = Math.ceil(filteredMembers.length / MEMBER_PAGE_SIZE);
+
+    // Helper: toggle sort for scorecard
+    const toggleMemberSort = useCallback((col) => {
+        setMemberSort(prev => ({ col, dir: prev.col === col && prev.dir === "desc" ? "asc" : "desc" }));
+        setMemberPage(1);
+    }, []);
+
+    // Helper: toggle sort for divisions
+    const toggleDivSort = useCallback((col) => {
+        setDivSort(prev => ({ col, dir: prev.col === col && prev.dir === "desc" ? "asc" : "desc" }));
+    }, []);
+
+    // Helper: sort indicator
+    const SortIcon = ({ col, activeSort }) => {
+        if (activeSort.col !== col) return <span className="text-muted ms-1" style={{opacity:0.3}}>⇅</span>;
+        return <span className="ms-1">{activeSort.dir === "asc" ? "↑" : "↓"}</span>;
+    };
 
     const orgDateStats = useMemo(() => {
         if (selectedUserId || !calendarData?.attendances) return {};
@@ -842,46 +904,79 @@ const AdminWorkCalendar = () => {
             {!selectedUserId && calendarData?.divisionStats?.length > 0 && (
                 <Card className="border-0 shadow-sm mb-4">
                     <Card.Header className="bg-white border-0 py-3">
-                        <div className="d-flex align-items-center gap-2">
+                        <div className="d-flex align-items-center gap-2 flex-wrap">
                             <i className="bi bi-diagram-3 text-primary"></i>
-                            <strong>Scorecard per Divisi</strong>
-                            <Badge bg="secondary" pill>{calendarData.divisionStats.length} divisi</Badge>
+                            <strong>Statistik per Divisi</strong>
+                            <Badge bg="secondary" pill>{sortedDivisionStats.length} divisi</Badge>
+                            <small className="text-muted ms-auto">Klik header kolom untuk urutkan</small>
                         </div>
+                        {/* Insight bar */}
+                        {divisionInsight && (
+                            <div className="d-flex gap-3 mt-2 flex-wrap">
+                                <small className="text-muted">
+                                    🏆 Terbaik: <strong className="text-success">{divisionInsight.best.name}</strong>
+                                    {" "}({divisionInsight.best.attendanceRate}%)
+                                </small>
+                                <small className="text-muted">
+                                    ⚠ Perlu perhatian: <strong className="text-danger">{divisionInsight.worst.name}</strong>
+                                    {" "}({divisionInsight.worst.attendanceRate}%)
+                                </small>
+                            </div>
+                        )}
                     </Card.Header>
                     <Card.Body className="p-0">
                         <div className="table-responsive">
                             <table className="table table-hover table-sm mb-0">
-                                <thead style={{ background: "#f8f9fa" }}>
+                                <thead style={{ background: "linear-gradient(135deg,#f8f9fa,#e9ecef)", position: "sticky", top: 0, zIndex: 2 }}>
                                     <tr>
-                                        <th className="ps-3 py-2 small">Divisi</th>
-                                        <th className="text-center py-2 small">Anggota</th>
-                                        <th className="text-center py-2 small">Hadir</th>
-                                        <th className="text-center py-2 small">Terlambat</th>
-                                        <th className="text-center py-2 small">Alpha</th>
-                                        <th className="text-center py-2 small">Logbook</th>
-                                        <th className="text-center py-2 small" style={{ minWidth: 120 }}>Attendance Rate</th>
+                                        {[
+                                            { key: "name", label: "Divisi", align: "start" },
+                                            { key: "memberCount", label: "👥 Anggota", align: "center" },
+                                            { key: "attendanceDays", label: "✓ Hadir", align: "center" },
+                                            { key: "lateDays", label: "⏰ Terlambat", align: "center" },
+                                            { key: "absentDays", label: "✕ Alpha", align: "center" },
+                                            { key: "logbookCount", label: "📓 Logbook", align: "center" },
+                                            { key: "attendanceRate", label: "📊 Rate", align: "center", minWidth: 140 },
+                                        ].map(col => (
+                                            <th key={col.key}
+                                                className={`text-${col.align} py-2 small`}
+                                                style={{ cursor: "pointer", userSelect: "none", minWidth: col.minWidth || undefined, paddingLeft: col.key === "name" ? 16 : undefined }}
+                                                onClick={() => toggleDivSort(col.key)}
+                                            >
+                                                {col.label} <SortIcon col={col.key} activeSort={divSort} />
+                                            </th>
+                                        ))}
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {calendarData.divisionStats.map(div => (
-                                        <tr key={div.id} style={{ cursor: "pointer" }}
-                                            onClick={() => { setSelectedDivisionId(String(div.id)); handleApplyFilter(); }}>
-                                            <td className="ps-3 py-2 fw-medium small">{div.name}</td>
-                                            <td className="text-center py-2 small">{div.memberCount}</td>
-                                            <td className="text-center py-2 small"><span className="text-success fw-bold">{div.attendanceDays}</span></td>
-                                            <td className="text-center py-2 small"><span className="text-warning fw-bold">{div.lateDays}</span></td>
-                                            <td className="text-center py-2 small"><span className="text-danger fw-bold">{div.absentDays}</span></td>
-                                            <td className="text-center py-2 small"><span className="text-info fw-bold">{div.logbookCount}</span></td>
-                                            <td className="text-center py-2">
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <div className="flex-grow-1" style={{ height: 6, background: "#e9ecef", borderRadius: 3 }}>
-                                                        <div style={{ width: `${div.attendanceRate}%`, height: "100%", borderRadius: 3, background: div.attendanceRate >= 90 ? "#28a745" : div.attendanceRate >= 70 ? "#ffc107" : "#dc3545" }}></div>
+                                    {sortedDivisionStats.map((div, idx) => {
+                                        const isBest = divisionInsight?.best?.id === div.id;
+                                        const isWorst = divisionInsight?.worst?.id === div.id && sortedDivisionStats.length > 1;
+                                        const rateColor = div.attendanceRate >= 90 ? "#28a745" : div.attendanceRate >= 70 ? "#ffc107" : "#dc3545";
+                                        return (
+                                            <tr key={div.id} style={{ cursor: "pointer", background: isBest ? "#f0fff4" : isWorst ? "#fff5f5" : "white" }}
+                                                onClick={() => { setSelectedDivisionId(String(div.id)); handleApplyFilter(); }}>
+                                                <td className="ps-3 py-2 small">
+                                                    <span className="fw-medium">{div.name}</span>
+                                                    {isBest && <Badge bg="success" className="ms-2" style={{fontSize:"0.65rem"}}>🏆 Terbaik</Badge>}
+                                                    {isWorst && <Badge bg="danger" className="ms-2" style={{fontSize:"0.65rem"}}>⚠ Terendah</Badge>}
+                                                </td>
+                                                <td className="text-center py-2 small fw-medium">{div.memberCount}</td>
+                                                <td className="text-center py-2 small"><span className="text-success fw-bold">{div.attendanceDays}</span></td>
+                                                <td className="text-center py-2 small"><span className="text-warning fw-bold">{div.lateDays}</span></td>
+                                                <td className="text-center py-2 small"><span className="text-danger fw-bold">{div.absentDays}</span></td>
+                                                <td className="text-center py-2 small"><span className="text-info fw-bold">{div.logbookCount}</span></td>
+                                                <td className="py-2" style={{minWidth:140}}>
+                                                    <div className="d-flex align-items-center gap-2 px-2">
+                                                        <div className="flex-grow-1" style={{ height: 8, background: "#e9ecef", borderRadius: 4, overflow: "hidden" }}>
+                                                            <div style={{ width: `${div.attendanceRate}%`, height: "100%", borderRadius: 4, background: rateColor, transition: "width 0.4s ease" }}></div>
+                                                        </div>
+                                                        <small className="fw-bold" style={{ fontSize: "0.78rem", minWidth: 36, color: rateColor }}>{div.attendanceRate}%</small>
                                                     </div>
-                                                    <small className="fw-bold" style={{ fontSize: "0.75rem", minWidth: 32 }}>{div.attendanceRate}%</small>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -889,78 +984,137 @@ const AdminWorkCalendar = () => {
                 </Card>
             )}
 
-            {/* Member Scorecard — role:user only, with memberSearch + pagination */}
-            {!selectedUserId && filteredMembers.length > 0 && (
+            {/* Member Scorecard — Upgraded with sort, filter tabs, debounce search */}
+            {!selectedUserId && (calendarData?.memberStats?.filter(m => m.role !== "supervisor").length || 0) > 0 && (
                 <Card className="border-0 shadow-sm mb-4">
-                    <Card.Header className="bg-white border-0 py-3">
-                        <div className="d-flex align-items-center gap-2 flex-wrap">
+                    <Card.Header className="bg-white border-0 pb-0 pt-3 px-3">
+                        {/* Title row */}
+                        <div className="d-flex align-items-center gap-2 flex-wrap mb-2">
                             <i className="bi bi-person-lines-fill text-primary"></i>
                             <strong>Scorecard Anggota</strong>
-                            <Badge bg="secondary" pill>{filteredMembers.length} user</Badge>
+                            <Badge bg="secondary" pill>
+                                {(calendarData?.memberStats || []).filter(m => m.role !== "supervisor").length} total
+                            </Badge>
                             {selectedDivisionId && (
                                 <Badge bg="info" pill>
-                                    {calendarData?.allDivisions?.find(d => String(d.id) === String(selectedDivisionId))?.name || "Divisi"}
+                                    {allDivisions.find(d => String(d.id) === String(selectedDivisionId))?.name || "Divisi"}
                                 </Badge>
                             )}
+                            {filteredMembers.length !== (calendarData?.memberStats || []).filter(m => m.role !== "supervisor").length && (
+                                <Badge bg="warning" text="dark" pill>{filteredMembers.length} ditampilkan</Badge>
+                            )}
+                            {/* Search */}
                             <div className="ms-auto" style={{ minWidth: 220 }}>
                                 <Form.Control
                                     size="sm"
                                     placeholder="🔍 Cari nama atau divisi..."
-                                    value={memberSearch}
-                                    onChange={e => { setMemberSearch(e.target.value); setMemberPage(1); }}
+                                    value={memberSearchInput}
+                                    onChange={e => handleMemberSearchChange(e.target.value)}
                                 />
                             </div>
                         </div>
+                        {/* Status filter tabs */}
+                        <div className="d-flex gap-1 pb-0" style={{ borderBottom: "1px solid #dee2e6" }}>
+                            {[
+                                { key: "all", label: "Semua", icon: "bi-people", color: "secondary" },
+                                { key: "high", label: "Baik ≥80%", icon: "bi-check-circle", color: "success" },
+                                { key: "medium", label: "Cukup 60–79%", icon: "bi-dash-circle", color: "warning" },
+                                { key: "low", label: "Rendah <60%", icon: "bi-x-circle", color: "danger" },
+                            ].map(tab => {
+                                const all = (calendarData?.memberStats || []).filter(m => m.role !== "supervisor");
+                                const count = tab.key === "all" ? all.length
+                                    : tab.key === "high" ? all.filter(m => m.attendanceRate >= 80).length
+                                    : tab.key === "medium" ? all.filter(m => m.attendanceRate >= 60 && m.attendanceRate < 80).length
+                                    : all.filter(m => m.attendanceRate < 60).length;
+                                return (
+                                    <button key={tab.key} type="button"
+                                        className={`btn btn-sm px-3 py-1 border-0 rounded-top-3 ${memberStatusFilter === tab.key ? `btn-${tab.color} text-white` : "btn-light text-muted"}`}
+                                        style={{ fontSize: "0.78rem", borderBottom: memberStatusFilter === tab.key ? "2px solid transparent" : "none", marginBottom: -1 }}
+                                        onClick={() => { setMemberStatusFilter(tab.key); setMemberPage(1); }}
+                                    >
+                                        <i className={`bi ${tab.icon} me-1`}></i>{tab.label}
+                                        <span className={`ms-1 badge rounded-pill ${memberStatusFilter === tab.key ? "bg-white text-dark" : "bg-secondary"}`}
+                                            style={{ fontSize: "0.65rem" }}>{count}</span>
+                                    </button>
+                                );
+                            })}
+                            <small className="text-muted ms-auto align-self-center pe-2" style={{fontSize:"0.72rem"}}>
+                                Klik header kolom untuk urutkan
+                            </small>
+                        </div>
                     </Card.Header>
                     <Card.Body className="p-0">
-                        <div className="table-responsive">
+                        <div className="table-responsive" style={{ maxHeight: 520, overflowY: "auto" }}>
                             <table className="table table-hover table-sm mb-0">
-                                <thead style={{ background: "#f8f9fa", position: "sticky", top: 0, zIndex: 1 }}>
+                                <thead style={{ background: "linear-gradient(135deg,#f8f9fa,#e9ecef)", position: "sticky", top: 0, zIndex: 2 }}>
                                     <tr>
-                                        <th className="ps-3 py-2 small">#</th>
-                                        <th className="py-2 small">Nama</th>
-                                        <th className="py-2 small">Divisi</th>
-                                        <th className="text-center py-2 small">Hadir</th>
-                                        <th className="text-center py-2 small">Terlambat</th>
-                                        <th className="text-center py-2 small">Alpha</th>
-                                        <th className="text-center py-2 small">Izin</th>
-                                        <th className="text-center py-2 small">Logbook</th>
-                                        <th className="text-center py-2 small" style={{ minWidth: 110 }}>Rate</th>
+                                        <th className="ps-3 py-2 small text-muted">#</th>
+                                        {[
+                                            { key: "name", label: "Nama" },
+                                            { key: "divisionName", label: "Divisi" },
+                                            { key: "attendanceDays", label: "✓ Hadir" },
+                                            { key: "lateDays", label: "⏰ Telat" },
+                                            { key: "absentDays", label: "✕ Alpha" },
+                                            { key: "leaveDays", label: "🏖 Izin" },
+                                            { key: "logbookDays", label: "📓 LB" },
+                                            { key: "attendanceRate", label: "📊 Rate", minWidth: 130 },
+                                        ].map(col => (
+                                            <th key={col.key}
+                                                className={`py-2 small ${col.key !== "name" && col.key !== "divisionName" ? "text-center" : ""}`}
+                                                style={{ cursor: "pointer", userSelect: "none", minWidth: col.minWidth || undefined }}
+                                                onClick={() => toggleMemberSort(col.key)}
+                                            >
+                                                {col.label} <SortIcon col={col.key} activeSort={memberSort} />
+                                            </th>
+                                        ))}
+                                        <th className="text-center py-2 small">Status</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {paginatedMembers.length === 0 ? (
-                                        <tr><td colSpan={9} className="text-center py-3 text-muted small">Tidak ada anggota yang cocok</td></tr>
-                                    ) : paginatedMembers.map((m, idx) => (
-                                        <tr key={m.id} style={{ cursor: "pointer" }}
-                                            onClick={() => setSelectedUserId(String(m.id))}>
-                                            <td className="ps-3 py-2 small text-muted">{(memberPage-1)*MEMBER_PAGE_SIZE + idx + 1}</td>
-                                            <td className="py-2 small fw-medium">{m.name}</td>
-                                            <td className="py-2 small text-muted">{m.divisionName}</td>
-                                            <td className="text-center py-2 small text-success fw-bold">{m.attendanceDays}</td>
-                                            <td className="text-center py-2 small text-warning fw-bold">{m.lateDays}</td>
-                                            <td className="text-center py-2 small text-danger fw-bold">{m.absentDays}</td>
-                                            <td className="text-center py-2 small fw-bold" style={{color:"#6f42c1"}}>{m.leaveDays}</td>
-                                            <td className="text-center py-2 small text-info fw-bold">{m.logbookDays}</td>
-                                            <td className="text-center py-2">
-                                                <div className="d-flex align-items-center gap-1">
-                                                    <div className="flex-grow-1" style={{ height: 5, background: "#e9ecef", borderRadius: 3 }}>
-                                                        <div style={{ width: `${m.attendanceRate}%`, height: "100%", borderRadius: 3, background: m.attendanceRate >= 80 ? "#28a745" : m.attendanceRate >= 60 ? "#ffc107" : "#dc3545" }}></div>
+                                        <tr><td colSpan={10} className="text-center py-4 text-muted">
+                                            <i className="bi bi-search d-block mb-2" style={{fontSize:"1.5rem"}}></i>
+                                            Tidak ada anggota yang cocok
+                                        </td></tr>
+                                    ) : paginatedMembers.map((m, idx) => {
+                                        const rate = m.attendanceRate || 0;
+                                        const rateColor = rate >= 80 ? "#28a745" : rate >= 60 ? "#e6a817" : "#dc3545";
+                                        const perfLabel = rate >= 80 ? ["Baik", "success"] : rate >= 60 ? ["Cukup", "warning"] : ["Rendah", "danger"];
+                                        return (
+                                            <tr key={m.id} style={{ cursor: "pointer" }}
+                                                onClick={() => setSelectedUserId(String(m.id))}>
+                                                <td className="ps-3 py-2 small text-muted">{(memberPage-1)*MEMBER_PAGE_SIZE + idx + 1}</td>
+                                                <td className="py-2 small fw-medium" style={{maxWidth:160, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{m.name}</td>
+                                                <td className="py-2 small text-muted" style={{maxWidth:120, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{m.divisionName || "-"}</td>
+                                                <td className="text-center py-2 small"><span className="text-success fw-bold">{m.attendanceDays}</span></td>
+                                                <td className="text-center py-2 small"><span className="text-warning fw-bold">{m.lateDays}</span></td>
+                                                <td className="text-center py-2 small"><span className="text-danger fw-bold">{m.absentDays}</span></td>
+                                                <td className="text-center py-2 small fw-bold" style={{color:"#6f42c1"}}>{m.leaveDays}</td>
+                                                <td className="text-center py-2 small text-info fw-bold">{m.logbookDays}</td>
+                                                <td className="py-2" style={{minWidth:130}}>
+                                                    <div className="d-flex align-items-center gap-1 px-1">
+                                                        <div className="flex-grow-1" style={{ height: 6, background: "#e9ecef", borderRadius: 3, overflow: "hidden" }}>
+                                                            <div style={{ width: `${rate}%`, height: "100%", borderRadius: 3, background: rateColor, transition: "width 0.4s ease" }}></div>
+                                                        </div>
+                                                        <small className="fw-bold" style={{ fontSize: "0.72rem", minWidth: 30, color: rateColor }}>{rate}%</small>
                                                     </div>
-                                                    <small className="fw-bold" style={{ fontSize: "0.7rem", minWidth: 28 }}>{m.attendanceRate}%</small>
-                                                </div>
-                                                {m.attendanceRate < 70 && <small className="text-danger d-block" style={{ fontSize: "0.65rem" }}>⚠ Rendah</small>}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                </td>
+                                                <td className="text-center py-2">
+                                                    <Badge bg={perfLabel[1]} style={{fontSize:"0.65rem"}}>{perfLabel[0]}</Badge>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
-                        {totalMemberPages > 1 && (
-                            <div className="d-flex align-items-center justify-content-between px-3 py-2 border-top" style={{ background: "#fafafa" }}>
-                                <small className="text-muted">
-                                    Menampilkan {(memberPage-1)*MEMBER_PAGE_SIZE+1}–{Math.min(memberPage*MEMBER_PAGE_SIZE, filteredMembers.length)} dari {filteredMembers.length} anggota
-                                </small>
+                        {/* Pagination */}
+                        <div className="d-flex align-items-center justify-content-between px-3 py-2 border-top" style={{ background: "#fafafa" }}>
+                            <small className="text-muted">
+                                {filteredMembers.length === 0 ? "Tidak ada data" :
+                                    `Menampilkan ${(memberPage-1)*MEMBER_PAGE_SIZE+1}–${Math.min(memberPage*MEMBER_PAGE_SIZE, filteredMembers.length)} dari ${filteredMembers.length} anggota`}
+                            </small>
+                            {totalMemberPages > 1 && (
                                 <div className="d-flex gap-1">
                                     <Button size="sm" variant="outline-secondary" disabled={memberPage <= 1} onClick={() => setMemberPage(p => p-1)}>‹</Button>
                                     {Array.from({length: totalMemberPages}, (_, i) => i+1)
@@ -974,8 +1128,8 @@ const AdminWorkCalendar = () => {
                                     }
                                     <Button size="sm" variant="outline-secondary" disabled={memberPage >= totalMemberPages} onClick={() => setMemberPage(p => p+1)}>›</Button>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </Card.Body>
                 </Card>
             )}
