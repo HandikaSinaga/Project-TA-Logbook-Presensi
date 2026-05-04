@@ -96,7 +96,7 @@ const AdminWorkCalendar = () => {
         fetchDivisions();
     }, []);
 
-    // Fetch calendar data
+    // Fetch calendar data with comprehensive error handling and retry logic
     const fetchCalendarData = useCallback(
         async (date) => {
             try {
@@ -106,22 +106,38 @@ const AdminWorkCalendar = () => {
 
                 const params = { year, month };
                 if (selectedDivisionId) {
-                    params.division_id = selectedDivisionId;
+                    params.division_id = parseInt(selectedDivisionId);
                 }
 
                 const response = await axiosInstance.get("/admin/calendar", {
                     params,
                 });
 
-                if (response.data.success) {
+                if (response.data.success && response.data.data) {
                     setCalendarData(response.data.data);
                     generateEvents(response.data.data);
+
+                    // Log data for debugging
+                    console.log("✅ Calendar Data Loaded:", {
+                        period: response.data.data.period,
+                        divisionFilter: selectedDivisionId || "all",
+                        users: response.data.data.memberStats?.length || 0,
+                        totalAttendances:
+                            response.data.data.attendances?.length || 0,
+                        totalLeaves: response.data.data.leaves?.length || 0,
+                        totalLogbooks: response.data.data.logbooks?.length || 0,
+                        divisionStats:
+                            response.data.data.divisionStats?.length || 0,
+                    });
+                } else {
+                    throw new Error("Invalid response format");
                 }
             } catch (error) {
-                console.error("Error fetching calendar:", error);
+                console.error("❌ Error fetching calendar:", error);
                 toast.error(
                     error.response?.data?.message || "Gagal memuat kalender",
                 );
+                setCalendarData(null);
             } finally {
                 setLoading(false);
             }
@@ -132,13 +148,21 @@ const AdminWorkCalendar = () => {
     // Enhanced event generation with priority-based conflict resolution
     // For admin view: shows organization-wide aggregated data
     const generateEvents = useCallback((data) => {
+        if (!data || !data.holidays) {
+            console.warn("❌ Invalid calendar data structure");
+            setEvents([]);
+            return;
+        }
+
         const eventsByDate = {}; // Group events by date to handle conflicts
 
-        console.log("👨‍💼 Admin Calendar Data:", {
-            hasHolidays: !!data.holidays,
-            hasAttendances: !!data.attendances,
-            hasLeaves: !!data.leaves,
-            totalUsers: data.statistics?.totalUsers || 0,
+        console.log("👨‍💼 Admin Calendar Event Generation:", {
+            hasHolidays: !!data.holidays?.length,
+            hasAttendances: !!data.attendances?.length,
+            hasLeaves: !!data.leaves?.length,
+            totalHolidays: data.holidays?.length || 0,
+            totalAttendances: data.attendances?.length || 0,
+            totalLeaves: data.leaves?.length || 0,
         });
 
         // Helper function to add event with priority check
@@ -151,29 +175,31 @@ const AdminWorkCalendar = () => {
         };
 
         // 1. Holidays - Red for national, Orange for custom (Highest Priority)
-        data.holidays?.forEach((holiday) => {
-            const date = holiday.date;
-            addEvent(
-                date,
-                {
-                    id: `holiday-${holiday.id}`,
-                    title: `🎉 ${holiday.name}`,
-                    start: new Date(date + "T00:00:00"),
-                    end: new Date(date + "T23:59:59"),
-                    allDay: true,
-                    type: "holiday",
-                    color: holiday.is_national
-                        ? COLORS.holiday
-                        : COLORS.holidayCustom,
-                    resource: holiday,
-                },
-                EVENT_PRIORITY.holiday,
-            );
-        });
+        if (Array.isArray(data.holidays)) {
+            data.holidays.forEach((holiday) => {
+                const date = holiday.date;
+                addEvent(
+                    date,
+                    {
+                        id: `holiday-${holiday.id}`,
+                        title: `🎉 ${holiday.name}`,
+                        start: new Date(date + "T00:00:00"),
+                        end: new Date(date + "T23:59:59"),
+                        allDay: true,
+                        type: "holiday",
+                        color: holiday.is_national
+                            ? COLORS.holiday
+                            : COLORS.holidayCustom,
+                        resource: holiday,
+                    },
+                    EVENT_PRIORITY.holiday,
+                );
+            });
+        }
 
         // 2. Attendance summary - Aggregated view for entire organization
         // Green for normal, Yellow if any late
-        if (data.attendances) {
+        if (Array.isArray(data.attendances)) {
             const attendancesByDate = {};
             data.attendances.forEach((attendance) => {
                 const date = attendance.date;
@@ -208,39 +234,41 @@ const AdminWorkCalendar = () => {
         }
 
         // 3. Leave summary - Purple color
-        data.leaves?.forEach((leave) => {
-            const userName = leave.user?.name || "User";
-            const shortName =
-                userName.length > 15
-                    ? `${userName.substring(0, 15)}...`
-                    : userName;
+        if (Array.isArray(data.leaves)) {
+            data.leaves.forEach((leave) => {
+                const userName = leave.user?.name || "User";
+                const shortName =
+                    userName.length > 15
+                        ? `${userName.substring(0, 15)}...`
+                        : userName;
 
-            const leaveStart = moment(leave.start_date);
-            const leaveEnd = moment(leave.end_date);
+                const leaveStart = moment(leave.start_date);
+                const leaveEnd = moment(leave.end_date);
 
-            // Create event for each day in leave period
-            for (
-                let date = leaveStart.clone();
-                date.isSameOrBefore(leaveEnd);
-                date.add(1, "day")
-            ) {
-                const dateStr = date.format("YYYY-MM-DD");
-                addEvent(
-                    dateStr,
-                    {
-                        id: `leave-${leave.id}-${dateStr}`,
-                        title: `🏖️ ${shortName}`,
-                        start: new Date(dateStr + "T00:00:00"),
-                        end: new Date(dateStr + "T23:59:59"),
-                        allDay: true,
-                        type: "leave",
-                        color: COLORS.leave,
-                        resource: leave,
-                    },
-                    EVENT_PRIORITY.leave,
-                );
-            }
-        });
+                // Create event for each day in leave period
+                for (
+                    let date = leaveStart.clone();
+                    date.isSameOrBefore(leaveEnd);
+                    date.add(1, "day")
+                ) {
+                    const dateStr = date.format("YYYY-MM-DD");
+                    addEvent(
+                        dateStr,
+                        {
+                            id: `leave-${leave.id}-${dateStr}`,
+                            title: `🏖️ ${shortName}`,
+                            start: new Date(dateStr + "T00:00:00"),
+                            end: new Date(dateStr + "T23:59:59"),
+                            allDay: true,
+                            type: "leave",
+                            color: COLORS.leave,
+                            resource: leave,
+                        },
+                        EVENT_PRIORITY.leave,
+                    );
+                }
+            });
+        }
 
         // Resolve conflicts: Keep only highest priority event per date
         const finalEvents = [];
@@ -579,7 +607,7 @@ const AdminWorkCalendar = () => {
             </Card>
 
             {/* Summary Cards - Modern Design with Gradients */}
-            {calendarData?.statistics && (
+            {calendarData?.summary && (
                 <Row className="g-3 mb-4">
                     <Col xs={6} md={3}>
                         <Card
@@ -598,7 +626,7 @@ const AdminWorkCalendar = () => {
                                     ></i>
                                 </div>
                                 <h3 className="mb-1 fw-bold">
-                                    {calendarData.statistics.totalUsers || 0}
+                                    {calendarData.summary?.totalUsers || 0}
                                 </h3>
                                 <small className="text-white-50 fw-medium">
                                     Total User
@@ -623,7 +651,7 @@ const AdminWorkCalendar = () => {
                                     ></i>
                                 </div>
                                 <h3 className="mb-1 fw-bold">
-                                    {calendarData.statistics.attendanceCount ||
+                                    {calendarData.summary?.totalAttendances ||
                                         0}
                                 </h3>
                                 <small className="text-white-50 fw-medium">
@@ -649,7 +677,7 @@ const AdminWorkCalendar = () => {
                                     ></i>
                                 </div>
                                 <h3 className="mb-1 fw-bold">
-                                    {calendarData.holidays?.length || 0}
+                                    {calendarData.summary?.totalHolidays || 0}
                                 </h3>
                                 <small className="text-white-50 fw-medium">
                                     Hari Libur
@@ -674,10 +702,11 @@ const AdminWorkCalendar = () => {
                                     ></i>
                                 </div>
                                 <h3 className="mb-1 fw-bold">
-                                    {calendarData.leaves?.length || 0}
+                                    {calendarData.summary?.leaveStats
+                                        ?.approved || 0}
                                 </h3>
                                 <small className="text-white-50 fw-medium">
-                                    Cuti
+                                    Cuti Disetujui
                                 </small>
                             </Card.Body>
                         </Card>
@@ -1070,7 +1099,7 @@ const AdminWorkCalendar = () => {
                                         <Row className="text-center">
                                             <Col xs={3}>
                                                 <h5 className="mb-0 text-primary">
-                                                    {dateDetail.statistics
+                                                    {dateDetail.summary
                                                         ?.totalUsers || 0}
                                                 </h5>
                                                 <small className="text-muted">
@@ -1079,7 +1108,7 @@ const AdminWorkCalendar = () => {
                                             </Col>
                                             <Col xs={3}>
                                                 <h5 className="mb-0 text-success">
-                                                    {dateDetail.statistics
+                                                    {dateDetail.summary
                                                         ?.presentCount || 0}
                                                 </h5>
                                                 <small className="text-muted">
@@ -1088,7 +1117,7 @@ const AdminWorkCalendar = () => {
                                             </Col>
                                             <Col xs={3}>
                                                 <h5 className="mb-0 text-warning">
-                                                    {dateDetail.statistics
+                                                    {dateDetail.summary
                                                         ?.leaveCount || 0}
                                                 </h5>
                                                 <small className="text-muted">
@@ -1097,7 +1126,7 @@ const AdminWorkCalendar = () => {
                                             </Col>
                                             <Col xs={3}>
                                                 <h5 className="mb-0 text-danger">
-                                                    {dateDetail.statistics
+                                                    {dateDetail.summary
                                                         ?.absentCount || 0}
                                                 </h5>
                                                 <small className="text-muted">
@@ -1266,6 +1295,857 @@ const AdminWorkCalendar = () => {
                         </Card.Body>
                     </Card>
                 </div>
+            )}
+
+            {/* ============================================================================ */}
+            {/* COMPREHENSIVE ORGANIZATIONAL MONITORING SECTION - INDUSTRY BEST PRACTICES */}
+            {/* ============================================================================ */}
+
+            {calendarData && (
+                <>
+                    {/* Divider with Title */}
+                    <div className="my-5">
+                        <div className="d-flex align-items-center">
+                            <div
+                                className="flex-grow-1"
+                                style={{
+                                    height: "2px",
+                                    background:
+                                        "linear-gradient(90deg, #667eea 0%, transparent 100%)",
+                                }}
+                            ></div>
+                            <div className="mx-3">
+                                <h4
+                                    className="mb-0 fw-bold"
+                                    style={{
+                                        background:
+                                            "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                                        WebkitBackgroundClip: "text",
+                                        WebkitTextFillColor: "transparent",
+                                        backgroundClip: "text",
+                                    }}
+                                >
+                                    <i className="bi bi-graph-up me-2"></i>
+                                    Analitik Mendalam Organisasi
+                                </h4>
+                            </div>
+                            <div
+                                className="flex-grow-1"
+                                style={{
+                                    height: "2px",
+                                    background:
+                                        "linear-gradient(90deg, transparent 0%, #667eea 100%)",
+                                }}
+                            ></div>
+                        </div>
+                        <p className="text-center text-muted small mt-2">
+                            Monitoring real-time performa divisi, user activity,
+                            dan supervisor oversight
+                        </p>
+                    </div>
+
+                    {/* ============================================================================ */}
+                    {/* SECTION 1: DIVISION-LEVEL ANALYTICS (SUPERVISOR OVERSIGHT) */}
+                    {/* ============================================================================ */}
+                    <Card
+                        className="mb-4 border-0"
+                        style={{
+                            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+                            borderRadius: "16px",
+                            overflow: "hidden",
+                        }}
+                    >
+                        <Card.Header
+                            className="text-white p-4"
+                            style={{
+                                background:
+                                    "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+                            }}
+                        >
+                            <div className="d-flex align-items-center">
+                                <div
+                                    className="d-flex align-items-center justify-content-center me-3"
+                                    style={{
+                                        width: "48px",
+                                        height: "48px",
+                                        borderRadius: "12px",
+                                        background: "rgba(255,255,255,0.2)",
+                                        backdropFilter: "blur(10px)",
+                                    }}
+                                >
+                                    <i
+                                        className="bi bi-bar-chart-line"
+                                        style={{ fontSize: "1.5rem" }}
+                                    ></i>
+                                </div>
+                                <div>
+                                    <h5 className="mb-0 fw-bold">
+                                        Statistik Divisi
+                                    </h5>
+                                    <small className="text-white-50">
+                                        Overview performa setiap divisi dengan
+                                        KPI
+                                    </small>
+                                </div>
+                            </div>
+                        </Card.Header>
+
+                        <Card.Body className="p-4">
+                            {calendarData.divisionStats &&
+                            calendarData.divisionStats.length > 0 ? (
+                                <div className="table-responsive">
+                                    <table className="table table-hover mb-0">
+                                        <thead
+                                            style={{ background: "#f8f9fa" }}
+                                        >
+                                            <tr>
+                                                <th
+                                                    style={{
+                                                        color: "#667eea",
+                                                        fontWeight: "600",
+                                                        borderBottom:
+                                                            "2px solid #667eea",
+                                                    }}
+                                                >
+                                                    <i className="bi bi-diagram-2 me-2"></i>
+                                                    Divisi
+                                                </th>
+                                                <th
+                                                    className="text-center"
+                                                    style={{
+                                                        color: "#667eea",
+                                                        fontWeight: "600",
+                                                        borderBottom:
+                                                            "2px solid #667eea",
+                                                    }}
+                                                >
+                                                    👥 Members
+                                                </th>
+                                                <th
+                                                    className="text-center"
+                                                    style={{
+                                                        color: "#667eea",
+                                                        fontWeight: "600",
+                                                        borderBottom:
+                                                            "2px solid #667eea",
+                                                    }}
+                                                >
+                                                    ✓ Hadir
+                                                </th>
+                                                <th
+                                                    className="text-center"
+                                                    style={{
+                                                        color: "#667eea",
+                                                        fontWeight: "600",
+                                                        borderBottom:
+                                                            "2px solid #667eea",
+                                                    }}
+                                                >
+                                                    ⏰ Terlambat
+                                                </th>
+                                                <th
+                                                    className="text-center"
+                                                    style={{
+                                                        color: "#667eea",
+                                                        fontWeight: "600",
+                                                        borderBottom:
+                                                            "2px solid #667eea",
+                                                    }}
+                                                >
+                                                    ✕ Tidak Hadir
+                                                </th>
+                                                <th
+                                                    className="text-center"
+                                                    style={{
+                                                        color: "#667eea",
+                                                        fontWeight: "600",
+                                                        borderBottom:
+                                                            "2px solid #667eea",
+                                                    }}
+                                                >
+                                                    📋 Logbook
+                                                </th>
+                                                <th
+                                                    className="text-center"
+                                                    style={{
+                                                        color: "#667eea",
+                                                        fontWeight: "600",
+                                                        borderBottom:
+                                                            "2px solid #667eea",
+                                                    }}
+                                                >
+                                                    📊 Rate
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {calendarData.divisionStats.map(
+                                                (div, idx) => {
+                                                    const attendanceRate =
+                                                        div.attendanceRate || 0;
+                                                    const rateColor =
+                                                        attendanceRate >= 90
+                                                            ? "#28a745"
+                                                            : attendanceRate >=
+                                                                75
+                                                              ? "#ffc107"
+                                                              : "#dc3545";
+
+                                                    return (
+                                                        <tr
+                                                            key={div.id}
+                                                            style={{
+                                                                borderBottom:
+                                                                    "1px solid #e9ecef",
+                                                                transition:
+                                                                    "all 0.3s ease",
+                                                            }}
+                                                            onMouseOver={(
+                                                                e,
+                                                            ) => {
+                                                                e.currentTarget.style.backgroundColor =
+                                                                    "#f8f9fa";
+                                                                e.currentTarget.style.transform =
+                                                                    "translateX(4px)";
+                                                            }}
+                                                            onMouseOut={(e) => {
+                                                                e.currentTarget.style.backgroundColor =
+                                                                    "white";
+                                                                e.currentTarget.style.transform =
+                                                                    "translateX(0)";
+                                                            }}
+                                                        >
+                                                            <td
+                                                                className="fw-bold"
+                                                                style={{
+                                                                    color: "#667eea",
+                                                                }}
+                                                            >
+                                                                <i className="bi bi-diagram-2 me-2"></i>
+                                                                {div.name}
+                                                            </td>
+                                                            <td className="text-center">
+                                                                <Badge
+                                                                    bg="primary"
+                                                                    className="px-3 py-2"
+                                                                >
+                                                                    {
+                                                                        div.memberCount
+                                                                    }
+                                                                </Badge>
+                                                            </td>
+                                                            <td className="text-center">
+                                                                <span
+                                                                    className="fw-medium"
+                                                                    style={{
+                                                                        color: "#28a745",
+                                                                        fontSize:
+                                                                            "1rem",
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        div.attendanceDays
+                                                                    }
+                                                                </span>
+                                                            </td>
+                                                            <td className="text-center">
+                                                                {div.lateDays >
+                                                                0 ? (
+                                                                    <span
+                                                                        className="fw-medium"
+                                                                        style={{
+                                                                            color: "#ffc107",
+                                                                        }}
+                                                                    >
+                                                                        ⚠️{" "}
+                                                                        {
+                                                                            div.lateDays
+                                                                        }
+                                                                    </span>
+                                                                ) : (
+                                                                    <span
+                                                                        className="text-muted"
+                                                                        style={{
+                                                                            fontSize:
+                                                                                "1.2rem",
+                                                                        }}
+                                                                    >
+                                                                        -
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="text-center">
+                                                                {div.absentDays >
+                                                                0 ? (
+                                                                    <span
+                                                                        className="fw-medium"
+                                                                        style={{
+                                                                            color: "#dc3545",
+                                                                        }}
+                                                                    >
+                                                                        ✕{" "}
+                                                                        {
+                                                                            div.absentDays
+                                                                        }
+                                                                    </span>
+                                                                ) : (
+                                                                    <span
+                                                                        className="text-muted"
+                                                                        style={{
+                                                                            fontSize:
+                                                                                "1.2rem",
+                                                                        }}
+                                                                    >
+                                                                        -
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="text-center">
+                                                                <span
+                                                                    className="fw-medium text-info"
+                                                                    style={{
+                                                                        fontSize:
+                                                                            "1rem",
+                                                                    }}
+                                                                >
+                                                                    {
+                                                                        div.logbookCount
+                                                                    }
+                                                                </span>
+                                                            </td>
+                                                            <td className="text-center">
+                                                                <div
+                                                                    style={{
+                                                                        display:
+                                                                            "flex",
+                                                                        alignItems:
+                                                                            "center",
+                                                                        justifyContent:
+                                                                            "center",
+                                                                        gap: "6px",
+                                                                    }}
+                                                                >
+                                                                    <div
+                                                                        style={{
+                                                                            width: "60px",
+                                                                            height: "24px",
+                                                                            background:
+                                                                                "#e9ecef",
+                                                                            borderRadius:
+                                                                                "12px",
+                                                                            overflow:
+                                                                                "hidden",
+                                                                        }}
+                                                                    >
+                                                                        <div
+                                                                            style={{
+                                                                                width: `${attendanceRate}%`,
+                                                                                height: "100%",
+                                                                                background:
+                                                                                    rateColor,
+                                                                                transition:
+                                                                                    "width 0.3s ease",
+                                                                            }}
+                                                                        ></div>
+                                                                    </div>
+                                                                    <span
+                                                                        className="fw-bold small"
+                                                                        style={{
+                                                                            color: rateColor,
+                                                                            minWidth:
+                                                                                "40px",
+                                                                        }}
+                                                                    >
+                                                                        {
+                                                                            attendanceRate
+                                                                        }
+                                                                        %
+                                                                    </span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                },
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <Alert
+                                    variant="secondary"
+                                    className="mb-0 text-center"
+                                >
+                                    <i className="bi bi-info-circle me-2"></i>
+                                    Belum ada data divisi untuk periode ini
+                                </Alert>
+                            )}
+                        </Card.Body>
+                    </Card>
+
+                    {/* ============================================================================ */}
+                    {/* SECTION 2: MEMBER-LEVEL PERFORMANCE DASHBOARD (USER ACTIVITY) */}
+                    {/* ============================================================================ */}
+                    <Card
+                        className="mb-4 border-0"
+                        style={{
+                            boxShadow: "0 10px 40px rgba(0,0,0,0.1)",
+                            borderRadius: "16px",
+                            overflow: "hidden",
+                        }}
+                    >
+                        <Card.Header
+                            className="text-white p-4"
+                            style={{
+                                background:
+                                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                            }}
+                        >
+                            <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div className="d-flex align-items-center">
+                                    <div
+                                        className="d-flex align-items-center justify-content-center me-3"
+                                        style={{
+                                            width: "48px",
+                                            height: "48px",
+                                            borderRadius: "12px",
+                                            background: "rgba(255,255,255,0.2)",
+                                            backdropFilter: "blur(10px)",
+                                        }}
+                                    >
+                                        <i
+                                            className="bi bi-person-badge"
+                                            style={{ fontSize: "1.5rem" }}
+                                        ></i>
+                                    </div>
+                                    <div>
+                                        <h5 className="mb-0 fw-bold">
+                                            Skor Kinerja Individual
+                                        </h5>
+                                        <small className="text-white-50">
+                                            Performance scorecard setiap
+                                            karyawan berdasarkan presensi,
+                                            logbook, dan ketepatan waktu
+                                        </small>
+                                    </div>
+                                </div>
+                                <Badge
+                                    bg="light"
+                                    text="dark"
+                                    className="px-3 py-2"
+                                >
+                                    <i className="bi bi-people me-1"></i>
+                                    {calendarData.memberStats?.length || 0} User
+                                </Badge>
+                            </div>
+                        </Card.Header>
+
+                        <Card.Body className="p-4">
+                            {calendarData.memberStats &&
+                            calendarData.memberStats.length > 0 ? (
+                                <>
+                                    <div style={{ overflowX: "auto" }}>
+                                        <table className="table table-hover mb-0">
+                                            <thead
+                                                style={{
+                                                    background: "#f8f9fa",
+                                                    position: "sticky",
+                                                    top: 0,
+                                                }}
+                                            >
+                                                <tr>
+                                                    <th
+                                                        style={{
+                                                            color: "#667eea",
+                                                            fontWeight: "600",
+                                                            borderBottom:
+                                                                "2px solid #667eea",
+                                                        }}
+                                                    >
+                                                        <i className="bi bi-person-circle me-2"></i>
+                                                        User / Role
+                                                    </th>
+                                                    <th
+                                                        className="text-center"
+                                                        style={{
+                                                            color: "#667eea",
+                                                            fontWeight: "600",
+                                                            borderBottom:
+                                                                "2px solid #667eea",
+                                                        }}
+                                                    >
+                                                        📍 Divisi
+                                                    </th>
+                                                    <th
+                                                        className="text-center"
+                                                        style={{
+                                                            color: "#667eea",
+                                                            fontWeight: "600",
+                                                            borderBottom:
+                                                                "2px solid #667eea",
+                                                        }}
+                                                    >
+                                                        ✓ Hadir
+                                                    </th>
+                                                    <th
+                                                        className="text-center"
+                                                        style={{
+                                                            color: "#667eea",
+                                                            fontWeight: "600",
+                                                            borderBottom:
+                                                                "2px solid #667eea",
+                                                        }}
+                                                    >
+                                                        ⏰ Terlambat
+                                                    </th>
+                                                    <th
+                                                        className="text-center"
+                                                        style={{
+                                                            color: "#667eea",
+                                                            fontWeight: "600",
+                                                            borderBottom:
+                                                                "2px solid #667eea",
+                                                        }}
+                                                    >
+                                                        ✕ Absen
+                                                    </th>
+                                                    <th
+                                                        className="text-center"
+                                                        style={{
+                                                            color: "#667eea",
+                                                            fontWeight: "600",
+                                                            borderBottom:
+                                                                "2px solid #667eea",
+                                                        }}
+                                                    >
+                                                        🏖️ Cuti
+                                                    </th>
+                                                    <th
+                                                        className="text-center"
+                                                        style={{
+                                                            color: "#667eea",
+                                                            fontWeight: "600",
+                                                            borderBottom:
+                                                                "2px solid #667eea",
+                                                        }}
+                                                    >
+                                                        📓 Logbook
+                                                    </th>
+                                                    <th
+                                                        className="text-center"
+                                                        style={{
+                                                            color: "#667eea",
+                                                            fontWeight: "600",
+                                                            borderBottom:
+                                                                "2px solid #667eea",
+                                                        }}
+                                                    >
+                                                        📊 Kehadiran
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {calendarData.memberStats
+                                                    .sort(
+                                                        (a, b) =>
+                                                            b.attendanceRate -
+                                                            a.attendanceRate,
+                                                    )
+                                                    .map((member) => {
+                                                        const attendanceRate =
+                                                            member.attendanceRate ||
+                                                            0;
+                                                        const rateColor =
+                                                            attendanceRate >= 90
+                                                                ? "#28a745"
+                                                                : attendanceRate >=
+                                                                    75
+                                                                  ? "#ffc107"
+                                                                  : "#dc3545";
+                                                        const roleEmoji =
+                                                            member.role ===
+                                                            "supervisor"
+                                                                ? "👨‍💼"
+                                                                : "👤";
+
+                                                        return (
+                                                            <tr
+                                                                key={member.id}
+                                                                style={{
+                                                                    borderBottom:
+                                                                        "1px solid #e9ecef",
+                                                                    transition:
+                                                                        "all 0.3s ease",
+                                                                }}
+                                                                onMouseOver={(
+                                                                    e,
+                                                                ) => {
+                                                                    e.currentTarget.style.backgroundColor =
+                                                                        "#f8f9fa";
+                                                                    e.currentTarget.style.transform =
+                                                                        "translateX(4px)";
+                                                                }}
+                                                                onMouseOut={(
+                                                                    e,
+                                                                ) => {
+                                                                    e.currentTarget.style.backgroundColor =
+                                                                        "white";
+                                                                    e.currentTarget.style.transform =
+                                                                        "translateX(0)";
+                                                                }}
+                                                            >
+                                                                <td
+                                                                    className="fw-bold"
+                                                                    style={{
+                                                                        color: "#667eea",
+                                                                    }}
+                                                                >
+                                                                    {roleEmoji}{" "}
+                                                                    {
+                                                                        member.name
+                                                                    }
+                                                                    <br />
+                                                                    <small className="text-muted text-uppercase">
+                                                                        {
+                                                                            member.role
+                                                                        }
+                                                                    </small>
+                                                                </td>
+                                                                <td className="text-center">
+                                                                    <small
+                                                                        className="fw-medium"
+                                                                        style={{
+                                                                            color: "#666",
+                                                                        }}
+                                                                    >
+                                                                        {member.divisionName ||
+                                                                            "-"}
+                                                                    </small>
+                                                                </td>
+                                                                <td className="text-center">
+                                                                    <Badge
+                                                                        bg="success"
+                                                                        className="px-2 py-1"
+                                                                    >
+                                                                        ✓{" "}
+                                                                        {
+                                                                            member.attendanceDays
+                                                                        }
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="text-center">
+                                                                    {member.lateDays >
+                                                                    0 ? (
+                                                                        <Badge
+                                                                            bg="warning"
+                                                                            text="dark"
+                                                                            className="px-2 py-1"
+                                                                        >
+                                                                            ⏰{" "}
+                                                                            {
+                                                                                member.lateDays
+                                                                            }
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <span className="text-muted">
+                                                                            -
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="text-center">
+                                                                    {member.absentDays >
+                                                                    0 ? (
+                                                                        <Badge
+                                                                            bg="danger"
+                                                                            className="px-2 py-1"
+                                                                        >
+                                                                            ✕{" "}
+                                                                            {
+                                                                                member.absentDays
+                                                                            }
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <span className="text-muted">
+                                                                            -
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="text-center">
+                                                                    {member.leaveDays >
+                                                                    0 ? (
+                                                                        <Badge
+                                                                            bg="secondary"
+                                                                            className="px-2 py-1"
+                                                                        >
+                                                                            🏖️{" "}
+                                                                            {
+                                                                                member.leaveDays
+                                                                            }
+                                                                        </Badge>
+                                                                    ) : (
+                                                                        <span className="text-muted">
+                                                                            -
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="text-center">
+                                                                    <Badge
+                                                                        bg="info"
+                                                                        className="px-2 py-1"
+                                                                    >
+                                                                        📓{" "}
+                                                                        {
+                                                                            member.logbookDays
+                                                                        }
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="text-center">
+                                                                    <div
+                                                                        style={{
+                                                                            display:
+                                                                                "flex",
+                                                                            alignItems:
+                                                                                "center",
+                                                                            justifyContent:
+                                                                                "center",
+                                                                            gap: "8px",
+                                                                        }}
+                                                                    >
+                                                                        <div
+                                                                            style={{
+                                                                                width: "80px",
+                                                                                height: "28px",
+                                                                                background:
+                                                                                    "#e9ecef",
+                                                                                borderRadius:
+                                                                                    "14px",
+                                                                                overflow:
+                                                                                    "hidden",
+                                                                                boxShadow:
+                                                                                    "inset 0 1px 3px rgba(0,0,0,0.1)",
+                                                                            }}
+                                                                        >
+                                                                            <div
+                                                                                style={{
+                                                                                    width: `${attendanceRate}%`,
+                                                                                    height: "100%",
+                                                                                    background:
+                                                                                        rateColor,
+                                                                                    transition:
+                                                                                        "width 0.3s ease",
+                                                                                    boxShadow: `0 0 10px ${rateColor}40`,
+                                                                                }}
+                                                                            ></div>
+                                                                        </div>
+                                                                        <span
+                                                                            className="fw-bold small"
+                                                                            style={{
+                                                                                color: rateColor,
+                                                                                minWidth:
+                                                                                    "45px",
+                                                                                textAlign:
+                                                                                    "right",
+                                                                            }}
+                                                                        >
+                                                                            {
+                                                                                attendanceRate
+                                                                            }
+                                                                            %
+                                                                        </span>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Summary Footer */}
+                                    <div
+                                        className="mt-4 pt-3 border-top"
+                                        style={{
+                                            background: "#f8f9fa",
+                                            borderRadius: "8px",
+                                            padding: "12px 16px",
+                                        }}
+                                    >
+                                        <Row className="text-center">
+                                            <Col xs={6} md={3}>
+                                                <div>
+                                                    <h6 className="mb-1 text-success fw-bold">
+                                                        {calendarData.memberStats.reduce(
+                                                            (acc, m) =>
+                                                                acc +
+                                                                m.attendanceDays,
+                                                            0,
+                                                        )}
+                                                    </h6>
+                                                    <small className="text-muted">
+                                                        Total Kehadiran
+                                                    </small>
+                                                </div>
+                                            </Col>
+                                            <Col xs={6} md={3}>
+                                                <div>
+                                                    <h6 className="mb-1 text-warning fw-bold">
+                                                        {calendarData.memberStats.reduce(
+                                                            (acc, m) =>
+                                                                acc +
+                                                                m.lateDays,
+                                                            0,
+                                                        )}
+                                                    </h6>
+                                                    <small className="text-muted">
+                                                        Total Terlambat
+                                                    </small>
+                                                </div>
+                                            </Col>
+                                            <Col xs={6} md={3}>
+                                                <div>
+                                                    <h6 className="mb-1 text-danger fw-bold">
+                                                        {calendarData.memberStats.reduce(
+                                                            (acc, m) =>
+                                                                acc +
+                                                                m.absentDays,
+                                                            0,
+                                                        )}
+                                                    </h6>
+                                                    <small className="text-muted">
+                                                        Total Absen
+                                                    </small>
+                                                </div>
+                                            </Col>
+                                            <Col xs={6} md={3}>
+                                                <div>
+                                                    <h6 className="mb-1 text-info fw-bold">
+                                                        {calendarData.memberStats.reduce(
+                                                            (acc, m) =>
+                                                                acc +
+                                                                m.logbookDays,
+                                                            0,
+                                                        )}
+                                                    </h6>
+                                                    <small className="text-muted">
+                                                        Total Logbook
+                                                    </small>
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                    </div>
+                                </>
+                            ) : (
+                                <Alert
+                                    variant="secondary"
+                                    className="mb-0 text-center"
+                                >
+                                    <i className="bi bi-info-circle me-2"></i>
+                                    Belum ada data kinerja karyawan untuk
+                                    periode ini
+                                </Alert>
+                            )}
+                        </Card.Body>
+                    </Card>
+                </>
             )}
         </div>
     );
