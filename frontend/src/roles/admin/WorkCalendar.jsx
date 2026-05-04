@@ -47,6 +47,104 @@ const EVENT_PRIORITY = {
     present: 5,
 };
 
+// ─── Reusable ComboSelect: dropdown yang bisa diketik + lihat semua opsi ─────
+const ComboSelect = ({ label, placeholder, options, value, onChange, onClear, renderOption, getLabel }) => {
+    const [inputVal, setInputVal] = useState("");
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    // Sync inputVal when value changes externally (e.g. reset)
+    useEffect(() => {
+        if (!value) setInputVal("");
+        else {
+            const found = options.find(o => String(o.id) === String(value));
+            if (found) setInputVal(getLabel(found));
+        }
+    }, [value, options]);
+
+    // Close on outside click
+    useEffect(() => {
+        const handler = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
+    const filtered = inputVal.trim()
+        ? options.filter(o => getLabel(o).toLowerCase().includes(inputVal.toLowerCase()))
+        : options;
+
+    const handleSelect = (opt) => {
+        setInputVal(getLabel(opt));
+        setOpen(false);
+        onChange(opt);
+    };
+
+    const handleClear = () => {
+        setInputVal("");
+        setOpen(false);
+        onClear();
+    };
+
+    return (
+        <div ref={ref} style={{ position: "relative" }}>
+            <div className="input-group input-group-sm">
+                <Form.Control
+                    size="sm"
+                    placeholder={placeholder}
+                    value={inputVal}
+                    onChange={e => { setInputVal(e.target.value); setOpen(true); }}
+                    onFocus={() => setOpen(true)}
+                    autoComplete="off"
+                    style={{ borderRight: value ? "none" : undefined }}
+                />
+                {value && (
+                    <button className="btn btn-outline-secondary btn-sm" type="button"
+                        onClick={handleClear} title="Hapus pilihan"
+                        style={{ border: "1px solid #dee2e6", borderLeft: "none", padding: "0 8px" }}
+                    >✕</button>
+                )}
+                <button className="btn btn-outline-secondary btn-sm" type="button"
+                    onClick={() => setOpen(o => !o)}
+                    style={{ border: "1px solid #dee2e6", borderLeft: "none", padding: "0 8px" }}
+                >{open ? "▲" : "▼"}</button>
+            </div>
+            {open && (
+                <div style={{ position:"absolute", top:"calc(100% + 2px)", left:0, right:0, zIndex:2000,
+                    background:"#fff", border:"1px solid #dee2e6", borderRadius:6,
+                    maxHeight:220, overflowY:"auto", boxShadow:"0 6px 20px rgba(0,0,0,0.12)" }}>
+                    {/* Semua item */}
+                    <div className="px-2 py-1 small text-muted fw-medium" style={{background:"#f8f9fa",borderBottom:"1px solid #eee"}}>
+                        {filtered.length} dari {options.length} {label.toLowerCase()}
+                    </div>
+                    {filtered.length === 0 ? (
+                        <div className="px-2 py-2 small text-muted text-center">Tidak ditemukan</div>
+                    ) : (
+                        <>
+                            <div className="px-2 py-1 small text-muted" style={{cursor:"pointer",borderBottom:"1px solid #f5f5f5"}}
+                                onMouseDown={e => { e.preventDefault(); handleClear(); }}>
+                                — Semua {label}
+                            </div>
+                            {filtered.map(opt => (
+                                <div key={opt.id}
+                                    className="px-2 py-1 small"
+                                    style={{ cursor:"pointer",
+                                        background: String(value) === String(opt.id) ? "#e8f4fd" : "transparent",
+                                        fontWeight: String(value) === String(opt.id) ? 600 : 400 }}
+                                    onMouseOver={e => { if(String(value) !== String(opt.id)) e.currentTarget.style.background="#f5f5f5"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = String(value) === String(opt.id) ? "#e8f4fd" : "transparent"; }}
+                                    onMouseDown={e => { e.preventDefault(); handleSelect(opt); }}
+                                >
+                                    {renderOption ? renderOption(opt) : getLabel(opt)}
+                                </div>
+                            ))}
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
 const AdminWorkCalendar = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [loading, setLoading] = useState(true);
@@ -77,13 +175,11 @@ const AdminWorkCalendar = () => {
         return urlYear || String(new Date().getFullYear());
     });
     const [statusFilter, setStatusFilter] = useState("all");
-
-    // Search states for typeahead filter
-    const [searchDivision, setSearchDivision] = useState("");
-    const [searchUser, setSearchUser] = useState("");
     // Pagination for member scorecard (handle large data)
     const [memberPage, setMemberPage] = useState(1);
     const MEMBER_PAGE_SIZE = 20;
+    // Inline search for member scorecard table
+    const [memberSearch, setMemberSearch] = useState("");
 
     const detailRef = useRef(null);
 
@@ -371,8 +467,7 @@ const AdminWorkCalendar = () => {
         setCurrentDate(today);
         setSelectedDivisionId("");
         setSelectedUserId("");
-        setSearchDivision("");
-        setSearchUser("");
+        setMemberSearch("");
         setMemberPage(1);
         setSearchParams({});
         setSelectedDate(null);
@@ -407,32 +502,26 @@ const AdminWorkCalendar = () => {
 
     // ── Derived/memoized data for large-data performance ──────────────────
 
-    // Filtered divisions for search
-    const filteredDivisions = useMemo(() => {
-        const all = calendarData?.allDivisions || [];
-        if (!searchDivision.trim()) return all;
-        return all.filter(d => d.name.toLowerCase().includes(searchDivision.toLowerCase()));
-    }, [calendarData?.allDivisions, searchDivision]);
+    // Divisions list (all, no filter — ComboSelect handles its own filtering)
+    const allDivisions = useMemo(() => calendarData?.allDivisions || [], [calendarData?.allDivisions]);
 
-    // Filtered users: exclude supervisors, apply division filter + search
-    const filteredUsers = useMemo(() => {
+    // Users list: only role:user, filtered by selected division
+    const allUsers = useMemo(() => {
         const all = (calendarData?.users || []).filter(u => u.role !== "supervisor");
-        const byDiv = selectedDivisionId
+        return selectedDivisionId
             ? all.filter(u => String(u.division_id) === String(selectedDivisionId))
             : all;
-        if (!searchUser.trim()) return byDiv;
-        return byDiv.filter(u => u.name.toLowerCase().includes(searchUser.toLowerCase()));
-    }, [calendarData?.users, selectedDivisionId, searchUser]);
+    }, [calendarData?.users, selectedDivisionId]);
 
-    // Member scorecard: exclude supervisors, apply search, sort by rate
+    // Member scorecard: only role:user, apply memberSearch, sort by rate
     const filteredMembers = useMemo(() => {
         const all = (calendarData?.memberStats || []).filter(m => m.role !== "supervisor");
-        if (!searchUser.trim()) return [...all].sort((a, b) => b.attendanceRate - a.attendanceRate);
+        if (!memberSearch.trim()) return [...all].sort((a, b) => b.attendanceRate - a.attendanceRate);
+        const q = memberSearch.toLowerCase();
         return [...all]
-            .filter(m => m.name.toLowerCase().includes(searchUser.toLowerCase()) ||
-                         m.divisionName?.toLowerCase().includes(searchUser.toLowerCase()))
+            .filter(m => m.name.toLowerCase().includes(q) || m.divisionName?.toLowerCase().includes(q))
             .sort((a, b) => b.attendanceRate - a.attendanceRate);
-    }, [calendarData?.memberStats, searchUser]);
+    }, [calendarData?.memberStats, memberSearch]);
 
     // Paginated member list
     const paginatedMembers = useMemo(() => {
@@ -603,85 +692,49 @@ const AdminWorkCalendar = () => {
                         {/* Division search filter */}
                         <Col xs={12} md={3}>
                             <Form.Label className="small fw-medium mb-1">Divisi</Form.Label>
-                            <div style={{ position: "relative" }}>
-                                <Form.Control
-                                    size="sm"
-                                    placeholder="🔍 Cari atau pilih divisi..."
-                                    value={searchDivision}
-                                    onChange={e => setSearchDivision(e.target.value)}
-                                    onFocus={e => e.target.select()}
-                                />
-                                {searchDivision && filteredDivisions.length > 0 && (
-                                    <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:1000, background:"#fff", border:"1px solid #dee2e6", borderRadius:4, maxHeight:180, overflowY:"auto", boxShadow:"0 4px 12px rgba(0,0,0,0.1)" }}>
-                                        <div
-                                            className="px-2 py-1 small text-muted"
-                                            style={{ cursor:"pointer", borderBottom:"1px solid #f0f0f0" }}
-                                            onClick={() => { setSelectedDivisionId(""); setSearchDivision(""); setSelectedUserId(""); setSearchUser(""); }}
-                                        >📋 Semua Divisi</div>
-                                        {filteredDivisions.map(div => (
-                                            <div
-                                                key={div.id}
-                                                className="px-2 py-1 small"
-                                                style={{ cursor:"pointer", background: String(selectedDivisionId) === String(div.id) ? "#e3f2fd" : "transparent" }}
-                                                onMouseOver={e => e.currentTarget.style.background="#f5f5f5"}
-                                                onMouseOut={e => e.currentTarget.style.background = String(selectedDivisionId) === String(div.id) ? "#e3f2fd" : "transparent"}
-                                                onClick={() => { setSelectedDivisionId(String(div.id)); setSearchDivision(div.name); setSelectedUserId(""); setSearchUser(""); }}
-                                            >{div.name}</div>
-                                        ))}
-                                    </div>
-                                )}
-                                {selectedDivisionId && !searchDivision && (
-                                    <div className="small text-primary mt-1">
-                                        <i className="bi bi-check-circle-fill me-1"></i>
-                                        {calendarData?.allDivisions?.find(d => String(d.id) === String(selectedDivisionId))?.name}
-                                        <span className="ms-2 text-muted" style={{cursor:"pointer"}} onClick={() => { setSelectedDivisionId(""); setSelectedUserId(""); setSearchUser(""); }}>✕ hapus</span>
-                                    </div>
-                                )}
-                            </div>
+                            <ComboSelect
+                                label="Divisi"
+                                placeholder="Pilih atau cari divisi..."
+                                options={allDivisions}
+                                value={selectedDivisionId}
+                                getLabel={d => d.name}
+                                onChange={div => {
+                                    setSelectedDivisionId(String(div.id));
+                                    setSelectedUserId(""); // reset user saat divisi berubah
+                                }}
+                                onClear={() => { setSelectedDivisionId(""); setSelectedUserId(""); }}
+                            />
                         </Col>
 
-                        {/* User search filter (no supervisors) */}
+                        {/* User combobox — hanya role:user (anggota) */}
                         <Col xs={12} md={3}>
-                            <Form.Label className="small fw-medium mb-1">User (Anggota)</Form.Label>
-                            <div style={{ position: "relative" }}>
-                                <Form.Control
-                                    size="sm"
-                                    placeholder="🔍 Cari nama user..."
-                                    value={searchUser}
-                                    onChange={e => { setSearchUser(e.target.value); if (!e.target.value) setSelectedUserId(""); }}
-                                    onFocus={e => e.target.select()}
-                                />
-                                {searchUser && filteredUsers.length > 0 && (
-                                    <div style={{ position:"absolute", top:"100%", left:0, right:0, zIndex:1000, background:"#fff", border:"1px solid #dee2e6", borderRadius:4, maxHeight:200, overflowY:"auto", boxShadow:"0 4px 12px rgba(0,0,0,0.1)" }}>
-                                        <div
-                                            className="px-2 py-1 small text-muted"
-                                            style={{ cursor:"pointer", borderBottom:"1px solid #f0f0f0" }}
-                                            onClick={() => { setSelectedUserId(""); setSearchUser(""); }}
-                                        >👥 Semua Anggota</div>
-                                        {filteredUsers.slice(0, 50).map(u => (
-                                            <div
-                                                key={u.id}
-                                                className="px-2 py-1 small"
-                                                style={{ cursor:"pointer", background: String(selectedUserId) === String(u.id) ? "#e3f2fd" : "transparent" }}
-                                                onMouseOver={e => e.currentTarget.style.background="#f5f5f5"}
-                                                onMouseOut={e => e.currentTarget.style.background = String(selectedUserId) === String(u.id) ? "#e3f2fd" : "transparent"}
-                                                onClick={() => { setSelectedUserId(String(u.id)); setSearchUser(u.name); }}
-                                            >
-                                                <span>{u.name}</span>
-                                                <small className="text-muted ms-2">{u.divisionName || ""}</small>
-                                            </div>
-                                        ))}
-                                        {filteredUsers.length > 50 && <div className="px-2 py-1 small text-muted">+{filteredUsers.length - 50} lainnya, ketik lebih spesifik</div>}
-                                    </div>
+                            <Form.Label className="small fw-medium mb-1">
+                                Anggota
+                                {selectedDivisionId && (
+                                    <span className="text-muted ms-1 small">
+                                        ({allUsers.length} orang)
+                                    </span>
                                 )}
-                                {selectedUserId && (
-                                    <div className="small text-primary mt-1">
-                                        <i className="bi bi-person-check-fill me-1"></i>
-                                        {calendarData?.users?.find(u => String(u.id) === String(selectedUserId))?.name}
-                                        <span className="ms-2 text-muted" style={{cursor:"pointer"}} onClick={() => { setSelectedUserId(""); setSearchUser(""); }}>✕ hapus</span>
-                                    </div>
+                            </Form.Label>
+                            <ComboSelect
+                                label="Anggota"
+                                placeholder="Pilih atau cari anggota..."
+                                options={allUsers}
+                                value={selectedUserId}
+                                getLabel={u => u.name}
+                                renderOption={u => (
+                                    <span>
+                                        {u.name}
+                                        {u.divisionName && (
+                                            <small className="text-muted ms-2" style={{fontSize:"0.75rem"}}>
+                                                {u.divisionName}
+                                            </small>
+                                        )}
+                                    </span>
                                 )}
-                            </div>
+                                onChange={u => setSelectedUserId(String(u.id))}
+                                onClear={() => setSelectedUserId("")}
+                            />
                         </Col>
 
                         <Col xs={6} md={2}>
@@ -704,29 +757,228 @@ const AdminWorkCalendar = () => {
                             <Button size="sm" variant="primary" className="flex-grow-1" onClick={handleApplyFilter}>
                                 <i className="bi bi-search me-1"></i>Terapkan
                             </Button>
-                            <Button size="sm" variant="outline-secondary" onClick={handleResetFilter} title="Reset filter">
+                            <Button size="sm" variant="outline-secondary" onClick={handleResetFilter} title="Reset semua filter">
                                 <i className="bi bi-arrow-counterclockwise"></i>
                             </Button>
                         </Col>
                     </Row>
                     {selectedUserId && (
-                        <div className="mt-2 p-2 rounded" style={{background:"#e3f2fd",fontSize:"0.8rem"}}>
-                            <i className="bi bi-person-circle me-1 text-primary"></i>
-                            <strong>Mode User:</strong> Menampilkan kalender personal{" "}
-                            <strong>{calendarData?.users?.find(u => String(u.id) === String(selectedUserId))?.name || ""}</strong>
-                            {" "}&mdash; data sama seperti tampilan user bersangkutan.
+                        <div className="mt-2 p-2 rounded d-flex align-items-center gap-2" style={{background:"#e3f2fd",fontSize:"0.82rem"}}>
+                            <i className="bi bi-person-circle text-primary"></i>
+                            <span>
+                                <strong>Mode Individual:</strong>{" "}
+                                Menampilkan kalender personal{" "}
+                                <strong>{allUsers.find(u => String(u.id) === String(selectedUserId))?.name || ""}</strong>
+                                {" "}&mdash; data sama seperti tampilan user bersangkutan.
+                            </span>
                         </div>
                     )}
                 </Card.Body>
             </Card>
 
+            {/* KPI Summary Cards - 6 metrics */}
+            {calendarData?.summary && (
+                <Row className="g-3 mb-4">
+                    {[
+                        { gradient: "linear-gradient(135deg,#667eea,#764ba2)", icon: "bi-people", label: selectedUserId ? "User Dipilih" : "Total Anggota", value: calendarData.summary.totalUsers || 0 },
+                        { gradient: "linear-gradient(135deg,#43e97b,#38f9d7)", icon: "bi-check-circle", label: "Kehadiran", value: calendarData.summary.totalAttendances || 0 },
+                        { gradient: "linear-gradient(135deg,#f6d365,#fda085)", icon: "bi-clock-history", label: "Terlambat", value: calendarData.summary.lateCount || 0 },
+                        { gradient: "linear-gradient(135deg,#f093fb,#f5576c)", icon: "bi-x-circle", label: "Alpha/Absen", value: (() => { const exp = (calendarData.summary.totalUsers || 0) * (calendarData.summary.workingDaysElapsed || 0); return Math.max(0, exp - (calendarData.summary.totalAttendances || 0) - (calendarData.summary.leaveStats?.approved || 0)); })() },
+                        { gradient: "linear-gradient(135deg,#6f42c1,#a855f7)", icon: "bi-briefcase", label: "Izin Disetujui", value: calendarData.summary.leaveStats?.approved || 0 },
+                        { gradient: "linear-gradient(135deg,#17a2b8,#4facfe)", icon: "bi-journal-text", label: "Logbook", value: calendarData.summary.totalLogbooks || 0 },
+                    ].map((card, i) => (
+                        <Col xs={6} md={2} key={i}>
+                            <Card className="border-0 shadow-sm h-100" style={{ background: card.gradient, color: "white" }}>
+                                <Card.Body className="p-3 text-center">
+                                    <div className="mb-1"><i className={`bi ${card.icon}`} style={{ fontSize: "1.8rem" }}></i></div>
+                                    <h4 className="mb-0 fw-bold">{card.value}</h4>
+                                    <small className="text-white-50 fw-medium" style={{ fontSize: "0.75rem" }}>{card.label}</small>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    ))}
+                </Row>
+            )}
 
-            {/* Calendar - Modern Design with Integrated Filter */}
+            {/* Legend */}
+            <Card className="mb-4 border-0 shadow-sm">
+                <Card.Body className="p-3">
+                    <div className="d-flex align-items-center gap-2 mb-3">
+                        <i className="bi bi-palette text-primary"></i>
+                        <strong className="small">Keterangan Warna Kalender</strong>
+                        <span className="text-muted small ms-auto">
+                            {selectedUserId ? "Mode individual — 1 event/hari" : "Mode tim — multi event/hari + heatmap"}
+                        </span>
+                    </div>
+                    <Row className="g-2">
+                        {[
+                            { color: COLORS.holiday, label: "Libur Nasional", icon: "🎉" },
+                            { color: COLORS.holidayCustom, label: "Hari Libur", icon: "📅" },
+                            { color: COLORS.present, label: "Hadir Tepat", icon: "✓" },
+                            { color: COLORS.late, label: "Terlambat", icon: "⏰" },
+                            { color: COLORS.leave, label: "Izin/Cuti", icon: "🏖️" },
+                            { color: COLORS.absent, label: "Alpha", icon: "❌" },
+                        ].map((item, i) => (
+                            <Col xs={6} md={4} lg={2} key={i}>
+                                <div className="d-flex align-items-center gap-2 p-2 rounded" style={{ background: "#f8f9fa" }}>
+                                    <span style={{ display: "inline-block", width: 16, height: 16, borderRadius: 4, backgroundColor: item.color, flexShrink: 0 }}></span>
+                                    <span style={{ fontSize: "0.8rem" }}>{item.icon} {item.label}</span>
+                                </div>
+                            </Col>
+                        ))}
+                    </Row>
+                    {!selectedUserId && (
+                        <div className="mt-2 d-flex gap-3 flex-wrap">
+                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#e8f5e9",border:"1px solid #ccc",marginRight:4 }}></span>≥90% hadir</small>
+                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#fff9c4",border:"1px solid #ccc",marginRight:4 }}></span>70–89%</small>
+                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#fff3e0",border:"1px solid #ccc",marginRight:4 }}></span>50–69%</small>
+                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#ffebee",border:"1px solid #ccc",marginRight:4 }}></span>&lt;50%</small>
+                        </div>
+                    )}
+                </Card.Body>
+            </Card>
 
+            {/* Division Scorecard — only in org/division view */}
+            {!selectedUserId && calendarData?.divisionStats?.length > 0 && (
+                <Card className="border-0 shadow-sm mb-4">
+                    <Card.Header className="bg-white border-0 py-3">
+                        <div className="d-flex align-items-center gap-2">
+                            <i className="bi bi-diagram-3 text-primary"></i>
+                            <strong>Scorecard per Divisi</strong>
+                            <Badge bg="secondary" pill>{calendarData.divisionStats.length} divisi</Badge>
+                        </div>
+                    </Card.Header>
+                    <Card.Body className="p-0">
+                        <div className="table-responsive">
+                            <table className="table table-hover table-sm mb-0">
+                                <thead style={{ background: "#f8f9fa" }}>
+                                    <tr>
+                                        <th className="ps-3 py-2 small">Divisi</th>
+                                        <th className="text-center py-2 small">Anggota</th>
+                                        <th className="text-center py-2 small">Hadir</th>
+                                        <th className="text-center py-2 small">Terlambat</th>
+                                        <th className="text-center py-2 small">Alpha</th>
+                                        <th className="text-center py-2 small">Logbook</th>
+                                        <th className="text-center py-2 small" style={{ minWidth: 120 }}>Attendance Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {calendarData.divisionStats.map(div => (
+                                        <tr key={div.id} style={{ cursor: "pointer" }}
+                                            onClick={() => { setSelectedDivisionId(String(div.id)); handleApplyFilter(); }}>
+                                            <td className="ps-3 py-2 fw-medium small">{div.name}</td>
+                                            <td className="text-center py-2 small">{div.memberCount}</td>
+                                            <td className="text-center py-2 small"><span className="text-success fw-bold">{div.attendanceDays}</span></td>
+                                            <td className="text-center py-2 small"><span className="text-warning fw-bold">{div.lateDays}</span></td>
+                                            <td className="text-center py-2 small"><span className="text-danger fw-bold">{div.absentDays}</span></td>
+                                            <td className="text-center py-2 small"><span className="text-info fw-bold">{div.logbookCount}</span></td>
+                                            <td className="text-center py-2">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <div className="flex-grow-1" style={{ height: 6, background: "#e9ecef", borderRadius: 3 }}>
+                                                        <div style={{ width: `${div.attendanceRate}%`, height: "100%", borderRadius: 3, background: div.attendanceRate >= 90 ? "#28a745" : div.attendanceRate >= 70 ? "#ffc107" : "#dc3545" }}></div>
+                                                    </div>
+                                                    <small className="fw-bold" style={{ fontSize: "0.75rem", minWidth: 32 }}>{div.attendanceRate}%</small>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card.Body>
+                </Card>
+            )}
 
-
-
-
+            {/* Member Scorecard — role:user only, with memberSearch + pagination */}
+            {!selectedUserId && filteredMembers.length > 0 && (
+                <Card className="border-0 shadow-sm mb-4">
+                    <Card.Header className="bg-white border-0 py-3">
+                        <div className="d-flex align-items-center gap-2 flex-wrap">
+                            <i className="bi bi-person-lines-fill text-primary"></i>
+                            <strong>Scorecard Anggota</strong>
+                            <Badge bg="secondary" pill>{filteredMembers.length} user</Badge>
+                            {selectedDivisionId && (
+                                <Badge bg="info" pill>
+                                    {calendarData?.allDivisions?.find(d => String(d.id) === String(selectedDivisionId))?.name || "Divisi"}
+                                </Badge>
+                            )}
+                            <div className="ms-auto" style={{ minWidth: 220 }}>
+                                <Form.Control
+                                    size="sm"
+                                    placeholder="🔍 Cari nama atau divisi..."
+                                    value={memberSearch}
+                                    onChange={e => { setMemberSearch(e.target.value); setMemberPage(1); }}
+                                />
+                            </div>
+                        </div>
+                    </Card.Header>
+                    <Card.Body className="p-0">
+                        <div className="table-responsive">
+                            <table className="table table-hover table-sm mb-0">
+                                <thead style={{ background: "#f8f9fa", position: "sticky", top: 0, zIndex: 1 }}>
+                                    <tr>
+                                        <th className="ps-3 py-2 small">#</th>
+                                        <th className="py-2 small">Nama</th>
+                                        <th className="py-2 small">Divisi</th>
+                                        <th className="text-center py-2 small">Hadir</th>
+                                        <th className="text-center py-2 small">Terlambat</th>
+                                        <th className="text-center py-2 small">Alpha</th>
+                                        <th className="text-center py-2 small">Izin</th>
+                                        <th className="text-center py-2 small">Logbook</th>
+                                        <th className="text-center py-2 small" style={{ minWidth: 110 }}>Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {paginatedMembers.length === 0 ? (
+                                        <tr><td colSpan={9} className="text-center py-3 text-muted small">Tidak ada anggota yang cocok</td></tr>
+                                    ) : paginatedMembers.map((m, idx) => (
+                                        <tr key={m.id} style={{ cursor: "pointer" }}
+                                            onClick={() => setSelectedUserId(String(m.id))}>
+                                            <td className="ps-3 py-2 small text-muted">{(memberPage-1)*MEMBER_PAGE_SIZE + idx + 1}</td>
+                                            <td className="py-2 small fw-medium">{m.name}</td>
+                                            <td className="py-2 small text-muted">{m.divisionName}</td>
+                                            <td className="text-center py-2 small text-success fw-bold">{m.attendanceDays}</td>
+                                            <td className="text-center py-2 small text-warning fw-bold">{m.lateDays}</td>
+                                            <td className="text-center py-2 small text-danger fw-bold">{m.absentDays}</td>
+                                            <td className="text-center py-2 small fw-bold" style={{color:"#6f42c1"}}>{m.leaveDays}</td>
+                                            <td className="text-center py-2 small text-info fw-bold">{m.logbookDays}</td>
+                                            <td className="text-center py-2">
+                                                <div className="d-flex align-items-center gap-1">
+                                                    <div className="flex-grow-1" style={{ height: 5, background: "#e9ecef", borderRadius: 3 }}>
+                                                        <div style={{ width: `${m.attendanceRate}%`, height: "100%", borderRadius: 3, background: m.attendanceRate >= 80 ? "#28a745" : m.attendanceRate >= 60 ? "#ffc107" : "#dc3545" }}></div>
+                                                    </div>
+                                                    <small className="fw-bold" style={{ fontSize: "0.7rem", minWidth: 28 }}>{m.attendanceRate}%</small>
+                                                </div>
+                                                {m.attendanceRate < 70 && <small className="text-danger d-block" style={{ fontSize: "0.65rem" }}>⚠ Rendah</small>}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {totalMemberPages > 1 && (
+                            <div className="d-flex align-items-center justify-content-between px-3 py-2 border-top" style={{ background: "#fafafa" }}>
+                                <small className="text-muted">
+                                    Menampilkan {(memberPage-1)*MEMBER_PAGE_SIZE+1}–{Math.min(memberPage*MEMBER_PAGE_SIZE, filteredMembers.length)} dari {filteredMembers.length} anggota
+                                </small>
+                                <div className="d-flex gap-1">
+                                    <Button size="sm" variant="outline-secondary" disabled={memberPage <= 1} onClick={() => setMemberPage(p => p-1)}>‹</Button>
+                                    {Array.from({length: totalMemberPages}, (_, i) => i+1)
+                                        .filter(p => p === 1 || p === totalMemberPages || Math.abs(p - memberPage) <= 1)
+                                        .reduce((acc, p, i, arr) => { if (i > 0 && p - arr[i-1] > 1) acc.push("..."); acc.push(p); return acc; }, [])
+                                        .map((p, i) => p === "..." ? (
+                                            <span key={`e-${i}`} className="px-2 py-1 small text-muted">…</span>
+                                        ) : (
+                                            <Button key={p} size="sm" variant={p === memberPage ? "primary" : "outline-secondary"} onClick={() => setMemberPage(p)}>{p}</Button>
+                                        ))
+                                    }
+                                    <Button size="sm" variant="outline-secondary" disabled={memberPage >= totalMemberPages} onClick={() => setMemberPage(p => p+1)}>›</Button>
+                                </div>
+                            </div>
+                        )}
+                    </Card.Body>
+                </Card>
+            )}
 
             <Card
                 className="border-0 mb-4"
