@@ -284,87 +284,80 @@ const OfficeLocations = () => {
         }
     };
 
-    const autoFillCurrentLocation = async () => {
+    // Auto-fill WiFi/IP saja (tanpa menyentuh GPS)
+    const autoFillWifi = async () => {
         setTestingLocation(true);
-        toast.loading("Auto-fill WiFi & GPS...", { id: "auto-fill" });
+        toast.loading("Mendeteksi IP WiFi Anda...", { id: "auto-fill-wifi" });
 
         try {
-            // Get current IP from backend
-            const ipResponse = await axiosInstance.get(
-                "/admin/office-networks/my-ip"
-            );
+            const ipResponse = await axiosInstance.get("/admin/office-networks/my-ip");
 
             if (ipResponse.data.success) {
                 const ipData = ipResponse.data.data;
-
-                // Update formData with IP info
                 setFormData((prev) => ({
                     ...prev,
                     ip_address: ipData.ip,
                     ip_range_start: ipData.suggestedRange.start,
                     ip_range_end: ipData.suggestedRange.end,
                 }));
-
-                // Show IP info
                 toast.success(
-                    `✅ IP terdeteksi: ${ipData.ip}${
-                        ipData.isLocal ? " (localhost)" : ""
-                    }`,
-                    { id: "auto-fill", duration: 3000 }
-                );
-            }
-
-            // Get GPS
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    async (position) => {
-                        const coords = {
-                            latitude: position.coords.latitude.toFixed(8),
-                            longitude: position.coords.longitude.toFixed(8),
-                            accuracy: Math.round(position.coords.accuracy),
-                        };
-
-                        setFormData((prev) => ({
-                            ...prev,
-                            latitude: coords.latitude,
-                            longitude: coords.longitude,
-                        }));
-                        setCurrentLocation(coords);
-
-                        toast.success(
-                            `✅ WiFi & GPS berhasil terisi otomatis!\nIP: ${ipResponse.data.data.ip}\nGPS: ±${coords.accuracy}m`,
-                            { id: "auto-fill", duration: 5000 }
-                        );
-                        setTestingLocation(false);
-                    },
-                    (error) => {
-                        toast.success(
-                            `✅ WiFi berhasil terisi! GPS tidak dapat diakses (opsional).`,
-                            { id: "auto-fill", duration: 4000 }
-                        );
-                        setTestingLocation(false);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0,
-                    }
+                    `✅ WiFi terdeteksi: ${ipData.ip}${ipData.isLocal ? " (localhost)" : ""}`,
+                    { id: "auto-fill-wifi", duration: 4000 }
                 );
             } else {
-                toast.success(
-                    `✅ WiFi berhasil terisi! Browser tidak support GPS (opsional).`,
-                    { id: "auto-fill", duration: 4000 }
-                );
-                setTestingLocation(false);
+                toast.error("Gagal mendeteksi IP WiFi", { id: "auto-fill-wifi" });
             }
         } catch (error) {
-            console.error("Auto-fill error:", error);
-            toast.error("Gagal auto-fill. Silakan isi manual.", {
-                id: "auto-fill",
-            });
+            console.error("Auto-fill WiFi error:", error);
+            toast.error("Gagal auto-fill WiFi. Silakan isi manual.", { id: "auto-fill-wifi" });
+        } finally {
             setTestingLocation(false);
         }
     };
+
+    // Auto-fill GPS saja (tanpa menyentuh WiFi/IP)
+    const autoFillGPS = () => {
+        if (!navigator.geolocation) {
+            toast.error("Geolocation tidak didukung browser ini");
+            return;
+        }
+
+        setGettingLocation(true);
+        toast.loading("Mengambil koordinat GPS...", { id: "auto-fill-gps" });
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const coords = {
+                    latitude: position.coords.latitude.toFixed(8),
+                    longitude: position.coords.longitude.toFixed(8),
+                    accuracy: Math.round(position.coords.accuracy),
+                };
+                setFormData((prev) => ({
+                    ...prev,
+                    latitude: coords.latitude,
+                    longitude: coords.longitude,
+                }));
+                setCurrentLocation(coords);
+                toast.success(
+                    `✅ GPS berhasil diambil (akurasi ±${coords.accuracy}m)`,
+                    { id: "auto-fill-gps", duration: 4000 }
+                );
+                setGettingLocation(false);
+            },
+            (error) => {
+                let errorMsg = "Gagal mendapatkan lokasi GPS";
+                switch (error.code) {
+                    case error.PERMISSION_DENIED: errorMsg = "Akses GPS ditolak. Mohon izinkan akses GPS."; break;
+                    case error.POSITION_UNAVAILABLE: errorMsg = "Informasi lokasi tidak tersedia"; break;
+                    case error.TIMEOUT: errorMsg = "Request lokasi timeout"; break;
+                }
+                toast.error(errorMsg, { id: "auto-fill-gps" });
+                setGettingLocation(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    };
+
 
     const stats = {
         total: offices.length,
@@ -776,45 +769,40 @@ const OfficeLocations = () => {
                                             <i className="bi bi-wifi me-2"></i>
                                             WiFi/IP Detection (Priority 1)
                                         </h6>
-                                        
-                                        {/* Auto-Fill Button - Primary Action */}
+                                                                   {/* Auto-Fill WiFi Button — khusus isi WiFi/IP saja */}
                                         <div className="alert alert-primary bg-light border-primary mb-3">
                                             <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
                                                 <div>
-                                                    <i className="bi bi-magic me-2"></i>
-                                                    <strong>Quick Start:</strong> Deteksi otomatis lokasi Anda saat ini
+                                                    <i className="bi bi-wifi me-2"></i>
+                                                    <strong>Auto-Fill WiFi:</strong> Deteksi IP jaringan Anda saat ini
                                                 </div>
                                                 <button
                                                     type="button"
-                                                    className="btn btn-primary"
-                                                    onClick={
-                                                        autoFillCurrentLocation
-                                                    }
+                                                    className="btn btn-info text-white"
+                                                    onClick={autoFillWifi}
                                                     disabled={testingLocation}
                                                 >
                                                     {testingLocation ? (
                                                         <>
-                                                            <span
-                                                                className="spinner-border spinner-border-sm me-2"
-                                                                role="status"
-                                                            ></span>
+                                                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
                                                             Detecting...
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <i className="bi bi-radar me-2"></i>
-                                                            Auto-Fill WiFi & GPS
+                                                            <i className="bi bi-wifi me-2"></i>
+                                                            Deteksi IP WiFi Sekarang
                                                         </>
                                                     )}
                                                 </button>
                                             </div>
                                             <small className="text-muted d-block mt-2">
-                                                Akan mengisi IP Address, IP Range, dan GPS secara otomatis
+                                                Hanya mengisi kolom IP Address dan IP Range. GPS <strong>tidak</strong> akan tersentuh.
                                             </small>
                                         </div>
-                                        
+
                                         <p className="text-muted small mb-3">
-                                            User yang terhubung ke WiFi kantor akan otomatis terdeteksi ONSITE. Anda bisa mengisi manual atau gunakan tombol Auto-Fill di atas.
+                                            User yang terhubung ke WiFi kantor akan otomatis terdeteksi <strong>ONSITE</strong>.
+                                            Isi manual atau gunakan tombol <em>Deteksi IP WiFi</em> di atas.
                                         </p>
 
                                         <div className="row g-3">
@@ -902,62 +890,67 @@ const OfficeLocations = () => {
                                     <div className="pb-3">
                                         <h6 className="text-warning mb-2">
                                             <i className="bi bi-geo-alt me-2"></i>
-                                            GPS Detection (Priority 2 - Optional)
+                                            GPS Detection (Priority 2 — Fallback jika tidak di WiFi kantor)
                                         </h6>
                                         <p className="text-muted small mb-3">
-                                            User yang berada dalam radius kantor
-                                            akan terdeteksi ONSITE (jika bukan
-                                            WiFi kantor). GPS bersifat <strong>opsional</strong> dan hanya sebagai validasi tambahan.
-                                            <br/>
-                                            <em>💡 Tip: Gunakan tombol "Auto-Fill WiFi & GPS" di atas untuk mengisi GPS secara otomatis.</em>
+                                            Jika user <strong>tidak terhubung ke WiFi kantor</strong>, sistem akan cek lokasi GPS.
+                                            User dalam radius yang ditentukan akan tetap terdeteksi <strong>ONSITE</strong>.
+                                            <br />
+                                            <em>💡 Isi GPS saja sudah cukup jika kantor tidak menggunakan WiFi terdeteksi.</em>
                                         </p>
+
+                                        {/* Auto-Fill GPS Button — khusus isi GPS saja, tidak menyentuh WiFi */}
+                                        <div className="alert alert-warning bg-light border-warning mb-3 py-2">
+                                            <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                                <div>
+                                                    <i className="bi bi-crosshair me-2"></i>
+                                                    <strong>Auto-Fill GPS:</strong> Ambil koordinat lokasi Anda saat ini
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-warning text-dark"
+                                                    onClick={autoFillGPS}
+                                                    disabled={gettingLocation}
+                                                >
+                                                    {gettingLocation ? (
+                                                        <>
+                                                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                            Mengambil GPS...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <i className="bi bi-geo-alt me-2"></i>
+                                                            Ambil Koordinat GPS Sekarang
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                            <small className="text-muted d-block mt-1">
+                                                Hanya mengisi Latitude, Longitude, dan mempertahankan Radius. WiFi/IP <strong>tidak</strong> akan tersentuh.
+                                            </small>
+                                        </div>
 
                                         <div className="row g-3 mb-3">
                                             <div className="col-md-5">
-                                                <label className="form-label">
-                                                    Latitude
-                                                </label>
+                                                <label className="form-label">Latitude</label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
                                                     value={formData.latitude}
                                                     onChange={(e) =>
-                                                        setFormData({
-                                                            ...formData,
-                                                            latitude:
-                                                                e.target.value,
-                                                        })
+                                                        setFormData({ ...formData, latitude: e.target.value })
                                                     }
                                                     placeholder="-6.200000"
                                                 />
-                                                <small className="text-muted">
-                                                    <a 
-                                                        href="#" 
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            getCurrentGPS();
-                                                        }}
-                                                        className="text-decoration-none"
-                                                    >
-                                                        <i className="bi bi-crosshair me-1"></i>
-                                                        Ambil dari lokasi saat ini
-                                                    </a>
-                                                </small>
                                             </div>
                                             <div className="col-md-5">
-                                                <label className="form-label">
-                                                    Longitude
-                                                </label>
+                                                <label className="form-label">Longitude</label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
                                                     value={formData.longitude}
                                                     onChange={(e) =>
-                                                        setFormData({
-                                                            ...formData,
-                                                            longitude:
-                                                                e.target.value,
-                                                        })
+                                                        setFormData({ ...formData, longitude: e.target.value })
                                                     }
                                                     placeholder="106.816666"
                                                 />
