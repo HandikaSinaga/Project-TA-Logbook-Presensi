@@ -1176,151 +1176,200 @@ class CalendarController {
      */
     static async getAdminCalendar(req, res) {
         try {
-            const { year, month, division_id } = req.query;
+            const { year, month, division_id, user_id } = req.query;
 
             // Parse date range
             const period = CalendarController.getMonthDateRange(year, month);
             const { firstDay, lastDay } = period;
 
             // Build user filter
-            const userWhereClause = {};
-            if (division_id) {
-                userWhereClause.division_id = parseInt(division_id);
-            }
+            const userWhereClause = { role: { [Op.ne]: "admin" } };
+            if (division_id) userWhereClause.division_id = parseInt(division_id);
+            if (user_id) userWhereClause.id = parseInt(user_id);
 
-            // Get users first
-            const users = await User.findAll({
-                where: userWhereClause,
-                attributes: ["id", "name", "email", "role"],
-                include: [
-                    {
-                        model: Division,
-                        as: "division",
-                        attributes: ["id", "name"],
-                    },
-                ],
-                raw: false,
+            // Get all divisions for filter dropdown
+            const allDivisions = await Division.findAll({
+                attributes: ["id", "name"],
+                order: [["name", "ASC"]],
+                raw: true,
             });
 
-            const userIds = users.map((user) => user.id);
+            // Get users
+            const users = await User.findAll({
+                where: userWhereClause,
+                attributes: ["id", "name", "email", "role", "division_id", "created_at"],
+                include: [{
+                    model: Division,
+                    as: "division",
+                    attributes: ["id", "name"],
+                }],
+                order: [["name", "ASC"]],
+            });
 
-            // Parallel queries untuk semua data
-            const [workingDays, holidays, attendances, leaves] =
-                await Promise.all([
-                    CalendarController.getWorkingDaysConfig(),
-                    Holiday.findAll({
-                        where: {
-                            date: { [Op.between]: [firstDay, lastDay] },
-                            is_active: true,
-                        },
-                        include: [
-                            {
-                                model: User,
-                                as: "creator",
-                                attributes: ["id", "name"],
-                            },
-                        ],
-                        order: [["date", "ASC"]],
-                    }),
-                    Attendance.findAll({
-                        where: {
-                            user_id: { [Op.in]: userIds },
-                            date: { [Op.between]: [firstDay, lastDay] },
-                        },
-                        include: [
-                            {
-                                model: User,
-                                as: "user",
-                                attributes: ["id", "name"],
-                                include: [
-                                    {
-                                        model: Division,
-                                        as: "division",
-                                        attributes: ["id", "name"],
-                                    },
-                                ],
-                            },
-                        ],
-                        attributes: [
-                            "id",
-                            "user_id",
-                            "date",
-                            "check_in_time",
-                            "check_out_time",
-                            "status",
-                        ],
-                        order: [["date", "ASC"]],
-                    }),
-                    Leave.findAll({
-                        where: {
-                            user_id: { [Op.in]: userIds },
-                            [Op.or]: [
-                                {
-                                    start_date: {
-                                        [Op.between]: [firstDay, lastDay],
-                                    },
-                                },
-                                {
-                                    end_date: {
-                                        [Op.between]: [firstDay, lastDay],
-                                    },
-                                },
-                                {
-                                    [Op.and]: [
-                                        { start_date: { [Op.lte]: firstDay } },
-                                        { end_date: { [Op.gte]: lastDay } },
-                                    ],
-                                },
-                            ],
-                        },
-                        include: [
-                            {
-                                model: User,
-                                as: "user",
-                                attributes: ["id", "name"],
-                            },
-                        ],
-                        order: [["start_date", "ASC"]],
-                    }),
-                ]);
+            const userIds = users.map((u) => u.id);
+            if (userIds.length === 0) {
+                return res.status(200).json({
+                    success: true,
+                    message: "Data kalender sistem berhasil dimuat",
+                    data: {
+                        period, workingDays: [1,2,3,4,5], holidays: [], users: [],
+                        attendances: [], logbooks: [], leaves: [], allDivisions,
+                        summary: { totalUsers: 0, totalAttendances: 0, lateCount: 0, totalHolidays: 0, leaveStats: { approved: 0, pending: 0, rejected: 0 } },
+                        divisionStats: [], memberStats: [],
+                    },
+                });
+            }
 
-            // Group attendances by date untuk calendar view
-            const attendancesByDate = attendances.reduce((acc, att) => {
-                const dateKey = att.date;
-                if (!acc[dateKey]) acc[dateKey] = [];
-                acc[dateKey].push(att);
-                return acc;
-            }, {});
+            // Parallel queries
+            const [workingDays, holidays, attendances, logbooks, leaves] = await Promise.all([
+                CalendarController.getWorkingDaysConfig(),
+                Holiday.findAll({
+                    where: { date: { [Op.between]: [firstDay, lastDay] }, is_active: true },
+                    attributes: ["id", "date", "name", "is_national"],
+                    order: [["date", "ASC"]],
+                    raw: true,
+                }),
+                Attendance.findAll({
+                    where: { user_id: { [Op.in]: userIds }, date: { [Op.between]: [firstDay, lastDay] } },
+                    include: [{
+                        model: User, as: "user",
+                        attributes: ["id", "name", "division_id"],
+                        include: [{ model: Division, as: "division", attributes: ["id", "name"] }],
+                    }],
+                    attributes: ["id", "user_id", "date", "check_in_time", "check_out_time", "status", "work_type"],
+                    order: [["date", "ASC"]],
+                }),
+                Logbook.findAll({
+                    where: { user_id: { [Op.in]: userIds }, date: { [Op.between]: [firstDay, lastDay] } },
+                    include: [{ model: User, as: "user", attributes: ["id", "name", "division_id"] }],
+                    attributes: ["id", "user_id", "date", "activity", "status", "created_at"],
+                    order: [["date", "ASC"]],
+                }),
+                Leave.findAll({
+                    where: {
+                        user_id: { [Op.in]: userIds },
+                        [Op.or]: [
+                            { start_date: { [Op.between]: [firstDay, lastDay] } },
+                            { end_date: { [Op.between]: [firstDay, lastDay] } },
+                            { [Op.and]: [{ start_date: { [Op.lte]: firstDay } }, { end_date: { [Op.gte]: lastDay } }] },
+                        ],
+                    },
+                    include: [{ model: User, as: "user", attributes: ["id", "name", "division_id"] }],
+                    attributes: ["id", "user_id", "start_date", "end_date", "type", "status", "reason"],
+                    order: [["start_date", "ASC"]],
+                }),
+            ]);
 
-            // Calculate statistics
+            // Flatten to raw for frontend
+            const attendancesRaw = attendances.map(a => ({
+                id: a.id, user_id: a.user_id, date: a.date,
+                check_in_time: a.check_in_time, check_out_time: a.check_out_time,
+                status: a.status, work_type: a.work_type,
+                user: a.user ? { id: a.user.id, name: a.user.name, division_id: a.user.division_id, division: a.user.division?.dataValues } : null,
+            }));
+            const logbooksRaw = logbooks.map(l => ({
+                id: l.id, user_id: l.user_id, date: l.date,
+                activity: l.activity, status: l.status, created_at: l.created_at,
+                user: l.user ? { id: l.user.id, name: l.user.name, division_id: l.user.division_id } : null,
+            }));
+            const leavesRaw = leaves.map(l => ({
+                id: l.id, user_id: l.user_id, start_date: l.start_date, end_date: l.end_date,
+                type: l.type, status: l.status, reason: l.reason,
+                user: l.user ? { id: l.user.id, name: l.user.name, division_id: l.user.division_id } : null,
+            }));
+
+            // Global summary
+            const approvedLeaves = leavesRaw.filter(l => l.status === "approved");
             const summary = {
                 totalUsers: users.length,
-                totalAttendances: attendances.length,
-                lateCount: attendances.filter((att) => att.status === "late")
-                    .length,
+                totalAttendances: attendancesRaw.length,
+                lateCount: attendancesRaw.filter(a => a.status === "late").length,
                 totalHolidays: holidays.length,
+                totalLogbooks: logbooksRaw.length,
                 leaveStats: {
-                    pending: leaves.filter((l) => l.status === "pending")
-                        .length,
-                    approved: leaves.filter((l) => l.status === "approved")
-                        .length,
-                    rejected: leaves.filter((l) => l.status === "rejected")
-                        .length,
+                    approved: approvedLeaves.length,
+                    pending: leavesRaw.filter(l => l.status === "pending").length,
+                    rejected: leavesRaw.filter(l => l.status === "rejected").length,
                 },
+                workingDaysElapsed: (() => {
+                    const today = new Date(); const end = new Date(lastDay);
+                    const cap = today < end ? today : end;
+                    const start = new Date(firstDay); let count = 0;
+                    for (let d = new Date(start); d <= cap; d.setDate(d.getDate() + 1)) {
+                        if (workingDays.includes(d.getDay()) && !holidays.some(h => h.date === d.toISOString().split("T")[0])) count++;
+                    }
+                    return count || 1;
+                })(),
             };
+
+            // Per-division stats
+            const divisionMap = {};
+            allDivisions.forEach(div => {
+                divisionMap[div.id] = {
+                    id: div.id, name: div.name,
+                    memberCount: 0, attendanceDays: 0, lateDays: 0, absentDays: 0, leaveDays: 0, logbookCount: 0, attendanceRate: 0,
+                };
+            });
+            users.forEach(u => {
+                const divId = u.division_id;
+                if (divId && divisionMap[divId]) divisionMap[divId].memberCount++;
+            });
+            attendancesRaw.forEach(a => {
+                const divId = a.user?.division_id;
+                if (divId && divisionMap[divId]) {
+                    divisionMap[divId].attendanceDays++;
+                    if (a.status === "late") divisionMap[divId].lateDays++;
+                }
+            });
+            logbooksRaw.forEach(l => {
+                const divId = l.user?.division_id;
+                if (divId && divisionMap[divId]) divisionMap[divId].logbookCount++;
+            });
+            const divisionStats = Object.values(divisionMap)
+                .filter(d => d.memberCount > 0)
+                .map(d => {
+                    const expectedTotal = d.memberCount * summary.workingDaysElapsed;
+                    d.absentDays = Math.max(0, expectedTotal - d.attendanceDays - d.leaveDays);
+                    d.attendanceRate = expectedTotal > 0 ? Math.round((d.attendanceDays / expectedTotal) * 100) : 0;
+                    return d;
+                });
+
+            // Per-member stats (for user-level view or member scorecard)
+            const memberStatsPromises = users.map(async (u) => {
+                try {
+                    const alphaStats = await AlphaCalculationService.calculateMonthlyAlpha(u.id, period.year, period.month);
+                    const userAtts = attendancesRaw.filter(a => a.user_id === u.id);
+                    const expectedWorkingDays = alphaStats.expectedWorkingDays || 1;
+                    const attendanceDays = alphaStats.attendanceDays || 0;
+                    return {
+                        id: u.id, name: u.name, role: u.role,
+                        divisionId: u.division_id,
+                        divisionName: u.division?.dataValues?.name || u.division?.name || "-",
+                        attendanceDays,
+                        lateDays: userAtts.filter(a => a.status === "late").length,
+                        absentDays: alphaStats.alphaCount || 0,
+                        leaveDays: alphaStats.leaveDays || 0,
+                        logbookDays: logbooksRaw.filter(l => l.user_id === u.id).length,
+                        attendanceRate: Math.min(100, Math.round((attendanceDays / expectedWorkingDays) * 100)),
+                    };
+                } catch {
+                    return { id: u.id, name: u.name, role: u.role, divisionId: u.division_id, divisionName: "-", attendanceDays: 0, lateDays: 0, absentDays: 0, leaveDays: 0, logbookDays: 0, attendanceRate: 0 };
+                }
+            });
+            const memberStats = await Promise.all(memberStatsPromises);
 
             return res.status(200).json({
                 success: true,
                 message: "Data kalender sistem berhasil dimuat",
                 data: {
-                    period,
-                    workingDays,
-                    holidays,
-                    users,
-                    attendances,
-                    attendancesByDate,
-                    leaves,
+                    period, workingDays, holidays, allDivisions,
+                    users: users.map(u => ({ id: u.id, name: u.name, role: u.role, division_id: u.division_id, created_at: u.created_at, division: u.division?.dataValues })),
+                    attendances: attendancesRaw,
+                    logbooks: logbooksRaw,
+                    leaves: leavesRaw,
                     summary,
+                    divisionStats,
+                    memberStats,
                 },
             });
         } catch (error) {
@@ -1328,15 +1377,13 @@ class CalendarController {
             return res.status(500).json({
                 success: false,
                 message: "Gagal memuat data kalender sistem",
-                error:
-                    process.env.NODE_ENV === "development"
-                        ? error.message
-                        : undefined,
+                error: process.env.NODE_ENV === "development" ? error.message : undefined,
             });
         }
     }
 
     /**
+
      * ADMIN ROLE: Get comprehensive date detail for all users
      * Optimized dengan parallel queries
      *
