@@ -51,7 +51,6 @@ const AdminWorkCalendar = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [currentDate, setCurrentDate] = useState(() => {
-        // Initialize from URL params if available
         const urlMonth = searchParams.get("month");
         const urlYear = searchParams.get("year");
         if (urlMonth && urlYear) {
@@ -65,7 +64,8 @@ const AdminWorkCalendar = () => {
     const [dateDetail, setDateDetail] = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
     const [selectedDivisionId, setSelectedDivisionId] = useState("");
-    const [divisions, setDivisions] = useState([]);
+    const [selectedUserId, setSelectedUserId] = useState("");
+    // allDivisions comes from backend response (no separate fetch needed)
 
     // Filter states
     const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -76,27 +76,11 @@ const AdminWorkCalendar = () => {
         const urlYear = searchParams.get("year");
         return urlYear || String(new Date().getFullYear());
     });
+    const [statusFilter, setStatusFilter] = useState("all");
 
     const detailRef = useRef(null);
 
-    // Fetch divisions list
-    useEffect(() => {
-        const fetchDivisions = async () => {
-            try {
-                const response = await axiosInstance.get("/admin/divisions");
-                if (response.data.success) {
-                    setDivisions(
-                        response.data.data || response.data.divisions || [],
-                    );
-                }
-            } catch (error) {
-                console.error("Error fetching divisions:", error);
-            }
-        };
-        fetchDivisions();
-    }, []);
-
-    // Fetch calendar data with comprehensive error handling and retry logic
+    // Fetch calendar data
     const fetchCalendarData = useCallback(
         async (date) => {
             try {
@@ -105,196 +89,153 @@ const AdminWorkCalendar = () => {
                 const month = date.getMonth() + 1;
 
                 const params = { year, month };
-                if (selectedDivisionId) {
-                    params.division_id = parseInt(selectedDivisionId);
-                }
+                if (selectedDivisionId) params.division_id = parseInt(selectedDivisionId);
+                if (selectedUserId) params.user_id = parseInt(selectedUserId);
 
-                const response = await axiosInstance.get("/admin/calendar", {
-                    params,
-                });
+                const response = await axiosInstance.get("/admin/calendar", { params });
 
                 if (response.data.success && response.data.data) {
                     setCalendarData(response.data.data);
                     generateEvents(response.data.data);
-
-                    // Log data for debugging
-                    console.log("✅ Calendar Data Loaded:", {
-                        period: response.data.data.period,
-                        divisionFilter: selectedDivisionId || "all",
-                        users: response.data.data.memberStats?.length || 0,
-                        totalAttendances:
-                            response.data.data.attendances?.length || 0,
-                        totalLeaves: response.data.data.leaves?.length || 0,
-                        totalLogbooks: response.data.data.logbooks?.length || 0,
-                        divisionStats:
-                            response.data.data.divisionStats?.length || 0,
-                    });
                 } else {
                     throw new Error("Invalid response format");
                 }
             } catch (error) {
-                console.error("❌ Error fetching calendar:", error);
-                toast.error(
-                    error.response?.data?.message || "Gagal memuat kalender",
-                );
+                console.error("Error fetching calendar:", error);
+                toast.error(error.response?.data?.message || "Gagal memuat kalender");
                 setCalendarData(null);
             } finally {
                 setLoading(false);
             }
         },
-        [selectedDivisionId],
+        [selectedDivisionId, selectedUserId], // eslint-disable-line
     );
 
-    // Enhanced event generation with priority-based conflict resolution
-    // For admin view: shows organization-wide aggregated data
+    // generateEvents: multi-event per day (no priority suppression) like supervisor team view
+    // For user-specific view: single priority-based event per day
     const generateEvents = useCallback((data) => {
-        if (!data || !data.holidays) {
-            console.warn("❌ Invalid calendar data structure");
-            setEvents([]);
-            return;
-        }
+        if (!data || !data.holidays) { setEvents([]); return; }
 
-        const eventsByDate = {}; // Group events by date to handle conflicts
-
-        console.log("👨‍💼 Admin Calendar Event Generation:", {
-            hasHolidays: !!data.holidays?.length,
-            hasAttendances: !!data.attendances?.length,
-            hasLeaves: !!data.leaves?.length,
-            totalHolidays: data.holidays?.length || 0,
-            totalAttendances: data.attendances?.length || 0,
-            totalLeaves: data.leaves?.length || 0,
-        });
-
-        // Helper function to add event with priority check
+        const eventsByDate = {};
         const addEvent = (date, event, priority) => {
             const dateKey = moment(date).format("YYYY-MM-DD");
-            if (!eventsByDate[dateKey]) {
-                eventsByDate[dateKey] = [];
-            }
+            if (!eventsByDate[dateKey]) eventsByDate[dateKey] = [];
             eventsByDate[dateKey].push({ ...event, priority });
         };
 
-        // 1. Holidays - Red for national, Orange for custom (Highest Priority)
+        const isUserView = !!selectedUserId;
+
+        // 1. Holidays (always shown, highest priority)
         if (Array.isArray(data.holidays)) {
             data.holidays.forEach((holiday) => {
-                const date = holiday.date;
-                addEvent(
-                    date,
-                    {
-                        id: `holiday-${holiday.id}`,
-                        title: `🎉 ${holiday.name}`,
-                        start: new Date(date + "T00:00:00"),
-                        end: new Date(date + "T23:59:59"),
-                        allDay: true,
-                        type: "holiday",
-                        color: holiday.is_national
-                            ? COLORS.holiday
-                            : COLORS.holidayCustom,
-                        resource: holiday,
-                    },
-                    EVENT_PRIORITY.holiday,
-                );
+                addEvent(holiday.date, {
+                    id: `holiday-${holiday.id}`,
+                    title: `🎉 ${holiday.name}`,
+                    start: new Date(holiday.date + "T00:00:00"),
+                    end: new Date(holiday.date + "T23:59:59"),
+                    allDay: true, type: "holiday",
+                    color: holiday.is_national ? COLORS.holiday : COLORS.holidayCustom,
+                    resource: holiday,
+                }, EVENT_PRIORITY.holiday);
             });
         }
 
-        // 2. Attendance summary - Aggregated view for entire organization
-        // Green for normal, Yellow if any late
-        if (Array.isArray(data.attendances)) {
-            const attendancesByDate = {};
-            data.attendances.forEach((attendance) => {
-                const date = attendance.date;
-                if (!attendancesByDate[date]) {
-                    attendancesByDate[date] = { total: 0, late: 0 };
+        const holidayDates = new Set(data.holidays?.map(h => h.date) || []);
+
+        if (isUserView && data.user?.created_at) {
+            // ── USER-SPECIFIC VIEW: single event per day, priority-based ──
+            const userJoinDate = moment(data.user.created_at).startOf("day");
+
+            // Alpha markers
+            if (data.period && data.workingDays) {
+                const today = moment().startOf("day");
+                const attendanceDates = new Set(data.attendances?.map(a => a.date) || []);
+                const leaveDates = new Set();
+                data.leaves?.forEach(leave => {
+                    for (let d = moment(leave.start_date).clone(); d.isSameOrBefore(moment(leave.end_date)); d.add(1, "day"))
+                        leaveDates.add(d.format("YYYY-MM-DD"));
+                });
+                for (let d = moment(data.period.firstDay).clone(); d.isSameOrBefore(moment(data.period.lastDay)); d.add(1, "day")) {
+                    const ds = d.format("YYYY-MM-DD");
+                    if (d.isBefore(userJoinDate) || d.isAfter(today)) continue;
+                    if (!data.workingDays.includes(d.day()) || holidayDates.has(ds) || attendanceDates.has(ds) || leaveDates.has(ds)) continue;
+                    addEvent(ds, { id: `absent-${ds}`, title: "❌ Alpha", start: new Date(ds + "T00:00:00"), end: new Date(ds + "T23:59:59"), allDay: true, type: "absent", color: COLORS.absent, resource: { date: ds } }, EVENT_PRIORITY.absent);
                 }
-                attendancesByDate[date].total++;
-                if (attendance.status === "late") {
-                    attendancesByDate[date].late++;
+            }
+            // Leaves
+            data.leaves?.forEach(leave => {
+                for (let d = moment(leave.start_date).clone(); d.isSameOrBefore(moment(leave.end_date)); d.add(1, "day")) {
+                    const ds = d.format("YYYY-MM-DD");
+                    addEvent(ds, { id: `leave-${leave.id}-${ds}`, title: `🏖️ ${leave.type?.replace("izin_", "") || "Izin"}`, start: new Date(ds + "T00:00:00"), end: new Date(ds + "T23:59:59"), allDay: true, type: "leave", color: COLORS.leave, resource: leave }, EVENT_PRIORITY.leave);
+                }
+            });
+            // Attendances
+            data.attendances?.forEach(att => {
+                const time = att.check_in_time?.substring(0, 5) || "";
+                const isLate = att.status === "late";
+                addEvent(att.date, { id: `att-${att.id}`, title: isLate ? `⏰ ${time}` : `✓ ${time}`, start: new Date(att.date + "T00:00:00"), end: new Date(att.date + "T23:59:59"), allDay: true, type: "attendance", color: isLate ? COLORS.late : COLORS.present, resource: att }, isLate ? EVENT_PRIORITY.late : EVENT_PRIORITY.present);
+            });
+        } else {
+            // ── TEAM/ORG VIEW: multi-event per day, no suppression ──
+            const totalUsers = data.users?.length || data.summary?.totalUsers || 0;
+            const attByDate = {};
+            data.attendances?.forEach(a => {
+                if (!attByDate[a.date]) attByDate[a.date] = { onTime: 0, late: 0 };
+                attByDate[a.date][a.status === "late" ? "late" : "onTime"]++;
+            });
+            const leaveDateMap = {};
+            data.leaves?.filter(l => l.status === "approved").forEach(l => {
+                for (let d = moment(l.start_date).clone(); d.isSameOrBefore(moment(l.end_date)); d.add(1, "day")) {
+                    const ds = d.format("YYYY-MM-DD"); if (!leaveDateMap[ds]) leaveDateMap[ds] = 0; leaveDateMap[ds]++;
                 }
             });
 
-            Object.keys(attendancesByDate).forEach((date) => {
-                const stats = attendancesByDate[date];
-                const isLate = stats.late > 0;
+            const allDates = new Set([
+                ...Object.keys(attByDate),
+                ...Object.keys(leaveDateMap),
+            ]);
+            // Add all working days in period
+            if (data.period && data.workingDays) {
+                const today = moment().startOf("day");
+                for (let d = moment(data.period.firstDay).clone(); d.isSameOrBefore(moment(data.period.lastDay)); d.add(1, "day")) {
+                    if (data.workingDays.includes(d.day()) && !d.isAfter(today)) allDates.add(d.format("YYYY-MM-DD"));
+                }
+            }
 
-                addEvent(
-                    date,
-                    {
-                        id: `attendance-${date}`,
-                        title: `👥 ${stats.total} user${stats.late > 0 ? ` (⚠️${stats.late})` : ""}`,
-                        start: new Date(date + "T00:00:00"),
-                        end: new Date(date + "T23:59:59"),
-                        allDay: true,
-                        type: "attendance",
-                        color: isLate ? COLORS.late : COLORS.present,
-                        resource: stats,
-                    },
-                    isLate ? EVENT_PRIORITY.late : EVENT_PRIORITY.present,
-                );
+            const today = moment().startOf("day");
+            allDates.forEach(dateStr => {
+                if (holidayDates.has(dateStr)) return;
+                const dm = moment(dateStr);
+                if (dm.isAfter(today)) return;
+                if (data.workingDays && !data.workingDays.includes(dm.day())) return;
+
+                const onTime = attByDate[dateStr]?.onTime || 0;
+                const late = attByDate[dateStr]?.late || 0;
+                const leave = leaveDateMap[dateStr] || 0;
+                const absent = Math.max(0, totalUsers - onTime - late - leave);
+
+                if (onTime > 0) addEvent(dateStr, { id: `present-${dateStr}`, title: `✓ ${onTime} Tepat`, start: new Date(dateStr + "T00:00:00"), end: new Date(dateStr + "T23:59:59"), allDay: true, type: "present", color: COLORS.present, resource: { date: dateStr, count: onTime } }, 50);
+                if (late > 0) addEvent(dateStr, { id: `late-${dateStr}`, title: `⏰ ${late} Terlambat`, start: new Date(dateStr + "T00:00:00"), end: new Date(dateStr + "T23:59:59"), allDay: true, type: "late", color: COLORS.late, resource: { date: dateStr, count: late } }, 51);
+                if (leave > 0) addEvent(dateStr, { id: `leave-${dateStr}`, title: `🏖️ ${leave} Izin`, start: new Date(dateStr + "T00:00:00"), end: new Date(dateStr + "T23:59:59"), allDay: true, type: "leave", color: COLORS.leave, resource: { date: dateStr, count: leave } }, 52);
+                if (absent > 0) addEvent(dateStr, { id: `absent-${dateStr}`, title: `❌ ${absent} Alpha`, start: new Date(dateStr + "T00:00:00"), end: new Date(dateStr + "T23:59:59"), allDay: true, type: "absent", color: COLORS.absent, resource: { date: dateStr, count: absent } }, 53);
             });
         }
 
-        // 3. Leave summary - Purple color
-        if (Array.isArray(data.leaves)) {
-            data.leaves.forEach((leave) => {
-                const userName = leave.user?.name || "User";
-                const shortName =
-                    userName.length > 15
-                        ? `${userName.substring(0, 15)}...`
-                        : userName;
-
-                const leaveStart = moment(leave.start_date);
-                const leaveEnd = moment(leave.end_date);
-
-                // Create event for each day in leave period
-                for (
-                    let date = leaveStart.clone();
-                    date.isSameOrBefore(leaveEnd);
-                    date.add(1, "day")
-                ) {
-                    const dateStr = date.format("YYYY-MM-DD");
-                    addEvent(
-                        dateStr,
-                        {
-                            id: `leave-${leave.id}-${dateStr}`,
-                            title: `🏖️ ${shortName}`,
-                            start: new Date(dateStr + "T00:00:00"),
-                            end: new Date(dateStr + "T23:59:59"),
-                            allDay: true,
-                            type: "leave",
-                            color: COLORS.leave,
-                            resource: leave,
-                        },
-                        EVENT_PRIORITY.leave,
-                    );
-                }
-            });
-        }
-
-        // Resolve conflicts: Keep only highest priority event per date
+        // Resolve: user view = 1 event/date; team view = all (except holiday suppresses all)
         const finalEvents = [];
-        Object.keys(eventsByDate).forEach((dateKey) => {
-            const dateEvents = eventsByDate[dateKey];
-            // Sort by priority (lower number = higher priority)
-            dateEvents.sort((a, b) => a.priority - b.priority);
-            // Take only the highest priority event
-            const topEvent = dateEvents[0];
-            if (topEvent) {
-                const { priority, ...eventData } = topEvent;
-                finalEvents.push(eventData);
+        Object.keys(eventsByDate).forEach(dateKey => {
+            const evs = eventsByDate[dateKey].sort((a, b) => a.priority - b.priority);
+            if (isUserView) {
+                const { priority: _p, ...ev } = evs[0]; finalEvents.push(ev);
+            } else {
+                const hasHoliday = evs.some(e => e.type === "holiday");
+                (hasHoliday ? evs.filter(e => e.type === "holiday") : evs)
+                    .forEach(e => { const { priority: _p, ...ev } = e; finalEvents.push(ev); });
             }
         });
 
-        console.log("🔍 Admin Event Generation Debug:");
-        console.log(`   - Total events generated: ${finalEvents.length}`);
-        console.log(`   - Event types:`, {
-            holidays: finalEvents.filter((e) => e.type === "holiday").length,
-            attendances: finalEvents.filter((e) => e.type === "attendance")
-                .length,
-            leaves: finalEvents.filter((e) => e.type === "leave").length,
-        });
-
         setEvents(finalEvents);
-    }, []);
+    }, [selectedUserId]);
 
     // Fetch date detail
     const fetchDateDetail = useCallback(
@@ -379,6 +320,12 @@ const AdminWorkCalendar = () => {
     // Handle division filter change
     const handleDivisionFilterChange = useCallback((e) => {
         setSelectedDivisionId(e.target.value);
+        setSelectedUserId(""); // Reset user when division changes
+    }, []);
+
+    // Handle user filter change
+    const handleUserFilterChange = useCallback((e) => {
+        setSelectedUserId(e.target.value);
     }, []);
 
     // Month/Year filter handlers
@@ -412,17 +359,16 @@ const AdminWorkCalendar = () => {
         const today = new Date();
         const currentMonth = String(today.getMonth() + 1).padStart(2, "0");
         const currentYear = String(today.getFullYear());
-
         setSelectedMonth(currentMonth);
         setSelectedYear(currentYear);
         setCurrentDate(today);
-
-        // Clear URL params
+        setSelectedDivisionId("");
+        setSelectedUserId("");
         setSearchParams({});
-
         setSelectedDate(null);
         setDateDetail(null);
-    }, [setSearchParams]);
+        fetchCalendarData(today);
+    }, [setSearchParams, fetchCalendarData]);
 
     // Close detail section
     const handleCloseDetail = useCallback(() => {
@@ -449,7 +395,20 @@ const AdminWorkCalendar = () => {
         };
     }, []);
 
-    // Day cell styling with future date handling and today highlight
+    // Build per-date attendance stats for heatmap (org/team view only)
+    const orgDateStats = useMemo(() => {
+        if (selectedUserId || !calendarData?.attendances) return {};
+        const stats = {};
+        const totalUsers = calendarData.users?.length || calendarData.summary?.totalUsers || 0;
+        calendarData.attendances.forEach(a => {
+            if (!stats[a.date]) stats[a.date] = { present: 0 };
+            stats[a.date].present++;
+        });
+        Object.keys(stats).forEach(d => { stats[d].totalUsers = totalUsers; });
+        return stats;
+    }, [calendarData, selectedUserId]);
+
+    // Day cell styling: heatmap for org/team view, standard for user view
     const dayPropGetter = useCallback(
         (date) => {
             const dayOfWeek = date.getDay();
@@ -462,34 +421,45 @@ const AdminWorkCalendar = () => {
             let className = "";
 
             if (isFuture) {
-                // Future dates - disabled style
-                style = {
-                    backgroundColor: "#f8f9fa",
-                    color: "#adb5bd",
-                    opacity: 0.6,
-                    cursor: "not-allowed",
-                };
+                style = { backgroundColor: "#f8f9fa", color: "#adb5bd", opacity: 0.6, cursor: "not-allowed" };
                 className = "future-date-disabled";
-            } else if (isTodayDate) {
-                // Today - highlight with blue
-                style = {
-                    backgroundColor: "#e3f2fd",
-                    fontWeight: "bold",
-                    border: "2px solid #2196f3",
-                };
-                className = "today-highlight";
-            } else if (!isWorkingDay) {
-                // Weekend - light gray
-                style = {
-                    backgroundColor: COLORS.weekend,
-                    color: "#adb5bd",
-                };
-                className = "weekend";
+            } else if (selectedUserId && calendarData?.user?.created_at) {
+                // User-specific: check pre-join date
+                const userJoinDate = moment(calendarData.user.created_at).startOf("day");
+                if (moment(date).isBefore(userJoinDate)) {
+                    style = { backgroundColor: "#e9ecef", color: "#adb5bd", opacity: 0.4, cursor: "not-allowed", pointerEvents: "none" };
+                    className = "pre-join-date-disabled";
+                } else if (isTodayDate) {
+                    style = { backgroundColor: "#e3f2fd", fontWeight: "bold", border: "2px solid #2196f3" };
+                    className = "today-highlight";
+                } else if (!isWorkingDay) {
+                    style = { backgroundColor: COLORS.weekend, color: "#adb5bd" };
+                    className = "weekend";
+                }
+            } else {
+                // Org/team view heatmap
+                if (isTodayDate) {
+                    style = { backgroundColor: "#e3f2fd", fontWeight: "bold", border: "2px solid #2196f3" };
+                    className = "today-highlight";
+                } else if (!isWorkingDay) {
+                    style = { backgroundColor: "#f0f0f0", color: "#adb5bd" };
+                    className = "weekend";
+                } else {
+                    const dayStats = orgDateStats[dateStr];
+                    const totalUsers = calendarData?.users?.length || calendarData?.summary?.totalUsers || 0;
+                    if (dayStats && totalUsers > 0) {
+                        const rate = Math.round((dayStats.present / totalUsers) * 100);
+                        if (rate >= 90) style = { backgroundColor: "#e8f5e9" };
+                        else if (rate >= 70) style = { backgroundColor: "#fff9c4" };
+                        else if (rate >= 50) style = { backgroundColor: "#fff3e0" };
+                        else style = { backgroundColor: "#ffebee" };
+                    }
+                }
             }
 
             return { style, className };
         },
-        [calendarData],
+        [calendarData, selectedUserId, orgDateStats],
     );
 
     useEffect(() => {
@@ -571,304 +541,258 @@ const AdminWorkCalendar = () => {
                 </div>
             </div>
 
-            {/* Filter - Division Selection */}
+            {/* Filter Panel - Full Featured */}
             <Card className="mb-3 border-0 shadow-sm">
                 <Card.Body className="p-3">
-                    <Row className="g-2 align-items-center">
-                        <Col xs={12} md={6}>
-                            <div className="d-flex align-items-center gap-2">
-                                <i
-                                    className="bi bi-funnel text-primary"
-                                    style={{ fontSize: "1.2rem" }}
-                                ></i>
-                                <div className="flex-grow-1">
-                                    <Form.Select
-                                        value={selectedDivisionId}
-                                        onChange={handleDivisionFilterChange}
-                                        style={{ fontWeight: "500" }}
-                                    >
-                                        <option value="">
-                                            📋 Semua Divisi
+                    <div className="d-flex align-items-center mb-2 gap-2">
+                        <i className="bi bi-funnel-fill text-primary"></i>
+                        <strong className="small">Filter Monitoring</strong>
+                        {(selectedDivisionId || selectedUserId) && (
+                            <Badge bg="primary" pill className="small">
+                                {selectedUserId ? "User" : "Divisi"} aktif
+                            </Badge>
+                        )}
+                    </div>
+                    <Row className="g-2 align-items-end">
+                        <Col xs={12} md={3}>
+                            <Form.Label className="small fw-medium mb-1">Divisi</Form.Label>
+                            <Form.Select size="sm" value={selectedDivisionId} onChange={handleDivisionFilterChange}>
+                                <option value="">📋 Semua Divisi</option>
+                                {(calendarData?.allDivisions || []).map(div => (
+                                    <option key={div.id} value={div.id}>{div.name}</option>
+                                ))}
+                            </Form.Select>
+                        </Col>
+                        <Col xs={12} md={3}>
+                            <Form.Label className="small fw-medium mb-1">User</Form.Label>
+                            <Form.Select size="sm" value={selectedUserId} onChange={handleUserFilterChange}>
+                                <option value="">👥 Semua User</option>
+                                {(calendarData?.users || [])
+                                    .filter(u => !selectedDivisionId || String(u.division_id) === String(selectedDivisionId))
+                                    .map(u => (
+                                        <option key={u.id} value={u.id}>
+                                            {u.name} {u.role === "supervisor" ? "⭐" : ""}
                                         </option>
-                                        {divisions.map((division) => (
-                                            <option
-                                                key={division.id}
-                                                value={division.id}
-                                            >
-                                                {division.name}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
-                                </div>
-                            </div>
+                                    ))}
+                            </Form.Select>
+                        </Col>
+                        <Col xs={6} md={2}>
+                            <Form.Label className="small fw-medium mb-1">Bulan</Form.Label>
+                            <Form.Select size="sm" value={selectedMonth} onChange={handleMonthChange}>
+                                {["01","02","03","04","05","06","07","08","09","10","11","12"].map((m,i) => (
+                                    <option key={m} value={m}>{moment().month(i).format("MMMM")}</option>
+                                ))}
+                            </Form.Select>
+                        </Col>
+                        <Col xs={6} md={2}>
+                            <Form.Label className="small fw-medium mb-1">Tahun</Form.Label>
+                            <Form.Select size="sm" value={selectedYear} onChange={handleYearChange}>
+                                {Array.from({length: 5}, (_, i) => new Date().getFullYear() - i).map(y => (
+                                    <option key={y} value={y}>{y}</option>
+                                ))}
+                            </Form.Select>
+                        </Col>
+                        <Col xs={12} md={2} className="d-flex gap-2">
+                            <Button size="sm" variant="primary" className="flex-grow-1" onClick={handleApplyFilter}>
+                                <i className="bi bi-search me-1"></i>Terapkan
+                            </Button>
+                            <Button size="sm" variant="outline-secondary" onClick={handleResetFilter} title="Reset filter">
+                                <i className="bi bi-arrow-counterclockwise"></i>
+                            </Button>
                         </Col>
                     </Row>
+                    {selectedUserId && (
+                        <div className="mt-2 p-2 rounded" style={{background:"#e3f2fd",fontSize:"0.8rem"}}>
+                            <i className="bi bi-person-circle me-1 text-primary"></i>
+                            <strong>Mode User:</strong> Menampilkan kalender personal{" "}
+                            <strong>{calendarData?.users?.find(u => String(u.id) === String(selectedUserId))?.name || ""}</strong>
+                            {" "}&mdash; data sama seperti tampilan user bersangkutan.
+                        </div>
+                    )}
                 </Card.Body>
             </Card>
 
-            {/* Summary Cards - Modern Design with Gradients */}
+
+            {/* KPI Summary Cards - 6 metrics */}
             {calendarData?.summary && (
                 <Row className="g-3 mb-4">
-                    <Col xs={6} md={3}>
-                        <Card
-                            className="border-0 shadow-sm h-100"
-                            style={{
-                                background:
-                                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                                color: "white",
-                            }}
-                        >
-                            <Card.Body className="p-3 text-center">
-                                <div className="mb-2">
-                                    <i
-                                        className="bi bi-people"
-                                        style={{ fontSize: "2rem" }}
-                                    ></i>
-                                </div>
-                                <h3 className="mb-1 fw-bold">
-                                    {calendarData.summary?.totalUsers || 0}
-                                </h3>
-                                <small className="text-white-50 fw-medium">
-                                    Total User
-                                </small>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    <Col xs={6} md={3}>
-                        <Card
-                            className="border-0 shadow-sm h-100"
-                            style={{
-                                background:
-                                    "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
-                                color: "white",
-                            }}
-                        >
-                            <Card.Body className="p-3 text-center">
-                                <div className="mb-2">
-                                    <i
-                                        className="bi bi-check-circle"
-                                        style={{ fontSize: "2rem" }}
-                                    ></i>
-                                </div>
-                                <h3 className="mb-1 fw-bold">
-                                    {calendarData.summary?.totalAttendances ||
-                                        0}
-                                </h3>
-                                <small className="text-white-50 fw-medium">
-                                    Kehadiran
-                                </small>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    <Col xs={6} md={3}>
-                        <Card
-                            className="border-0 shadow-sm h-100"
-                            style={{
-                                background:
-                                    "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
-                                color: "white",
-                            }}
-                        >
-                            <Card.Body className="p-3 text-center">
-                                <div className="mb-2">
-                                    <i
-                                        className="bi bi-calendar-x"
-                                        style={{ fontSize: "2rem" }}
-                                    ></i>
-                                </div>
-                                <h3 className="mb-1 fw-bold">
-                                    {calendarData.summary?.totalHolidays || 0}
-                                </h3>
-                                <small className="text-white-50 fw-medium">
-                                    Hari Libur
-                                </small>
-                            </Card.Body>
-                        </Card>
-                    </Col>
-                    <Col xs={6} md={3}>
-                        <Card
-                            className="border-0 shadow-sm h-100"
-                            style={{
-                                background:
-                                    "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
-                                color: "white",
-                            }}
-                        >
-                            <Card.Body className="p-3 text-center">
-                                <div className="mb-2">
-                                    <i
-                                        className="bi bi-briefcase"
-                                        style={{ fontSize: "2rem" }}
-                                    ></i>
-                                </div>
-                                <h3 className="mb-1 fw-bold">
-                                    {calendarData.summary?.leaveStats
-                                        ?.approved || 0}
-                                </h3>
-                                <small className="text-white-50 fw-medium">
-                                    Cuti Disetujui
-                                </small>
-                            </Card.Body>
-                        </Card>
-                    </Col>
+                    {[
+                        { gradient: "linear-gradient(135deg,#667eea,#764ba2)", icon: "bi-people", label: selectedUserId ? "User Dipilih" : "Total User", value: calendarData.summary.totalUsers || 0 },
+                        { gradient: "linear-gradient(135deg,#43e97b,#38f9d7)", icon: "bi-check-circle", label: "Kehadiran", value: calendarData.summary.totalAttendances || 0 },
+                        { gradient: "linear-gradient(135deg,#f6d365,#fda085)", icon: "bi-clock-history", label: "Terlambat", value: calendarData.summary.lateCount || 0 },
+                        { gradient: "linear-gradient(135deg,#f093fb,#f5576c)", icon: "bi-x-circle", label: "Alpha/Absen", value: (() => { const exp = (calendarData.summary.totalUsers || 0) * (calendarData.summary.workingDaysElapsed || 0); return Math.max(0, exp - (calendarData.summary.totalAttendances || 0) - (calendarData.summary.leaveStats?.approved || 0)); })() },
+                        { gradient: "linear-gradient(135deg,#6f42c1,#a855f7)", icon: "bi-briefcase", label: "Izin Disetujui", value: calendarData.summary.leaveStats?.approved || 0 },
+                        { gradient: "linear-gradient(135deg,#17a2b8,#4facfe)", icon: "bi-journal-text", label: "Logbook", value: calendarData.summary.totalLogbooks || 0 },
+                    ].map((card, i) => (
+                        <Col xs={6} md={2} key={i}>
+                            <Card className="border-0 shadow-sm h-100" style={{ background: card.gradient, color: "white" }}>
+                                <Card.Body className="p-3 text-center">
+                                    <div className="mb-1"><i className={`bi ${card.icon}`} style={{ fontSize: "1.8rem" }}></i></div>
+                                    <h4 className="mb-0 fw-bold">{card.value}</h4>
+                                    <small className="text-white-50 fw-medium" style={{ fontSize: "0.75rem" }}>{card.label}</small>
+                                </Card.Body>
+                            </Card>
+                        </Col>
+                    ))}
                 </Row>
             )}
 
-            {/* Legend - Modern Glassmorphism Design */}
-            <Card
-                className="mb-4 border-0"
-                style={{
-                    background: "rgba(255, 255, 255, 0.7)",
-                    backdropFilter: "blur(10px)",
-                    boxShadow: "0 8px 32px 0 rgba(31, 38, 135, 0.15)",
-                    border: "1px solid rgba(255, 255, 255, 0.18)",
-                }}
-            >
-                <Card.Body className="p-4">
-                    <div className="d-flex align-items-center mb-3">
-                        <div
-                            className="d-flex align-items-center justify-content-center"
-                            style={{
-                                width: "40px",
-                                height: "40px",
-                                borderRadius: "10px",
-                                background:
-                                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                                marginRight: "12px",
-                            }}
-                        >
-                            <i className="bi bi-palette text-white"></i>
-                        </div>
-                        <div>
-                            <h6 className="mb-0 fw-bold">
-                                Keterangan Warna Kalender
-                            </h6>
-                            <small className="text-muted">
-                                Sistem prioritas untuk menampilkan status
-                            </small>
-                        </div>
+            {/* Legend */}
+            <Card className="mb-4 border-0 shadow-sm">
+                <Card.Body className="p-3">
+                    <div className="d-flex align-items-center gap-2 mb-3">
+                        <i className="bi bi-palette text-primary"></i>
+                        <strong className="small">Keterangan Warna Kalender</strong>
+                        <span className="text-muted small ms-auto">
+                            {selectedUserId ? "Mode individual — 1 event/hari" : "Mode tim — multi event/hari + heatmap"}
+                        </span>
                     </div>
-
-                    <Row className="g-3">
+                    <Row className="g-2">
                         {[
-                            {
-                                color: COLORS.holiday,
-                                label: "Libur Nasional",
-                                icon: "🎉",
-                                priority: 1,
-                            },
-                            {
-                                color: COLORS.holidayCustom,
-                                label: "Hari Libur",
-                                icon: "📅",
-                                priority: 2,
-                            },
-                            {
-                                color: COLORS.leave,
-                                label: "Izin/Cuti User",
-                                icon: "🏖️",
-                                priority: 3,
-                            },
-                            {
-                                color: COLORS.late,
-                                label: "Ada Terlambat",
-                                icon: "⏰",
-                                priority: 4,
-                            },
-                            {
-                                color: COLORS.present,
-                                label: "Presensi Normal",
-                                icon: "✓",
-                                priority: 5,
-                            },
-                        ].map((item) => (
-                            <Col xs={6} md={4} lg={2} key={item.priority}>
-                                <div
-                                    className="d-flex align-items-center p-3 rounded-3 h-100"
-                                    style={{
-                                        background: "white",
-                                        border: "1px solid rgba(0,0,0,0.08)",
-                                        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                                        transition: "all 0.3s ease",
-                                        cursor: "default",
-                                    }}
-                                    onMouseOver={(e) => {
-                                        e.currentTarget.style.transform =
-                                            "translateY(-2px)";
-                                        e.currentTarget.style.boxShadow =
-                                            "0 4px 12px rgba(0,0,0,0.1)";
-                                    }}
-                                    onMouseOut={(e) => {
-                                        e.currentTarget.style.transform =
-                                            "translateY(0)";
-                                        e.currentTarget.style.boxShadow =
-                                            "0 2px 8px rgba(0,0,0,0.05)";
-                                    }}
-                                >
-                                    <span
-                                        className="me-2 flex-shrink-0"
-                                        style={{
-                                            display: "inline-block",
-                                            width: "24px",
-                                            height: "24px",
-                                            backgroundColor: item.color,
-                                            borderRadius: "6px",
-                                            boxShadow: `0 2px 8px ${item.color}40`,
-                                        }}
-                                    ></span>
-                                    <div className="flex-grow-1">
-                                        <div
-                                            className="fw-medium"
-                                            style={{
-                                                fontSize: "0.85rem",
-                                                lineHeight: "1.2",
-                                            }}
-                                        >
-                                            <span className="me-1">
-                                                {item.icon}
-                                            </span>
-                                            {item.label}
-                                        </div>
-                                        <small
-                                            className="text-muted"
-                                            style={{ fontSize: "0.7rem" }}
-                                        >
-                                            Prioritas {item.priority}
-                                        </small>
-                                    </div>
+                            { color: COLORS.holiday, label: "Libur Nasional", icon: "🎉" },
+                            { color: COLORS.holidayCustom, label: "Hari Libur", icon: "📅" },
+                            { color: COLORS.present, label: "Hadir Tepat", icon: "✓" },
+                            { color: COLORS.late, label: "Terlambat", icon: "⏰" },
+                            { color: COLORS.leave, label: "Izin/Cuti", icon: "🏖️" },
+                            { color: COLORS.absent, label: "Alpha", icon: "❌" },
+                        ].map((item, i) => (
+                            <Col xs={6} md={4} lg={2} key={i}>
+                                <div className="d-flex align-items-center gap-2 p-2 rounded" style={{ background: "#f8f9fa" }}>
+                                    <span style={{ display: "inline-block", width: 16, height: 16, borderRadius: 4, backgroundColor: item.color, flexShrink: 0 }}></span>
+                                    <span style={{ fontSize: "0.8rem" }}>{item.icon} {item.label}</span>
                                 </div>
                             </Col>
                         ))}
                     </Row>
-
-                    <Alert
-                        variant="info"
-                        className="mt-4 mb-0 border-0"
-                        style={{
-                            background:
-                                "linear-gradient(135deg, #667eea15 0%, #764ba215 100%)",
-                            borderLeft: "4px solid #667eea",
-                        }}
-                    >
-                        <div className="d-flex align-items-start">
-                            <i
-                                className="bi bi-lightbulb me-2 text-primary"
-                                style={{ fontSize: "1.2rem" }}
-                            ></i>
-                            <div>
-                                <strong className="text-primary">Tips:</strong>
-                                <span className="ms-2">
-                                    Jika satu tanggal memiliki beberapa status,
-                                    hanya status dengan prioritas tertinggi yang
-                                    ditampilkan di kalender.
-                                </span>
-                            </div>
+                    {!selectedUserId && (
+                        <div className="mt-2 d-flex gap-3 flex-wrap">
+                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#e8f5e9",border:"1px solid #ccc",marginRight:4 }}></span>≥90% hadir</small>
+                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#fff9c4",border:"1px solid #ccc",marginRight:4 }}></span>70–89%</small>
+                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#fff3e0",border:"1px solid #ccc",marginRight:4 }}></span>50–69%</small>
+                            <small className="text-muted"><span style={{ display:"inline-block",width:12,height:12,borderRadius:3,backgroundColor:"#ffebee",border:"1px solid #ccc",marginRight:4 }}></span>&lt;50%</small>
                         </div>
-                    </Alert>
+                    )}
                 </Card.Body>
             </Card>
 
+            {/* Division Scorecard — only in org/division view */}
+            {!selectedUserId && calendarData?.divisionStats?.length > 0 && (
+                <Card className="border-0 shadow-sm mb-4">
+                    <Card.Header className="bg-white border-0 py-3">
+                        <div className="d-flex align-items-center gap-2">
+                            <i className="bi bi-diagram-3 text-primary"></i>
+                            <strong>Scorecard per Divisi</strong>
+                            <Badge bg="secondary" pill>{calendarData.divisionStats.length} divisi</Badge>
+                        </div>
+                    </Card.Header>
+                    <Card.Body className="p-0">
+                        <div className="table-responsive">
+                            <table className="table table-hover table-sm mb-0">
+                                <thead style={{ background: "#f8f9fa" }}>
+                                    <tr>
+                                        <th className="ps-3 py-2 small">Divisi</th>
+                                        <th className="text-center py-2 small">Anggota</th>
+                                        <th className="text-center py-2 small">Hadir</th>
+                                        <th className="text-center py-2 small">Terlambat</th>
+                                        <th className="text-center py-2 small">Alpha</th>
+                                        <th className="text-center py-2 small">Logbook</th>
+                                        <th className="text-center py-2 small" style={{ minWidth: 120 }}>Attendance Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {calendarData.divisionStats.map(div => (
+                                        <tr key={div.id} style={{ cursor: "pointer" }} onClick={() => { setSelectedDivisionId(String(div.id)); handleApplyFilter(); }}>
+                                            <td className="ps-3 py-2 fw-medium small">{div.name}</td>
+                                            <td className="text-center py-2 small">{div.memberCount}</td>
+                                            <td className="text-center py-2 small"><span className="text-success fw-bold">{div.attendanceDays}</span></td>
+                                            <td className="text-center py-2 small"><span className="text-warning fw-bold">{div.lateDays}</span></td>
+                                            <td className="text-center py-2 small"><span className="text-danger fw-bold">{div.absentDays}</span></td>
+                                            <td className="text-center py-2 small"><span className="text-info fw-bold">{div.logbookCount}</span></td>
+                                            <td className="text-center py-2">
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <div className="flex-grow-1" style={{ height: 6, background: "#e9ecef", borderRadius: 3 }}>
+                                                        <div style={{ width: `${div.attendanceRate}%`, height: "100%", borderRadius: 3, background: div.attendanceRate >= 90 ? "#28a745" : div.attendanceRate >= 70 ? "#ffc107" : "#dc3545" }}></div>
+                                                    </div>
+                                                    <small className="fw-bold" style={{ fontSize: "0.75rem", minWidth: 32 }}>{div.attendanceRate}%</small>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card.Body>
+                </Card>
+            )}
+
+            {/* Member Scorecard — shown when memberStats exist */}
+            {calendarData?.memberStats?.length > 0 && (
+                <Card className="border-0 shadow-sm mb-4">
+                    <Card.Header className="bg-white border-0 py-3">
+                        <div className="d-flex align-items-center gap-2">
+                            <i className="bi bi-person-lines-fill text-primary"></i>
+                            <strong>Scorecard per Anggota</strong>
+                            <Badge bg="secondary" pill>{calendarData.memberStats.length} user</Badge>
+                            {selectedDivisionId && <Badge bg="info" pill>{calendarData?.allDivisions?.find(d => String(d.id) === String(selectedDivisionId))?.name || "Divisi"}</Badge>}
+                        </div>
+                    </Card.Header>
+                    <Card.Body className="p-0">
+                        <div className="table-responsive">
+                            <table className="table table-hover table-sm mb-0">
+                                <thead style={{ background: "#f8f9fa" }}>
+                                    <tr>
+                                        <th className="ps-3 py-2 small">Nama</th>
+                                        <th className="py-2 small">Divisi</th>
+                                        <th className="text-center py-2 small">Role</th>
+                                        <th className="text-center py-2 small">Hadir</th>
+                                        <th className="text-center py-2 small">Terlambat</th>
+                                        <th className="text-center py-2 small">Alpha</th>
+                                        <th className="text-center py-2 small">Izin</th>
+                                        <th className="text-center py-2 small">Logbook</th>
+                                        <th className="text-center py-2 small" style={{ minWidth: 110 }}>Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {calendarData.memberStats
+                                        .sort((a, b) => b.attendanceRate - a.attendanceRate)
+                                        .map(m => (
+                                        <tr key={m.id} style={{ cursor: "pointer" }} onClick={() => setSelectedUserId(String(m.id))}>
+                                            <td className="ps-3 py-2 small fw-medium">{m.name}</td>
+                                            <td className="py-2 small text-muted">{m.divisionName}</td>
+                                            <td className="text-center py-2">
+                                                <Badge bg={m.role === "supervisor" ? "warning" : "secondary"} className="small">{m.role === "supervisor" ? "⭐ SPV" : "User"}</Badge>
+                                            </td>
+                                            <td className="text-center py-2 small text-success fw-bold">{m.attendanceDays}</td>
+                                            <td className="text-center py-2 small text-warning fw-bold">{m.lateDays}</td>
+                                            <td className="text-center py-2 small text-danger fw-bold">{m.absentDays}</td>
+                                            <td className="text-center py-2 small text-purple fw-bold">{m.leaveDays}</td>
+                                            <td className="text-center py-2 small text-info fw-bold">{m.logbookDays}</td>
+                                            <td className="text-center py-2">
+                                                <div className="d-flex align-items-center gap-1">
+                                                    <div className="flex-grow-1" style={{ height: 5, background: "#e9ecef", borderRadius: 3 }}>
+                                                        <div style={{ width: `${m.attendanceRate}%`, height: "100%", borderRadius: 3, background: m.attendanceRate >= 80 ? "#28a745" : m.attendanceRate >= 60 ? "#ffc107" : "#dc3545" }}></div>
+                                                    </div>
+                                                    <small className="fw-bold" style={{ fontSize: "0.7rem", minWidth: 28 }}>{m.attendanceRate}%</small>
+                                                </div>
+                                                {m.attendanceRate < 70 && <small className="text-danger d-block" style={{ fontSize: "0.65rem" }}>⚠ Rendah</small>}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </Card.Body>
+                </Card>
+            )}
+
+
             {/* Calendar - Modern Design with Integrated Filter */}
+
+
+
+
+
+
             <Card
                 className="border-0 mb-4"
                 style={{
