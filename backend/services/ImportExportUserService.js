@@ -581,6 +581,15 @@ class ImportExportUserService {
                 return null; // Invalid if no match found
             };
 
+            // Helper function to normalize status
+            const normalizeStatus = (input) => {
+                if (!input) return true; // default aktif
+                const normalized = input.toString().toLowerCase().trim();
+                const inactiveValues = ["nonaktif", "0", "false", "no", "tidak aktif", "non-aktif", "f"];
+                if (inactiveValues.includes(normalized)) return false;
+                return true;
+            };
+
             // Skip header row and example rows
             let rowNumber = 1;
             worksheet.eachRow((row, rowIndex) => {
@@ -598,6 +607,9 @@ class ImportExportUserService {
                 const rawRole = row.getCell(7).value?.toString().trim();
                 const normalizedRole = normalizeRole(rawRole);
 
+                const rawStatus = row.getCell(11).value?.toString().trim();
+                const normalizedStatus = normalizeStatus(rawStatus);
+
                 const rowData = {
                     name: row.getCell(1).value?.toString().trim(),
                     email: row.getCell(2).value?.toString().trim(),
@@ -611,6 +623,7 @@ class ImportExportUserService {
                     periode: row.getCell(9).value?.toString().trim(),
                     sumber_magang: normalizedSumberMagang,
                     raw_sumber_magang: rawSumberMagang, // Keep original for error messages
+                    is_active: normalizedStatus,
                 };
 
                 // Skip empty rows
@@ -705,7 +718,7 @@ class ImportExportUserService {
                         sumber_magang: rowData.sumber_magang,
                         supervisor_id: null,
                         is_active_periode: true,
-                        is_active: true,
+                        is_active: rowData.is_active,
                     });
                 }
             });
