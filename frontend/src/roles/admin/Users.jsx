@@ -221,24 +221,13 @@ const AdminUsers = () => {
         try {
             const submitData = { ...formData };
 
-            // Handle values: keep some as null/empty if cleared
+            // Clean empty values, EXCEPT password untuk new user
             Object.keys(submitData).forEach((key) => {
-                // Keep password for new user
+                // Jangan hapus password jika sedang tambah user baru (required)
                 if (key === "password" && !editingId) {
-                    return;
+                    return; // Keep password for new user
                 }
-                
-                // Allow these fields to be empty strings (to clear them in DB)
-                const optionalFields = ["nip", "phone", "address", "division_id", "periode", "supervisor_id"];
-                if (optionalFields.includes(key)) {
-                    // Convert empty string to null for database
-                    if (submitData[key] === "") {
-                        submitData[key] = null;
-                    }
-                    return;
-                }
-
-                // Delete other truly empty/null values
+                // Hapus field kosong lainnya
                 if (submitData[key] === "" || submitData[key] === null) {
                     delete submitData[key];
                 }
@@ -825,6 +814,7 @@ const AdminUsers = () => {
                                             <th>Email</th>
                                             <th>Role</th>
                                             <th>Divisi</th>
+                                            <th>Supervisor</th>
                                             <th>Periode</th>
                                             <th>Sumber</th>
                                             <th>Status</th>
@@ -888,6 +878,17 @@ const AdminUsers = () => {
                                                                 -
                                                             </span>
                                                         )}
+                                                    </td>
+                                                    <td>
+                                                        {user.supervisorUser
+                                                            ?.name ||
+                                                            user.division
+                                                                ?.supervisor
+                                                                ?.name || (
+                                                                <span className="text-muted">
+                                                                    -
+                                                                </span>
+                                                            )}
                                                     </td>
                                                     <td>
                                                         {user.periode || (
@@ -999,7 +1000,7 @@ const AdminUsers = () => {
                                         ) : (
                                             <tr>
                                                 <td
-                                                    colSpan="9"
+                                                    colSpan="10"
                                                     className="text-center text-muted py-4"
                                                 >
                                                     Belum ada data user
