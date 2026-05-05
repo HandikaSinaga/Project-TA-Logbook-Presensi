@@ -8,6 +8,7 @@ import {
     Col,
     Image,
     Badge,
+    InputGroup,
 } from "react-bootstrap";
 import {
     FaUser,
@@ -23,6 +24,8 @@ import {
     FaFacebook,
     FaLock,
     FaCamera,
+    FaEye,
+    FaEyeSlash,
 } from "react-icons/fa";
 import axiosInstance from "../utils/axiosInstance";
 import ImageCropModal from "./common/ImageCropModal";
@@ -53,6 +56,9 @@ const ProfileSettings = ({ role = "user" }) => {
         new_password: "",
         confirm_password: "",
     });
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     // Avatar upload
     const [showCropModal, setShowCropModal] = useState(false);
@@ -627,61 +633,81 @@ const ProfileSettings = ({ role = "user" }) => {
                                         <Form.Label>
                                             Password Saat Ini
                                         </Form.Label>
-                                        <Form.Control
-                                            type="password"
-                                            placeholder="Masukkan password saat ini"
-                                            value={
-                                                passwordData.current_password
-                                            }
-                                            onChange={(e) =>
-                                                setPasswordData({
-                                                    ...passwordData,
-                                                    current_password:
-                                                        e.target.value,
-                                                })
-                                            }
-                                            required
-                                        />
+                                        <InputGroup>
+                                            <Form.Control
+                                                type={showCurrentPassword ? "text" : "password"}
+                                                placeholder="Masukkan password saat ini"
+                                                value={passwordData.current_password}
+                                                onChange={(e) =>
+                                                    setPasswordData({
+                                                        ...passwordData,
+                                                        current_password: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                            />
+                                            <Button 
+                                                variant="outline-secondary"
+                                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                            >
+                                                {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
+                                            </Button>
+                                        </InputGroup>
                                     </Form.Group>
                                     <Form.Group className="mb-3">
                                         <Form.Label>Password Baru</Form.Label>
-                                        <Form.Control
-                                            type="password"
-                                            placeholder="Minimal 6 karakter"
-                                            value={passwordData.new_password}
-                                            onChange={(e) =>
-                                                setPasswordData({
-                                                    ...passwordData,
-                                                    new_password:
-                                                        e.target.value,
-                                                })
-                                            }
-                                            required
-                                        />
+                                        <InputGroup>
+                                            <Form.Control
+                                                type={showNewPassword ? "text" : "password"}
+                                                placeholder="Minimal 6 karakter"
+                                                value={passwordData.new_password}
+                                                onChange={(e) =>
+                                                    setPasswordData({
+                                                        ...passwordData,
+                                                        new_password: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                            />
+                                            <Button 
+                                                variant="outline-secondary"
+                                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                            >
+                                                {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                                            </Button>
+                                        </InputGroup>
+                                        <Form.Text className="text-muted">
+                                            Gunakan minimal 6 karakter dengan kombinasi huruf dan angka.
+                                        </Form.Text>
                                     </Form.Group>
                                     <Form.Group className="mb-3">
                                         <Form.Label>
                                             Konfirmasi Password Baru
                                         </Form.Label>
-                                        <Form.Control
-                                            type="password"
-                                            placeholder="Ketik ulang password baru"
-                                            value={
-                                                passwordData.confirm_password
-                                            }
-                                            onChange={(e) =>
-                                                setPasswordData({
-                                                    ...passwordData,
-                                                    confirm_password:
-                                                        e.target.value,
-                                                })
-                                            }
-                                            required
-                                        />
+                                        <InputGroup>
+                                            <Form.Control
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                placeholder="Ketik ulang password baru"
+                                                value={passwordData.confirm_password}
+                                                onChange={(e) =>
+                                                    setPasswordData({
+                                                        ...passwordData,
+                                                        confirm_password: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                            />
+                                            <Button 
+                                                variant="outline-secondary"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                            >
+                                                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                                            </Button>
+                                        </InputGroup>
                                     </Form.Group>
                                     <div className="d-flex gap-2">
-                                        <Button type="submit" variant="warning">
-                                            Ubah Password
+                                        <Button type="submit" variant="warning" className="fw-bold">
+                                            Simpan Password Baru
                                         </Button>
                                         <Button
                                             type="button"
@@ -693,6 +719,9 @@ const ProfileSettings = ({ role = "user" }) => {
                                                     new_password: "",
                                                     confirm_password: "",
                                                 });
+                                                setShowCurrentPassword(false);
+                                                setShowNewPassword(false);
+                                                setShowConfirmPassword(false);
                                             }}
                                         >
                                             Batal
