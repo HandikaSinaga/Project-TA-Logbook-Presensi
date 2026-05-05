@@ -200,15 +200,32 @@ const SupervisorWorkCalendar = () => {
                         const dateStr = date.format("YYYY-MM-DD");
                         const dayOfWeek = date.day();
 
-                        // Skip if before user join date
-                        if (userJoinDate && date.isBefore(userJoinDate)) {
-                            continue;
-                        }
-
                         // Weekend check
                         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
                         const isWorkingDay =
                             data.workingDays.includes(dayOfWeek);
+
+                        // Add "Belum Bergabung" event if before join date
+                        if (userJoinDate && date.isBefore(userJoinDate)) {
+                            if (!isWeekend && isWorkingDay) {
+                                addEvent(
+                                    dateStr,
+                                    {
+                                        id: `prejoin-${dateStr}`,
+                                        title: "Belum Bergabung",
+                                        start: new Date(dateStr + "T00:00:00"),
+                                        end: new Date(dateStr + "T23:59:59"),
+                                        allDay: true,
+                                        type: "prejoin",
+                                        color: "#e2e8f0",
+                                        textColor: "#64748b",
+                                        resource: { date: dateStr, type: "prejoin" },
+                                    },
+                                    EVENT_PRIORITY.absent,
+                                );
+                            }
+                            continue;
+                        }
                         const hasHoliday = eventsByDate[dateStr]?.some(
                             (e) => e.type === "holiday",
                         );
@@ -379,7 +396,13 @@ const SupervisorWorkCalendar = () => {
                     const totalPresent = (attDay?.all?.length || 0);
                     const leaveCount = leaveDateMap[dateStr]?.length || 0;
                     const logbookCount = logbooksByDate[dateStr]?.length || 0;
-                    const absentCount = Math.max(0, teamSize - totalPresent - leaveCount);
+                    const activeTeamSize = data.teamMembers?.filter(user => {
+                        if (!user.created_at) return true;
+                        const joinDate = moment(user.created_at).startOf("day");
+                        return !moment(dateStr).isBefore(joinDate);
+                    }).length || 0;
+
+                    const absentCount = Math.max(0, activeTeamSize - totalPresent - leaveCount);
 
                     // Event: On-time attendances
                     if (onTimeCount > 0) {

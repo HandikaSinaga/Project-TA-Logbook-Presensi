@@ -215,14 +215,31 @@ const UserWorkCalendar = () => {
                 const dateStr = date.format("YYYY-MM-DD");
                 const dayOfWeek = date.day();
 
-                // CRITICAL: Skip if before user join date
-                if (userJoinDate && date.isBefore(userJoinDate)) {
-                    continue;
-                }
-
                 // CRITICAL: Weekend (0=Sunday, 6=Saturday) should NEVER be marked as absent
                 const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
                 const isWorkingDay = data.workingDays.includes(dayOfWeek);
+
+                // Add "Belum Bergabung" event if before join date
+                if (userJoinDate && date.isBefore(userJoinDate)) {
+                    if (!isWeekend && isWorkingDay) {
+                        addEvent(
+                            dateStr,
+                            {
+                                id: `prejoin-${dateStr}`,
+                                title: "Belum Bergabung",
+                                start: new Date(dateStr + "T00:00:00"),
+                                end: new Date(dateStr + "T23:59:59"),
+                                allDay: true,
+                                type: "prejoin",
+                                color: "#e2e8f0",
+                                textColor: "#64748b",
+                                resource: { date: dateStr, type: "prejoin" },
+                            },
+                            EVENT_PRIORITY.absent,
+                        );
+                    }
+                    continue;
+                }
                 const hasHoliday = eventsByDate[dateStr]?.some(
                     (e) => e.type === "holiday",
                 );

@@ -275,7 +275,13 @@ const AdminWorkCalendar = () => {
                 });
                 for (let d = moment(data.period.firstDay).clone(); d.isSameOrBefore(moment(data.period.lastDay)); d.add(1, "day")) {
                     const ds = d.format("YYYY-MM-DD");
-                    if (d.isBefore(userJoinDate) || d.isAfter(today)) continue;
+                    if (d.isBefore(userJoinDate)) {
+                        if (data.workingDays.includes(d.day()) && d.day() !== 0 && d.day() !== 6) {
+                            addEvent(ds, { id: `prejoin-${ds}`, title: "Belum Bergabung", start: new Date(ds + "T00:00:00"), end: new Date(ds + "T23:59:59"), allDay: true, type: "prejoin", color: "#e2e8f0", textColor: "#64748b", resource: { date: ds } }, EVENT_PRIORITY.absent);
+                        }
+                        continue;
+                    }
+                    if (d.isAfter(today)) continue;
                     if (!data.workingDays.includes(d.day()) || holidayDates.has(ds) || attendanceDates.has(ds) || leaveDates.has(ds)) continue;
                     addEvent(ds, { id: `absent-${ds}`, title: "❌ Alpha", start: new Date(ds + "T00:00:00"), end: new Date(ds + "T23:59:59"), allDay: true, type: "absent", color: COLORS.absent, resource: { date: ds } }, EVENT_PRIORITY.absent);
                 }
@@ -330,7 +336,14 @@ const AdminWorkCalendar = () => {
                 const onTime = attByDate[dateStr]?.onTime || 0;
                 const late = attByDate[dateStr]?.late || 0;
                 const leave = leaveDateMap[dateStr] || 0;
-                const absent = Math.max(0, totalUsers - onTime - late - leave);
+                
+                const activeTeamSize = data.users?.filter(user => {
+                    if (!user.created_at) return true;
+                    const joinDate = moment(user.created_at).startOf("day");
+                    return !moment(dateStr).isBefore(joinDate);
+                }).length || data.summary?.totalUsers || 0;
+                
+                const absent = Math.max(0, activeTeamSize - onTime - late - leave);
 
                 if (onTime > 0) addEvent(dateStr, { id: `present-${dateStr}`, title: `✓ ${onTime} Tepat`, start: new Date(dateStr + "T00:00:00"), end: new Date(dateStr + "T23:59:59"), allDay: true, type: "present", color: COLORS.present, resource: { date: dateStr, count: onTime } }, 50);
                 if (late > 0) addEvent(dateStr, { id: `late-${dateStr}`, title: `⏰ ${late} Terlambat`, start: new Date(dateStr + "T00:00:00"), end: new Date(dateStr + "T23:59:59"), allDay: true, type: "late", color: COLORS.late, resource: { date: dateStr, count: late } }, 51);
