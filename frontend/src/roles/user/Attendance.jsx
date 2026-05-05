@@ -1322,11 +1322,7 @@ const Attendance = () => {
                                                             Alasan
                                                         </small>
                                                         <strong
-                                                            className="text-truncate d-block"
-                                                            style={{
-                                                                maxWidth:
-                                                                    "200px",
-                                                            }}
+                                                            className="d-block"
                                                         >
                                                             {workTypeDetection.reason ||
                                                                 "-"}
