@@ -583,7 +583,25 @@ const AdminUsers = () => {
                         <div className="col-md-3">
                             <button
                                 className="btn btn-primary w-100"
-                                onClick={() => setShowModal(true)}
+                                onClick={() => {
+                                    setEditingId(null);
+                                    setFormData({
+                                        name: "",
+                                        email: "",
+                                        nip: "",
+                                        phone: "",
+                                        address: "",
+                                        role: "user",
+                                        division_id: "",
+                                        periode: "",
+                                        sumber_magang: "kampus",
+                                        supervisor_id: "",
+                                        password: "",
+                                        is_active: true,
+                                    });
+                                    setShowPassword(false);
+                                    setShowModal(true);
+                                }}
                             >
                                 <i className="bi bi-plus-circle me-2"></i>
                                 Tambah User
@@ -1061,6 +1079,20 @@ const AdminUsers = () => {
                             setShowModal(false);
                             setEditingId(null);
                             setShowPassword(false);
+                            setFormData({
+                                name: "",
+                                email: "",
+                                nip: "",
+                                phone: "",
+                                address: "",
+                                role: "user",
+                                division_id: "",
+                                periode: "",
+                                sumber_magang: "kampus",
+                                supervisor_id: "",
+                                password: "",
+                                is_active: true,
+                            });
                         }
                     }}
                 >
@@ -1084,6 +1116,20 @@ const AdminUsers = () => {
                                         setShowModal(false);
                                         setEditingId(null);
                                         setShowPassword(false);
+                                        setFormData({
+                                            name: "",
+                                            email: "",
+                                            nip: "",
+                                            phone: "",
+                                            address: "",
+                                            role: "user",
+                                            division_id: "",
+                                            periode: "",
+                                            sumber_magang: "kampus",
+                                            supervisor_id: "",
+                                            password: "",
+                                            is_active: true,
+                                        });
                                     }}
                                 ></button>
                             </div>
