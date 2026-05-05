@@ -1314,11 +1314,17 @@ const AdminAttendance = () => {
                                             <h6 className="card-subtitle mb-2 text-muted">
                                                 Check In
                                             </h6>
-                                            <p className="card-text fw-semibold">
+                                            <p className="card-text fw-semibold mb-1">
                                                 {formatTime(
                                                     selectedAttendance.check_in_time,
                                                 )}
                                             </p>
+                                            {selectedAttendance.check_in_address && (
+                                                <small className="text-muted d-block">
+                                                    <i className="bi bi-geo-alt-fill text-success me-1"></i>
+                                                    {selectedAttendance.check_in_address}
+                                                </small>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -1328,11 +1334,17 @@ const AdminAttendance = () => {
                                             <h6 className="card-subtitle mb-2 text-muted">
                                                 Check Out
                                             </h6>
-                                            <p className="card-text fw-semibold">
+                                            <p className="card-text fw-semibold mb-1">
                                                 {formatTime(
                                                     selectedAttendance.check_out_time,
                                                 )}
                                             </p>
+                                            {selectedAttendance.check_out_address && (
+                                                <small className="text-muted d-block">
+                                                    <i className="bi bi-geo-alt-fill text-danger me-1"></i>
+                                                    {selectedAttendance.check_out_address}
+                                                </small>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

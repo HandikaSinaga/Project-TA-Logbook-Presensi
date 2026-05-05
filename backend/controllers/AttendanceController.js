@@ -297,13 +297,17 @@ class AttendanceController {
             // Determine status from time validation
             const isLate = timeValidation.is_late || false;
 
+            const finalAddress = workType === "onsite" && locationValidation.office 
+                ? locationValidation.office.name 
+                : (address || null);
+
             const attendanceData = {
                 user_id: userId,
                 date: today,
                 check_in_time: checkInTime,
                 check_in_latitude: latitude,
                 check_in_longitude: longitude,
-                check_in_address: address || null,
+                check_in_address: finalAddress,
                 check_in_ip: clientIp,
                 work_type: workType,
                 offsite_reason: workType === "offsite" ? offsite_reason : null,
@@ -501,11 +505,15 @@ class AttendanceController {
             const diffMs = checkOut - checkIn;
             const workHours = (diffMs / (1000 * 60 * 60)).toFixed(2);
 
+            const finalCheckOutAddress = workType === "onsite" && locationValidation.office 
+                ? locationValidation.office.name 
+                : (address || null);
+
             await attendance.update({
                 check_out_time: checkOutTime,
                 check_out_latitude: latitude,
                 check_out_longitude: longitude,
-                check_out_address: address || null,
+                check_out_address: finalCheckOutAddress,
                 check_out_ip: clientIp,
                 check_out_photo: req.file ? getPublicPath(req.file.path) : null,
                 checkout_offsite_reason:
