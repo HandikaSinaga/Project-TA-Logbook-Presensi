@@ -143,6 +143,7 @@ class LocationHelper {
                         );
 
                         if (distance <= office.radius_meters) {
+                            console.log(`[GPS Debug] ONSITE MATCH: ${office.name}, distance: ${distance}m`);
                             console.log(
                                 `[ONSITE] Within radius: ${
                                     office.name

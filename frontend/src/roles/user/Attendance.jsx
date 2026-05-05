@@ -2491,7 +2491,9 @@ const Attendance = () => {
                                                     {selectedAttendance.check_in_address && (
                                                         <div className="mt-1 border-top pt-1 text-secondary">
                                                             <i className="bi bi-building me-1"></i>
-                                                            {selectedAttendance.check_in_address}
+                                                            {
+                                                                selectedAttendance.check_in_address
+                                                            }
                                                         </div>
                                                     )}
                                                 </div>
@@ -2516,7 +2518,9 @@ const Attendance = () => {
                                                     {selectedAttendance.check_out_address && (
                                                         <div className="mt-1 border-top pt-1 text-secondary">
                                                             <i className="bi bi-building me-1"></i>
-                                                            {selectedAttendance.check_out_address}
+                                                            {
+                                                                selectedAttendance.check_out_address
+                                                            }
                                                         </div>
                                                     )}
                                                 </div>
