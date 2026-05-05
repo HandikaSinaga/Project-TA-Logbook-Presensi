@@ -267,8 +267,20 @@ class ImportExportUserService {
                     {
                         model: Division,
                         as: "division",
-                        attributes: ["id", "name"],
+                        attributes: ["id", "name", "supervisor_id"],
+                        include: [
+                            {
+                                model: User,
+                                as: "supervisor",
+                                attributes: ["id", "name"],
+                            },
+                        ],
                         required: false,
+                    },
+                    {
+                        model: User,
+                        as: "supervisorUser",
+                        attributes: ["id", "name"],
                     },
                 ],
                 attributes: [
@@ -377,7 +389,7 @@ class ImportExportUserService {
                         ? user.sumber_magang.charAt(0).toUpperCase() +
                           user.sumber_magang.slice(1)
                         : "-",
-                    supervisor: "-",
+                    supervisor: user.supervisorUser?.name || user.division?.supervisor?.name || "-",
                     is_active: user.is_active ? "Aktif" : "Nonaktif",
                     created_at: formatDate(user.created_at),
                     updated_at: formatDate(user.updated_at),
