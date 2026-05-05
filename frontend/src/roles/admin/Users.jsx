@@ -927,14 +927,18 @@ const AdminUsers = () => {
                                                                                 user.address ||
                                                                                 "",
                                                                             role: user.role,
-                                                                            division_id: user.division_id ? String(user.division_id) : "",
+                                                                            division_id:
+                                                                                user.division_id ||
+                                                                                "",
                                                                             periode:
                                                                                 user.periode ||
                                                                                 "",
                                                                             sumber_magang:
                                                                                 user.sumber_magang ||
                                                                                 "kampus",
-                                                                            supervisor_id: user.supervisor_id ? String(user.supervisor_id) : "",
+                                                                            supervisor_id:
+                                                                                user.supervisor_id ||
+                                                                                "",
                                                                             password:
                                                                                 "",
                                                                             is_active:
@@ -1323,13 +1327,15 @@ const AdminUsers = () => {
                                                 <select
                                                     className="form-select"
                                                     value={formData.division_id}
-                                                    onChange={(e) =>
+                                                    onChange={(e) => {
+                                                        const divId = e.target.value;
+                                                        const selectedDiv = divisions.find(d => d.id === parseInt(divId));
                                                         setFormData({
                                                             ...formData,
-                                                            division_id:
-                                                                e.target.value,
-                                                        })
-                                                    }
+                                                            division_id: divId,
+                                                            supervisor_id: selectedDiv?.supervisor_id || ""
+                                                        });
+                                                    }}
                                                 >
                                                     <option value="">
                                                         Tidak ada divisi

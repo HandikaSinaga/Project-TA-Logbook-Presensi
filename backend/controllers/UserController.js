@@ -48,7 +48,7 @@ class UserController {
                 include: [
                     {
                         association: "division",
-                        attributes: ["id", "name"],
+                        attributes: ["id", "name", "supervisor_id"],
                     },
                 ],
                 attributes: { exclude: ["password"] },
@@ -152,7 +152,7 @@ class UserController {
                 include: [
                     {
                         association: "division",
-                        attributes: ["id", "name"],
+                        attributes: ["id", "name", "supervisor_id"],
                     },
                 ],
                 attributes: { exclude: ["password"] },
