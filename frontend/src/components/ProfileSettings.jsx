@@ -59,6 +59,7 @@ const ProfileSettings = ({ role = "user" }) => {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [passwordChanging, setPasswordChanging] = useState(false);
 
     // Avatar upload
     const [showCropModal, setShowCropModal] = useState(false);
@@ -190,6 +191,7 @@ const ProfileSettings = ({ role = "user" }) => {
         }
 
         try {
+            setPasswordChanging(true);
             setError("");
             setSuccess("");
 
@@ -206,9 +208,14 @@ const ProfileSettings = ({ role = "user" }) => {
                 new_password: "",
                 confirm_password: "",
             });
+            setShowCurrentPassword(false);
+            setShowNewPassword(false);
+            setShowConfirmPassword(false);
         } catch (err) {
             setError(err.response?.data?.message || "Gagal mengubah password");
             console.error("Error changing password:", err);
+        } finally {
+            setPasswordChanging(false);
         }
     };
 
@@ -706,8 +713,18 @@ const ProfileSettings = ({ role = "user" }) => {
                                         </InputGroup>
                                     </Form.Group>
                                     <div className="d-flex gap-2">
-                                        <Button type="submit" variant="warning" className="fw-bold">
-                                            Simpan Password Baru
+                                        <Button 
+                                            type="submit" 
+                                            variant="warning" 
+                                            className="fw-bold"
+                                            disabled={passwordChanging}
+                                        >
+                                            {passwordChanging ? (
+                                                <>
+                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                    Menyimpan...
+                                                </>
+                                            ) : "Simpan Password Baru"}
                                         </Button>
                                         <Button
                                             type="button"
@@ -723,6 +740,7 @@ const ProfileSettings = ({ role = "user" }) => {
                                                 setShowNewPassword(false);
                                                 setShowConfirmPassword(false);
                                             }}
+                                            disabled={passwordChanging}
                                         >
                                             Batal
                                         </Button>
