@@ -20,12 +20,13 @@ axiosInstance.interceptors.request.use(
 
 const refreshAccessToken = async () => {
     try {
+        const oldToken = localStorage.getItem("token");
         const response = await axios.post(
             `${API_URL}/refresh`,
-            {},
+            { token: oldToken },
             { withCredentials: true },
         );
-        const token = response.data.payload.TOKEN;
+        const token = response.data.token;
 
         localStorage.setItem("token", token);
         console.log("token refreshed");
@@ -59,6 +60,7 @@ axiosInstance.interceptors.response.use(
             "/google-idtoken",
             "/register",
             "/forgot-password",
+            "/profile/password",
         ];
         const isAuthEndpoint = authEndpoints.some((endpoint) =>
             originalRequest.url?.includes(endpoint),
