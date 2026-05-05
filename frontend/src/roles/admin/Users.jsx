@@ -938,6 +938,7 @@ const AdminUsers = () => {
                                                                                 "kampus",
                                                                             supervisor_id:
                                                                                 user.supervisor_id ||
+                                                                                user.division?.supervisor_id ||
                                                                                 "",
                                                                             password:
                                                                                 "",
