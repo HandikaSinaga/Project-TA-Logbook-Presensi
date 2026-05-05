@@ -927,18 +927,14 @@ const AdminUsers = () => {
                                                                                 user.address ||
                                                                                 "",
                                                                             role: user.role,
-                                                                            division_id:
-                                                                                user.division_id ||
-                                                                                "",
+                                                                            division_id: user.division_id ? String(user.division_id) : "",
                                                                             periode:
                                                                                 user.periode ||
                                                                                 "",
                                                                             sumber_magang:
                                                                                 user.sumber_magang ||
                                                                                 "kampus",
-                                                                            supervisor_id:
-                                                                                user.supervisor_id ||
-                                                                                "",
+                                                                            supervisor_id: user.supervisor_id ? String(user.supervisor_id) : "",
                                                                             password:
                                                                                 "",
                                                                             is_active:

@@ -51,7 +51,7 @@ class UserController {
                         attributes: ["id", "name"],
                     },
                 ],
-                attributes: ["id", "name", "email", "role", "nip", "phone", "address", "supervisor_id", "division_id", "periode", "sumber_magang", "is_active", "created_at", "updated_at"],
+                attributes: { exclude: ["password"] },
                 order: [["created_at", "DESC"]],
             });
 
