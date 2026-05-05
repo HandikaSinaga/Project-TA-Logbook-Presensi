@@ -24,6 +24,7 @@ const AdminUsers = () => {
         sumber_magang: "kampus",
         supervisor_id: "",
         password: "",
+        is_active: true,
     });
 
     // Filter states

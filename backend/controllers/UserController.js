@@ -27,8 +27,8 @@ class UserController {
                 whereClause.division_id = division_id;
             }
 
-            if (is_active !== undefined) {
-                whereClause.is_active = is_active === "true";
+            if (is_active !== undefined && is_active !== "") {
+                whereClause.is_active = is_active === "true" || is_active === "1";
             }
 
             if (periode !== undefined) {
@@ -91,6 +91,7 @@ class UserController {
                 division_id,
                 periode,
                 sumber_magang,
+                is_active,
             } = req.body;
 
             if (!name || !email || !password) {
@@ -121,7 +122,7 @@ class UserController {
                 periode: periode || null,
                 is_active_periode: true,
                 sumber_magang: sumber_magang || null,
-                is_active: true,
+                is_active: is_active !== undefined ? is_active : true,
             });
 
             res.status(201).json({
