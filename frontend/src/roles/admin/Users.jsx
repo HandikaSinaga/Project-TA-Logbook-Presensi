@@ -303,9 +303,12 @@ const AdminUsers = () => {
         }
 
         try {
-            await axiosInstance.put(`/admin/users/${resetPasswordUserId}`, {
-                password: resetPasswordData.newPassword,
-            });
+            await axiosInstance.put(
+                `/admin/users/${resetPasswordUserId}/reset-password`,
+                {
+                    new_password: resetPasswordData.newPassword,
+                },
+            );
 
             toast.success("Password berhasil direset");
             setShowResetPasswordModal(false);
