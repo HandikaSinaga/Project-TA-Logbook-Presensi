@@ -30,6 +30,7 @@ import {
 import axiosInstance from "../utils/axiosInstance";
 import ImageCropModal from "./common/ImageCropModal";
 import { getAvatarUrl } from "../utils/Constant";
+import toast from "react-hot-toast";
 
 const ProfileSettings = ({ role = "user" }) => {
     const [profile, setProfile] = useState(null);
@@ -181,12 +182,16 @@ const ProfileSettings = ({ role = "user" }) => {
         e.preventDefault();
 
         if (passwordData.new_password !== passwordData.confirm_password) {
-            setError("Password baru tidak cocok");
+            const msg = "Password baru tidak cocok";
+            setError(msg);
+            toast.error(msg);
             return;
         }
 
         if (passwordData.new_password.length < 6) {
-            setError("Password minimal 6 karakter");
+            const msg = "Password minimal 6 karakter";
+            setError(msg);
+            toast.error(msg);
             return;
         }
 
@@ -202,6 +207,7 @@ const ProfileSettings = ({ role = "user" }) => {
             });
 
             setSuccess("Password berhasil diubah");
+            toast.success("Password berhasil diubah");
             setShowPasswordForm(false);
             setPasswordData({
                 current_password: "",
@@ -212,7 +218,9 @@ const ProfileSettings = ({ role = "user" }) => {
             setShowNewPassword(false);
             setShowConfirmPassword(false);
         } catch (err) {
-            setError(err.response?.data?.message || "Gagal mengubah password");
+            const msg = err.response?.data?.message || "Gagal mengubah password";
+            setError(msg);
+            toast.error(msg);
             console.error("Error changing password:", err);
         } finally {
             setPasswordChanging(false);
@@ -635,6 +643,12 @@ const ProfileSettings = ({ role = "user" }) => {
                         </Card.Header>
                         {showPasswordForm && (
                             <Card.Body>
+                                {(error || success) && (
+                                    <div className="mb-3">
+                                        {error && <Alert variant="danger" onClose={() => setError("")} dismissible>{error}</Alert>}
+                                        {success && <Alert variant="success" onClose={() => setSuccess("")} dismissible>{success}</Alert>}
+                                    </div>
+                                )}
                                 <Form onSubmit={handleChangePassword}>
                                     <Form.Group className="mb-3">
                                         <Form.Label>
