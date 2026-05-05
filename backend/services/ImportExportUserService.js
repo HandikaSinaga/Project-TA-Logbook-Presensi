@@ -267,19 +267,6 @@ class ImportExportUserService {
                     {
                         model: Division,
                         as: "division",
-                        attributes: ["id", "name", "supervisor_id"],
-                        include: [
-                            {
-                                model: User,
-                                as: "supervisor",
-                                attributes: ["id", "name"],
-                            },
-                        ],
-                        required: false,
-                    },
-                    {
-                        model: User,
-                        as: "supervisorUser",
                         attributes: ["id", "name"],
                         required: false,
                     },
@@ -390,10 +377,7 @@ class ImportExportUserService {
                         ? user.sumber_magang.charAt(0).toUpperCase() +
                           user.sumber_magang.slice(1)
                         : "-",
-                    supervisor:
-                        user.supervisorUser?.name ||
-                        user.division?.supervisor?.name ||
-                        "-",
+                    supervisor: "-",
                     is_active: user.is_active ? "Aktif" : "Nonaktif",
                     created_at: formatDate(user.created_at),
                     updated_at: formatDate(user.updated_at),
@@ -770,42 +754,48 @@ class ImportExportUserService {
                 };
             }
 
-            // Check for existing emails in database
-            const existingEmails = await User.findAll({
-                where: {
-                    email: users.map((u) => u.email),
-                },
-                attributes: ["email"],
-            });
+            // Process users one by one (Update if exists, Create if new)
+            let createdCount = 0;
+            let updatedCount = 0;
+            const importedUsers = [];
 
-            if (existingEmails.length > 0) {
-                const existingEmailList = existingEmails.map((u) => u.email);
-                return {
-                    success: false,
-                    message: "Ditemukan email yang sudah terdaftar",
-                    errors: existingEmailList.map((email) => ({
-                        email,
-                        errors: ["Email sudah terdaftar dalam sistem"],
-                    })),
-                };
+            for (const userData of users) {
+                const existingUser = await User.findOne({
+                    where: { email: userData.email },
+                });
+
+                if (existingUser) {
+                    // UPDATE logic
+                    const updateData = { ...userData };
+                    
+                    // If password is dummy/placeholder, don't update it
+                    if (updateData.password === "password123" || !updateData.password) {
+                        delete updateData.password;
+                    } else {
+                        updateData.password = await bcrypt.hash(updateData.password, 10);
+                    }
+
+                    await existingUser.update(updateData);
+                    updatedCount++;
+                    importedUsers.push(existingUser);
+                } else {
+                    // CREATE logic
+                    const newUser = { ...userData };
+                    newUser.password = await bcrypt.hash(newUser.password || "password123", 10);
+                    const createdUser = await User.create(newUser);
+                    createdCount++;
+                    importedUsers.push(createdUser);
+                }
             }
-
-            // Hash passwords and create users
-            const usersToCreate = await Promise.all(
-                users.map(async (user) => ({
-                    ...user,
-                    password: await bcrypt.hash(user.password, 10),
-                }))
-            );
-
-            const createdUsers = await User.bulkCreate(usersToCreate);
 
             return {
                 success: true,
-                message: `Berhasil mengimpor ${createdUsers.length} user`,
+                message: `Import selesai: ${createdCount} baru, ${updatedCount} diupdate.`,
                 data: {
-                    count: createdUsers.length,
-                    users: createdUsers.map((u) => ({
+                    count: importedUsers.length,
+                    created: createdCount,
+                    updated: updatedCount,
+                    users: importedUsers.slice(0, 10).map((u) => ({
                         id: u.id,
                         name: u.name,
                         email: u.email,

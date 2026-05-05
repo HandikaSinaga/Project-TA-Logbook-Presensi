@@ -814,7 +814,6 @@ const AdminUsers = () => {
                                             <th>Email</th>
                                             <th>Role</th>
                                             <th>Divisi</th>
-                                            <th>Supervisor</th>
                                             <th>Periode</th>
                                             <th>Sumber</th>
                                             <th>Status</th>
@@ -878,17 +877,6 @@ const AdminUsers = () => {
                                                                 -
                                                             </span>
                                                         )}
-                                                    </td>
-                                                    <td>
-                                                        {user.supervisorUser
-                                                            ?.name ||
-                                                            user.division
-                                                                ?.supervisor
-                                                                ?.name || (
-                                                                <span className="text-muted">
-                                                                    -
-                                                                </span>
-                                                            )}
                                                     </td>
                                                     <td>
                                                         {user.periode || (
@@ -1000,7 +988,7 @@ const AdminUsers = () => {
                                         ) : (
                                             <tr>
                                                 <td
-                                                    colSpan="10"
+                                                    colSpan="9"
                                                     className="text-center text-muted py-4"
                                                 >
                                                     Belum ada data user

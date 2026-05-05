@@ -48,16 +48,6 @@ class UserController {
                 include: [
                     {
                         association: "division",
-                        attributes: ["id", "name", "supervisor_id"],
-                        include: [
-                            {
-                                association: "supervisor",
-                                attributes: ["id", "name"],
-                            },
-                        ],
-                    },
-                    {
-                        association: "supervisorUser",
                         attributes: ["id", "name"],
                     },
                 ],
