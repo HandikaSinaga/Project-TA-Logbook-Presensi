@@ -221,13 +221,24 @@ const AdminUsers = () => {
         try {
             const submitData = { ...formData };
 
-            // Clean empty values, EXCEPT password untuk new user
+            // Handle values: keep some as null/empty if cleared
             Object.keys(submitData).forEach((key) => {
-                // Jangan hapus password jika sedang tambah user baru (required)
+                // Keep password for new user
                 if (key === "password" && !editingId) {
-                    return; // Keep password for new user
+                    return;
                 }
-                // Hapus field kosong lainnya
+                
+                // Allow these fields to be empty strings (to clear them in DB)
+                const optionalFields = ["nip", "phone", "address", "division_id", "periode", "supervisor_id"];
+                if (optionalFields.includes(key)) {
+                    // Convert empty string to null for database
+                    if (submitData[key] === "") {
+                        submitData[key] = null;
+                    }
+                    return;
+                }
+
+                // Delete other truly empty/null values
                 if (submitData[key] === "" || submitData[key] === null) {
                     delete submitData[key];
                 }
