@@ -25,8 +25,9 @@ class DivisionController {
             });
 
             if (!user.division) {
-                return res.status(404).json({
-                    success: false,
+                return res.status(200).json({
+                    success: true,
+                    data: null,
                     message: "No division assigned",
                 });
             }
@@ -65,8 +66,9 @@ class DivisionController {
             const user = await User.findByPk(userId);
 
             if (!user.division_id) {
-                return res.status(404).json({
-                    success: false,
+                return res.status(200).json({
+                    success: true,
+                    data: null,
                     message: "No division assigned",
                 });
             }

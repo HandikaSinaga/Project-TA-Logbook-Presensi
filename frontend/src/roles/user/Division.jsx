@@ -23,7 +23,7 @@ const Division = () => {
             );
             const divisionData = response.data.data || response.data;
             setDivision(divisionData);
-            setMembers(divisionData.members || []);
+            setMembers(divisionData?.members || []);
         } catch (error) {
             console.error("Error fetching division:", error);
             toast.error("Gagal memuat data divisi");
@@ -88,14 +88,32 @@ const Division = () => {
                 </div>
             </div>
 
-            {division && (
-                <div
-                    className="card border-0 shadow-sm mb-4"
-                    style={{
-                        background:
-                            "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    }}
-                >
+            {!division ? (
+                <div className="card border-0 shadow-sm text-center p-5">
+                    <div className="card-body">
+                        <div className="mb-4">
+                            <i
+                                className="bi bi-diagram-3 text-muted"
+                                style={{ fontSize: "4rem" }}
+                            ></i>
+                        </div>
+                        <h4 className="fw-bold mb-3">Belum Memiliki Divisi</h4>
+                        <p className="text-muted mb-0">
+                            Anda belum ditempatkan di divisi mana pun. Informasi
+                            kelompok divisi akan tersedia setelah Anda
+                            dimasukkan ke dalam sebuah divisi oleh Admin.
+                        </p>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    <div
+                        className="card border-0 shadow-sm mb-4"
+                        style={{
+                            background:
+                                "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        }}
+                    >
                     <div className="card-body p-4 text-white">
                         <div className="row align-items-center">
                             <div className="col-md-8">
@@ -295,7 +313,9 @@ const Division = () => {
                         </div>
                     </div>
                 )}
-            </div>
+                </div>
+                </>
+            )}
 
             {/* Member Detail Modal */}
             {selectedMember && (
