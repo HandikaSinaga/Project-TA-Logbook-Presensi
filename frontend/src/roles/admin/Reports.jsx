@@ -2234,6 +2234,7 @@ const AdminReports = () => {
                                                                                          })()}
                                                                                          {item.check_in_address && <div className="text-truncate mt-1" style={{fontSize:"0.7rem",maxWidth:"200px"}} title={item.check_in_address}><i className="bi bi-geo-alt-fill text-primary me-1"></i>{item.check_in_address}</div>}
                                                                                      </div>
+                                                                                 )}
                                                                             </>
                                                                         )}
                                                                         {reportType ===
