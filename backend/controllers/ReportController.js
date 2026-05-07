@@ -72,6 +72,12 @@ class ReportController {
                         },
                     ],
                 },
+                {
+                    model: User,
+                    as: "approver",
+                    attributes: ["id", "name"],
+                    required: false,
+                },
             ];
 
             // Build user where clause for filters
@@ -641,6 +647,12 @@ class ReportController {
                             },
                         ],
                     },
+                    {
+                        model: User,
+                        as: "approver",
+                        attributes: ["id", "name"],
+                        required: false,
+                    },
                 ],
                 order: [["date", "DESC"]],
             });
@@ -930,6 +942,12 @@ class ReportController {
                             attributes: ["id", "name"],
                         },
                     ],
+                },
+                {
+                    model: User,
+                    as: "approver",
+                    attributes: ["id", "name"],
+                    required: false,
                 },
             ];
 

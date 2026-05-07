@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import toast from "react-hot-toast";
 import { OverlayTrigger, Tooltip, Spinner } from "react-bootstrap";
@@ -1200,32 +1200,11 @@ const AdminReports = () => {
                                                                         Status
                                                                         Approval
                                                                     </th>
-                                                                    <th
-                                                                        style={{
-                                                                            minWidth:
-                                                                                "100px",
-                                                                        }}
-                                                                    >
-                                                                        Check In
-                                                                    </th>
-                                                                    <th
-                                                                        style={{
-                                                                            minWidth:
-                                                                                "100px",
-                                                                        }}
-                                                                    >
-                                                                        Check
-                                                                        Out
-                                                                    </th>
-                                                                    <th
-                                                                        style={{
-                                                                            minWidth:
-                                                                                "100px",
-                                                                        }}
-                                                                    >
-                                                                        Tipe
-                                                                        Kerja
-                                                                    </th>
+                                                                     <th style={{minWidth:"100px"}}>Check In</th>
+                                                                     <th style={{minWidth:"100px"}}>Check Out</th>
+                                                                     <th style={{minWidth:"130px"}}>Tipe Kerja</th>
+                                                                     <th style={{minWidth:"200px"}}>Lokasi Check-In</th>
+                                                                     <th style={{minWidth:"200px"}}>Lokasi Check-Out</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
@@ -1398,26 +1377,26 @@ const AdminReports = () => {
                                                                                         )}
                                                                                     </small>
                                                                                 </td>
-                                                                                <td>
-                                                                                    <small
-                                                                                        className={`badge ${
-                                                                                            item.work_type ===
-                                                                                            "wfo"
-                                                                                                ? "bg-primary"
-                                                                                                : "bg-info"
-                                                                                        } bg-opacity-10 text-${
-                                                                                            item.work_type ===
-                                                                                            "wfo"
-                                                                                                ? "primary"
-                                                                                                : "info"
-                                                                                        }`}
-                                                                                    >
-                                                                                        {item.work_type ===
-                                                                                        "wfo"
-                                                                                            ? "WFO"
-                                                                                            : "WFH"}
-                                                                                    </small>
-                                                                                </td>
+                                                                                 <td>
+                                                                                     {(() => {
+ wt = item.work_type;
+ (wt === "onsite" && item.checkout_offsite_reason)
+                                                                                             return <span className="badge" style={{background:"#EFE0FF",color:"#3D0A60",fontSize:"0.72rem"}}>Onsite &rarr; Offsite</span>;
+ (wt === "onsite")
+                                                                                             return <span className="badge" style={{background:"#D0E8FF",color:"#0D3B66",fontSize:"0.72rem"}}>Onsite</span>;
+ (wt === "offsite")
+                                                                                             return <span className="badge" style={{background:"#FDE8D0",color:"#5C3317",fontSize:"0.72rem"}}>Offsite</span>;
+ <span className="text-muted">-</span>;
+                                                                                     })()}
+                                                                                 </td>
+                                                                                 <td style={{maxWidth:"200px"}}>
+                                                                                     <small className="text-muted d-block text-truncate" title={item.check_in_address || ""}>{item.check_in_address ? <><i className="bi bi-geo-alt-fill text-primary me-1"></i>{item.check_in_address}</> : <span className="text-muted">-</span>}</small>
+                                                                                     {item.offsite_reason && <small className="text-warning d-block text-truncate"><i className="bi bi-exclamation-circle me-1"></i>{item.offsite_reason}</small>}
+                                                                                 </td>
+                                                                                 <td style={{maxWidth:"200px"}}>
+                                                                                     <small className="text-muted d-block text-truncate" title={item.check_out_address || ""}>{item.check_out_time ? (item.check_out_address ? <><i className="bi bi-geo-alt text-danger me-1"></i>{item.check_out_address}</> : <span className="text-muted">-</span>) : <span className="badge bg-warning bg-opacity-10 text-warning">Belum CO</span>}</small>
+                                                                                     {item.checkout_offsite_reason && <small className="text-warning d-block text-truncate"><i className="bi bi-exclamation-circle me-1"></i>{item.checkout_offsite_reason}</small>}
+                                                                                 </td>
                                                                             </tr>
                                                                         );
                                                                     }
@@ -2245,15 +2224,19 @@ const AdminReports = () => {
                                                                                     `Masuk: ${item.check_in_time}`}
                                                                                 {item.check_out_time &&
                                                                                     ` | Keluar: ${item.check_out_time}`}
-                                                                                {item.work_type && (
-                                                                                    <div className="mt-1">
-                                                                                        <span className="badge bg-info text-dark">
-                                                                                            {item.work_type ===
-                                                                                            "onsite"
-                                                                                                ? "Onsite"
-                                                                                                : "Offsite"}
-                                                                                        </span>
-                                                                                    </div>
+                                                                                 {item.work_type && (
+                                                                                     <div className="mt-1">
+                                                                                         {(() => {
+                                                                                             const wt = item.work_type;
+                                                                                             if (wt === "onsite" && item.checkout_offsite_reason)
+                                                                                                 return <span className="badge" style={{background:"#EFE0FF",color:"#3D0A60",fontSize:"0.7rem"}}>Onsite &rarr; Offsite</span>;
+                                                                                             if (wt === "onsite") return <span className="badge" style={{background:"#D0E8FF",color:"#0D3B66",fontSize:"0.7rem"}}>Onsite</span>;
+                                                                                             if (wt === "offsite") return <span className="badge" style={{background:"#FDE8D0",color:"#5C3317",fontSize:"0.7rem"}}>Offsite</span>;
+                                                                                             return null;
+                                                                                         })()}
+                                                                                         {item.check_in_address && <div className="text-truncate mt-1" style={{fontSize:"0.7rem",maxWidth:"200px"}} title={item.check_in_address}><i className="bi bi-geo-alt-fill text-primary me-1"></i>{item.check_in_address}</div>}
+                                                                                     </div>
+                                                                                 )}
                                                                                 )}
                                                                             </>
                                                                         )}

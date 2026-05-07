@@ -1,4 +1,4 @@
-import ExcelJS from "exceljs";
+﻿import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -64,10 +64,26 @@ class ExportService {
         // Empty row for spacing
         worksheet.addRow([]);
 
+        // Detect work_type mix per record for the label column
+        const getWorkTypeLabel = (item) => {
+            const checkInType = item.check_in_time ? item.work_type : null;
+            // We infer checkout work type from checkout_offsite_reason:
+            // if checkout_offsite_reason exists the checkout was offsite, else onsite
+            const hasCheckout = !!item.check_out_time;
+            if (!checkInType) return "-";
+            if (!hasCheckout) return checkInType === "onsite" ? "Onsite" : "Offsite";
+
+            // Detect mixed: checkin onsite but checkout has offsite reason => mixed
+            if (checkInType === "onsite" && item.checkout_offsite_reason) return "Onsite → Offsite";
+            // Detect mixed: checkin offsite but checkout onsite (no checkout offsite reason)
+            if (checkInType === "offsite" && !item.checkout_offsite_reason) return "Offsite → Onsite";
+            return checkInType === "onsite" ? "Onsite" : "Offsite";
+        };
+
         // Set column widths and headers (row 5)
         worksheet.columns = [
             { header: "No", key: "no", width: 5 },
-            { header: "Tanggal", key: "date", width: 12 },
+            { header: "Tanggal", key: "date", width: 13 },
             { header: "Nama", key: "name", width: 25 },
             { header: "NIP", key: "nip", width: 15 },
             { header: "Divisi", key: "division", width: 20 },
@@ -75,40 +91,56 @@ class ExportService {
             { header: "Sumber Magang", key: "sumber_magang", width: 15 },
             { header: "Jam Masuk", key: "check_in", width: 12 },
             { header: "Jam Keluar", key: "check_out", width: 12 },
-            { header: "Tipe Kerja", key: "work_type", width: 12 },
-            { header: "Status", key: "status", width: 12 },
-            { header: "Lokasi Masuk", key: "location_in", width: 35 },
-            { header: "Lokasi Keluar", key: "location_out", width: 35 },
-            { header: "Keterangan", key: "notes", width: 40 },
+            { header: "Tipe Kerja", key: "work_type", width: 18 },
+            { header: "Status Kehadiran", key: "status", width: 16 },
+            { header: "Status Approval", key: "approval_status", width: 16 },
+            { header: "Lokasi Check-In", key: "location_in", width: 38 },
+            { header: "Lokasi Check-Out", key: "location_out", width: 38 },
+            { header: "Keterangan Offsite Check-In", key: "offsite_reason", width: 35 },
+            { header: "Keterangan Offsite Check-Out", key: "checkout_offsite_reason", width: 35 },
+            { header: "Koordinat Check-In", key: "coord_in", width: 25 },
+            { header: "Koordinat Check-Out", key: "coord_out", width: 25 },
+            { header: "Foto Check-In", key: "photo_in", width: 14 },
+            { header: "Foto Check-Out", key: "photo_out", width: 14 },
+            { header: "Catatan", key: "notes", width: 35 },
+            { header: "Alasan Penolakan", key: "rejection_reason", width: 35 },
         ];
 
         // Style header row (row 5)
         const headerRow = worksheet.getRow(5);
-        headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+        headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
         headerRow.fill = {
             type: "pattern",
             pattern: "solid",
-            fgColor: { argb: "FF4472C4" },
+            fgColor: { argb: "FF2E4057" },
         };
         headerRow.alignment = {
             vertical: "middle",
             horizontal: "center",
             wrapText: true,
         };
-        headerRow.height = 30;
+        headerRow.height = 35;
 
         // Calculate statistics
         const stats = {
             total: data.length,
             present: data.filter((a) => a.status === "present").length,
             late: data.filter((a) => a.status === "late").length,
+            early: data.filter((a) => a.status === "early").length,
             absent: data.filter((a) => a.status === "absent").length,
-            onsite: data.filter((a) => a.work_type === "onsite").length,
-            offsite: data.filter((a) => a.work_type === "offsite").length,
+            onsite: data.filter((a) => a.work_type === "onsite" && !a.checkout_offsite_reason).length,
+            offsite: data.filter((a) => a.work_type === "offsite" && !a.checkout_offsite_reason).length,
+            mixed_onsite_to_offsite: data.filter((a) => a.work_type === "onsite" && a.checkout_offsite_reason).length,
+            mixed_offsite_to_onsite: data.filter((a) => a.work_type === "offsite" && !a.checkout_offsite_reason && a.check_out_time).length,
+            approved: data.filter((a) => a.approval_status === "approved").length,
+            pending: data.filter((a) => a.approval_status === "pending").length,
+            rejected: data.filter((a) => a.approval_status === "rejected").length,
+            with_photo: data.filter((a) => a.check_in_photo || a.check_out_photo).length,
         };
 
         // Add data rows (starting from row 6)
         data.forEach((item, index) => {
+            const workTypeLabel = getWorkTypeLabel(item);
             const row = worksheet.addRow({
                 no: index + 1,
                 date: this.formatDate(item.date),
@@ -118,16 +150,24 @@ class ExportService {
                 periode: item.user?.periode || "-",
                 sumber_magang: item.user?.sumber_magang || "-",
                 check_in: item.check_in_time || "-",
-                check_out: item.check_out_time || "-",
-                work_type: item.work_type
-                    ? item.work_type === "onsite"
-                        ? "Onsite"
-                        : "Offsite"
-                    : "-",
+                check_out: item.check_out_time || "Belum Check-Out",
+                work_type: workTypeLabel,
                 status: this.translateStatus(item.status),
-                location_in: item.check_in_location || "-",
-                location_out: item.check_out_location || "-",
+                approval_status: this.translateStatus(item.approval_status),
+                location_in: item.check_in_address || "-",
+                location_out: item.check_out_address || (item.check_out_time ? "-" : "Belum Check-Out"),
+                offsite_reason: item.offsite_reason || "-",
+                checkout_offsite_reason: item.checkout_offsite_reason || "-",
+                coord_in: (item.check_in_latitude && item.check_in_longitude)
+                    ? `${parseFloat(item.check_in_latitude).toFixed(6)}, ${parseFloat(item.check_in_longitude).toFixed(6)}`
+                    : "-",
+                coord_out: (item.check_out_latitude && item.check_out_longitude)
+                    ? `${parseFloat(item.check_out_latitude).toFixed(6)}, ${parseFloat(item.check_out_longitude).toFixed(6)}`
+                    : "-",
+                photo_in: item.check_in_photo ? "✓ Ada" : "-",
+                photo_out: item.check_out_photo ? "✓ Ada" : "-",
                 notes: item.notes || "-",
+                rejection_reason: item.rejection_reason || "-",
             });
 
             // Add alternating row colors
@@ -140,93 +180,73 @@ class ExportService {
             }
 
             // Center align specific columns
-            row.getCell("no").alignment = {
-                horizontal: "center",
-                vertical: "middle",
-            };
-            row.getCell("date").alignment = {
-                horizontal: "center",
-                vertical: "middle",
-            };
-            row.getCell("check_in").alignment = {
-                horizontal: "center",
-                vertical: "middle",
-            };
-            row.getCell("check_out").alignment = {
-                horizontal: "center",
-                vertical: "middle",
-            };
-            row.getCell("work_type").alignment = {
-                horizontal: "center",
-                vertical: "middle",
-            };
-            row.getCell("status").alignment = {
-                horizontal: "center",
-                vertical: "middle",
-            };
+            ["no","date","check_in","check_out","work_type","status","approval_status","photo_in","photo_out"].forEach(key => {
+                row.getCell(key).alignment = { horizontal: "center", vertical: "middle" };
+            });
 
-            // Color code status
+            // Color code status kehadiran
             const statusCell = row.getCell("status");
             statusCell.font = { bold: true };
             if (item.status === "present") {
-                statusCell.font = {
-                    ...statusCell.font,
-                    color: { argb: "FF008000" },
-                };
-                statusCell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFD4EDDA" },
-                };
+                statusCell.font = { ...statusCell.font, color: { argb: "FF155724" } };
+                statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD4EDDA" } };
             } else if (item.status === "late") {
-                statusCell.font = {
-                    ...statusCell.font,
-                    color: { argb: "FFFF6600" },
-                };
-                statusCell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFFFF3CD" },
-                };
+                statusCell.font = { ...statusCell.font, color: { argb: "FF664D03" } };
+                statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF3CD" } };
+            } else if (item.status === "early") {
+                statusCell.font = { ...statusCell.font, color: { argb: "FF0C5460" } };
+                statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD1ECF1" } };
             } else if (item.status === "absent") {
-                statusCell.font = {
-                    ...statusCell.font,
-                    color: { argb: "FFFF0000" },
-                };
-                statusCell.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: "FFF8D7DA" },
-                };
+                statusCell.font = { ...statusCell.font, color: { argb: "FF721C24" } };
+                statusCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8D7DA" } };
+            }
+
+            // Color code approval status
+            const approvalCell = row.getCell("approval_status");
+            approvalCell.font = { bold: false };
+            if (item.approval_status === "approved") {
+                approvalCell.font = { color: { argb: "FF155724" } };
+                approvalCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD4EDDA" } };
+            } else if (item.approval_status === "pending") {
+                approvalCell.font = { color: { argb: "FF664D03" } };
+                approvalCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF3CD" } };
+            } else if (item.approval_status === "rejected") {
+                approvalCell.font = { color: { argb: "FF721C24" } };
+                approvalCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8D7DA" } };
+            }
+
+            // Color code work type
+            const workTypeCell = row.getCell("work_type");
+            if (workTypeLabel === "Onsite") {
+                workTypeCell.font = { bold: true, color: { argb: "FF0D3B66" } };
+                workTypeCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD0E8FF" } };
+            } else if (workTypeLabel === "Offsite") {
+                workTypeCell.font = { bold: true, color: { argb: "FF5C3317" } };
+                workTypeCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFDE8D0" } };
+            } else if (workTypeLabel.includes("→")) {
+                workTypeCell.font = { bold: true, color: { argb: "FF3D0A60" } };
+                workTypeCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFE0FF" } };
             }
 
             // Wrap text for long content
-            row.getCell("location_in").alignment = {
-                wrapText: true,
-                vertical: "top",
-            };
-            row.getCell("location_out").alignment = {
-                wrapText: true,
-                vertical: "top",
-            };
-            row.getCell("notes").alignment = {
-                wrapText: true,
-                vertical: "top",
-            };
+            ["location_in","location_out","offsite_reason","checkout_offsite_reason","notes","rejection_reason"].forEach(key => {
+                row.getCell(key).alignment = { wrapText: true, vertical: "top" };
+            });
         });
 
         // Add summary section
         const summaryStartRow = worksheet.rowCount + 2;
 
         // Summary title
-        worksheet.mergeCells(`A${summaryStartRow}:E${summaryStartRow}`);
+        const totalCols = 22;
+        worksheet.mergeCells(`A${summaryStartRow}:F${summaryStartRow}`);
         const summaryTitle = worksheet.getCell(`A${summaryStartRow}`);
         summaryTitle.value = "STATISTIK PRESENSI";
-        summaryTitle.font = { bold: true, size: 12 };
+        summaryTitle.font = { bold: true, size: 12, color: { argb: "FFFFFFFF" } };
         summaryTitle.fill = {
             type: "pattern",
             pattern: "solid",
-            fgColor: { argb: "FFE7E6E6" },
+            fgColor: { argb: "FF2E4057" },
         };
         summaryTitle.alignment = { horizontal: "center", vertical: "middle" };
         worksheet.getRow(summaryStartRow).height = 25;
@@ -234,21 +254,27 @@ class ExportService {
         // Summary data
         const summaryData = [
             ["Total Records", stats.total],
-            ["Hadir", stats.present],
+            ["Hadir (Tepat Waktu)", stats.present],
             ["Terlambat", stats.late],
+            ["Pulang Awal", stats.early],
             ["Tidak Hadir", stats.absent],
-            ["Onsite", stats.onsite],
-            ["Offsite", stats.offsite],
+            ["-", "-"],
+            ["Onsite (Keseluruhan)", stats.onsite],
+            ["Offsite (Keseluruhan)", stats.offsite],
+            ["Mixed: Onsite Check-In → Offsite Check-Out", stats.mixed_onsite_to_offsite],
+            ["-", "-"],
+            ["Disetujui (Approved)", stats.approved],
+            ["Menunggu Persetujuan", stats.pending],
+            ["Ditolak", stats.rejected],
+            ["-", "-"],
+            ["Presensi dengan Foto", stats.with_photo],
         ];
 
-        summaryData.forEach((item, index) => {
+        summaryData.forEach((item) => {
+            if (item[0] === "-") { worksheet.addRow([]); return; }
             const row = worksheet.addRow([item[0], "", "", item[1]]);
             row.getCell(1).font = { bold: true };
-            row.getCell(1).fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "FFF2F2F2" },
-            };
+            row.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF2F2F2" } };
             row.getCell(4).alignment = { horizontal: "center" };
             row.getCell(4).font = { bold: true };
         });
@@ -256,13 +282,12 @@ class ExportService {
         // Add filters to header row
         worksheet.autoFilter = {
             from: { row: 5, column: 1 },
-            to: { row: 5, column: 14 },
+            to: { row: 5, column: 22 },
         };
 
         // Add borders to all cells with data
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
             if (rowNumber >= 5) {
-                // Starting from header row
                 row.eachCell((cell) => {
                     cell.border = {
                         top: { style: "thin", color: { argb: "FFD3D3D3" } },
@@ -274,8 +299,8 @@ class ExportService {
             }
         });
 
-        // Freeze header rows
-        worksheet.views = [{ state: "frozen", xSplit: 0, ySplit: 5 }];
+        // Freeze header rows (freeze first 5 rows and first 2 columns for name navigation)
+        worksheet.views = [{ state: "frozen", xSplit: 2, ySplit: 5 }];
 
         return await workbook.xlsx.writeBuffer();
     }
@@ -1052,144 +1077,106 @@ class ExportService {
      */
     async addAttendanceSheet(workbook, attendances, dateRange) {
         const worksheet = workbook.addWorksheet("Presensi", {
-            pageSetup: {
-                paperSize: 9,
-                orientation: "landscape",
-                fitToPage: true,
-                fitToWidth: 1,
-                fitToHeight: 0,
-            },
+            pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
         });
 
-        // Title
-        worksheet.mergeCells("A1:N1");
+        worksheet.mergeCells("A1:U1");
         const titleCell = worksheet.getCell("A1");
         titleCell.value = "LAPORAN PRESENSI KARYAWAN";
-        titleCell.font = { size: 16, bold: true, color: { argb: "FF000000" } };
+        titleCell.font = { size: 16, bold: true };
         titleCell.alignment = { vertical: "middle", horizontal: "center" };
-        titleCell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFE7E6E6" },
-        };
+        titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE7E6E6" } };
         worksheet.getRow(1).height = 30;
 
-        // Date range
-        worksheet.mergeCells("A2:N2");
+        worksheet.mergeCells("A2:U2");
         const dateCell = worksheet.getCell("A2");
-        dateCell.value = `Periode: ${this.formatDate(
-            dateRange.start_date,
-        )} - ${this.formatDate(dateRange.end_date)}`;
+        dateCell.value = `Periode: ${this.formatDate(dateRange.start_date)} - ${this.formatDate(dateRange.end_date)}`;
         dateCell.font = { size: 11, italic: true };
         worksheet.getRow(2).height = 20;
 
-        // Headers
-        const headers = [
-            "No",
-            "Tanggal",
-            "Nama",
-            "NIP",
-            "Divisi",
-            "Status Kehadiran",
-            "Status Approval",
-            "Jam Masuk",
-            "Jam Keluar",
-            "Tipe Kerja",
-            "Periode",
-            "Sumber Magang",
-            "Deskripsi",
-            "Catatan",
+        const colDefs = [
+            { h: "No", w: 5 }, { h: "Tanggal", w: 13 }, { h: "Nama", w: 25 }, { h: "NIP", w: 15 },
+            { h: "Divisi", w: 20 }, { h: "Periode", w: 12 }, { h: "Sumber Magang", w: 15 },
+            { h: "Jam Masuk", w: 12 }, { h: "Jam Keluar", w: 12 }, { h: "Tipe Kerja", w: 18 },
+            { h: "Status Kehadiran", w: 16 }, { h: "Status Approval", w: 16 },
+            { h: "Lokasi Check-In", w: 38 }, { h: "Lokasi Check-Out", w: 38 },
+            { h: "Ket. Offsite Check-In", w: 35 }, { h: "Ket. Offsite Check-Out", w: 35 },
+            { h: "Koordinat Check-In", w: 25 }, { h: "Koordinat Check-Out", w: 25 },
+            { h: "Foto", w: 12 }, { h: "Catatan", w: 35 }, { h: "Alasan Penolakan", w: 35 },
         ];
+        worksheet.columns = colDefs.map(c => ({ width: c.w }));
 
         const headerRow = 4;
-        headers.forEach((header, index) => {
-            const cell = worksheet.getCell(headerRow, index + 1);
-            cell.value = header;
-            cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-            cell.fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "FF4472C4" },
-            };
-            cell.alignment = {
-                vertical: "center",
-                horizontal: "center",
-                wrapText: true,
-            };
+        colDefs.forEach((col, i) => {
+            const cell = worksheet.getCell(headerRow, i + 1);
+            cell.value = col.h;
+            cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2E4057" } };
+            cell.alignment = { vertical: "center", horizontal: "center", wrapText: true };
         });
-        worksheet.getRow(headerRow).height = 25;
+        worksheet.getRow(headerRow).height = 35;
 
-        // Data rows
-        attendances.forEach((attendance, index) => {
-            const row = headerRow + index + 1;
-            worksheet.getCell(row, 1).value = index + 1;
-            worksheet.getCell(row, 2).value = this.formatDate(attendance.date);
-            worksheet.getCell(row, 3).value = attendance.user?.name || "-";
-            worksheet.getCell(row, 4).value = attendance.user?.nip || "-";
-            worksheet.getCell(row, 5).value =
-                attendance.user?.division?.name || "-";
-            worksheet.getCell(row, 6).value = this.translateStatus(
-                attendance.status,
-            );
-            worksheet.getCell(row, 7).value = this.translateStatus(
-                attendance.approval_status,
-            );
-            worksheet.getCell(row, 8).value = attendance.check_in_time || "-";
-            worksheet.getCell(row, 9).value = attendance.check_out_time || "-";
-            worksheet.getCell(row, 10).value =
-                attendance.work_type === "onsite" ? "Onsite" : "Offsite";
-            worksheet.getCell(row, 11).value = attendance.user?.periode || "-";
-            worksheet.getCell(row, 12).value =
-                attendance.user?.sumber_magang || "-";
-            worksheet.getCell(row, 13).value = attendance.description || "-";
-            worksheet.getCell(row, 14).value = attendance.notes || "-";
-        });
-
-        // Column widths
-        worksheet.columns = [
-            { width: 5 },
-            { width: 12 },
-            { width: 15 },
-            { width: 12 },
-            { width: 15 },
-            { width: 15 },
-            { width: 15 },
-            { width: 12 },
-            { width: 12 },
-            { width: 12 },
-            { width: 10 },
-            { width: 15 },
-            { width: 20 },
-            { width: 20 },
-        ];
-
-        // Add filters
-        worksheet.autoFilter = {
-            from: { row: headerRow, column: 1 },
-            to: { row: headerRow, column: 14 },
+        const getWTLabel = (a) => {
+            if (!a.work_type) return "-";
+            if (!a.check_out_time) return a.work_type === "onsite" ? "Onsite" : "Offsite";
+            if (a.work_type === "onsite" && a.checkout_offsite_reason) return "Onsite \u2192 Offsite";
+            return a.work_type === "onsite" ? "Onsite" : "Offsite";
         };
 
-        // Add borders
-        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-            if (rowNumber >= headerRow) {
-                row.eachCell((cell) => {
-                    cell.border = {
-                        top: { style: "thin", color: { argb: "FFD3D3D3" } },
-                        left: { style: "thin", color: { argb: "FFD3D3D3" } },
-                        bottom: { style: "thin", color: { argb: "FFD3D3D3" } },
-                        right: { style: "thin", color: { argb: "FFD3D3D3" } },
-                    };
-                });
+        attendances.forEach((a, idx) => {
+            const row = headerRow + idx + 1;
+            const wt = getWTLabel(a);
+            const vals = [
+                idx + 1, this.formatDate(a.date), a.user?.name || "-", a.user?.nip || "-",
+                a.user?.division?.name || "-", a.user?.periode || "-", a.user?.sumber_magang || "-",
+                a.check_in_time || "-", a.check_out_time || "Belum CO", wt,
+                this.translateStatus(a.status), this.translateStatus(a.approval_status),
+                a.check_in_address || "-",
+                a.check_out_address || (a.check_out_time ? "-" : "Belum CO"),
+                a.offsite_reason || "-", a.checkout_offsite_reason || "-",
+                (a.check_in_latitude && a.check_in_longitude)
+                    ? `${parseFloat(a.check_in_latitude).toFixed(6)}, ${parseFloat(a.check_in_longitude).toFixed(6)}` : "-",
+                (a.check_out_latitude && a.check_out_longitude)
+                    ? `${parseFloat(a.check_out_latitude).toFixed(6)}, ${parseFloat(a.check_out_longitude).toFixed(6)}` : "-",
+                (a.check_in_photo || a.check_out_photo) ? "\u2713 Ada" : "-",
+                a.notes || "-", a.rejection_reason || "-",
+            ];
+            vals.forEach((v, c) => { worksheet.getCell(row, c + 1).value = v; });
+
+            if (idx % 2 === 0) {
+                for (let c = 1; c <= 21; c++) {
+                    const cell = worksheet.getCell(row, c);
+                    if (!cell.fill || !cell.fill.fgColor) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8F9FA" } };
+                }
             }
+            [1, 2, 8, 9, 10, 11, 12, 19].forEach(c => { worksheet.getCell(row, c).alignment = { horizontal: "center", vertical: "middle" }; });
+            [13, 14, 15, 16, 20, 21].forEach(c => { worksheet.getCell(row, c).alignment = { wrapText: true, vertical: "top" }; });
+
+            const sc = worksheet.getCell(row, 11);
+            if (a.status === "present") { sc.font = { bold: true, color: { argb: "FF155724" } }; sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD4EDDA" } }; }
+            else if (a.status === "late") { sc.font = { bold: true, color: { argb: "FF664D03" } }; sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF3CD" } }; }
+            else if (a.status === "early") { sc.font = { bold: true, color: { argb: "FF0C5460" } }; sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD1ECF1" } }; }
+            else if (a.status === "absent") { sc.font = { bold: true, color: { argb: "FF721C24" } }; sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8D7DA" } }; }
+
+            const ac = worksheet.getCell(row, 12);
+            if (a.approval_status === "approved") { ac.font = { color: { argb: "FF155724" } }; ac.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD4EDDA" } }; }
+            else if (a.approval_status === "pending") { ac.font = { color: { argb: "FF664D03" } }; ac.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF3CD" } }; }
+            else if (a.approval_status === "rejected") { ac.font = { color: { argb: "FF721C24" } }; ac.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8D7DA" } }; }
+
+            const wtc = worksheet.getCell(row, 10);
+            if (wt === "Onsite") { wtc.font = { bold: true, color: { argb: "FF0D3B66" } }; wtc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD0E8FF" } }; }
+            else if (wt === "Offsite") { wtc.font = { bold: true, color: { argb: "FF5C3317" } }; wtc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFDE8D0" } }; }
+            else if (wt.includes("\u2192")) { wtc.font = { bold: true, color: { argb: "FF3D0A60" } }; wtc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFE0FF" } }; }
         });
 
-        // Freeze header
-        worksheet.views = [{ state: "frozen", xSplit: 0, ySplit: headerRow }];
+        worksheet.autoFilter = { from: { row: headerRow, column: 1 }, to: { row: headerRow, column: 21 } };
+        worksheet.eachRow({ includeEmpty: false }, (row, rn) => {
+            if (rn >= headerRow) {
+                row.eachCell(cell => { cell.border = { top: { style: "thin", color: { argb: "FFD3D3D3" } }, left: { style: "thin", color: { argb: "FFD3D3D3" } }, bottom: { style: "thin", color: { argb: "FFD3D3D3" } }, right: { style: "thin", color: { argb: "FFD3D3D3" } } }; });
+            }
+        });
+        worksheet.views = [{ state: "frozen", xSplit: 2, ySplit: headerRow }];
     }
-
-    /**
-     * Add logbook data to workbook
-     */
     async addLogbookSheet(workbook, logbooks, dateRange) {
         const worksheet = workbook.addWorksheet("Logbook", {
             pageSetup: {
