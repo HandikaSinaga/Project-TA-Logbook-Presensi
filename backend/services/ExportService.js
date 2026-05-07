@@ -1,4 +1,4 @@
-import ExcelJS from "exceljs";
+﻿import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -1080,7 +1080,7 @@ class ExportService {
             pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
         });
 
-        worksheet.mergeCells("A1:U1");
+        worksheet.mergeCells("A1:V1");
         const titleCell = worksheet.getCell("A1");
         titleCell.value = "LAPORAN PRESENSI KARYAWAN";
         titleCell.font = { size: 16, bold: true };
@@ -1088,7 +1088,7 @@ class ExportService {
         titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE7E6E6" } };
         worksheet.getRow(1).height = 30;
 
-        worksheet.mergeCells("A2:U2");
+        worksheet.mergeCells("A2:V2");
         const dateCell = worksheet.getCell("A2");
         dateCell.value = `Periode: ${this.formatDate(dateRange.start_date)} - ${this.formatDate(dateRange.end_date)}`;
         dateCell.font = { size: 11, italic: true };
@@ -1100,9 +1100,10 @@ class ExportService {
             { h: "Jam Masuk", w: 12 }, { h: "Jam Keluar", w: 12 }, { h: "Tipe Kerja", w: 18 },
             { h: "Status Kehadiran", w: 16 }, { h: "Status Approval", w: 16 },
             { h: "Lokasi Check-In", w: 38 }, { h: "Lokasi Check-Out", w: 38 },
-            { h: "Ket. Offsite Check-In", w: 35 }, { h: "Ket. Offsite Check-Out", w: 35 },
+            { h: "Keterangan Offsite Check-In", w: 35 }, { h: "Keterangan Offsite Check-Out", w: 35 },
             { h: "Koordinat Check-In", w: 25 }, { h: "Koordinat Check-Out", w: 25 },
-            { h: "Foto", w: 12 }, { h: "Catatan", w: 35 }, { h: "Alasan Penolakan", w: 35 },
+            { h: "Foto Check-In", w: 14 }, { h: "Foto Check-Out", w: 14 },
+            { h: "Catatan", w: 35 }, { h: "Alasan Penolakan", w: 35 },
         ];
         worksheet.columns = colDefs.map(c => ({ width: c.w }));
 
@@ -1120,6 +1121,7 @@ class ExportService {
             if (!a.work_type) return "-";
             if (!a.check_out_time) return a.work_type === "onsite" ? "Onsite" : "Offsite";
             if (a.work_type === "onsite" && a.checkout_offsite_reason) return "Onsite \u2192 Offsite";
+            if (a.work_type === "offsite" && !a.checkout_offsite_reason) return "Offsite \u2192 Onsite";
             return a.work_type === "onsite" ? "Onsite" : "Offsite";
         };
 
@@ -1129,28 +1131,28 @@ class ExportService {
             const vals = [
                 idx + 1, this.formatDate(a.date), a.user?.name || "-", a.user?.nip || "-",
                 a.user?.division?.name || "-", a.user?.periode || "-", a.user?.sumber_magang || "-",
-                a.check_in_time || "-", a.check_out_time || "Belum CO", wt,
+                a.check_in_time || "-", a.check_out_time || "Belum Check-Out", wt,
                 this.translateStatus(a.status), this.translateStatus(a.approval_status),
                 a.check_in_address || "-",
-                a.check_out_address || (a.check_out_time ? "-" : "Belum CO"),
+                a.check_out_address || (a.check_out_time ? "-" : "Belum Check-Out"),
                 a.offsite_reason || "-", a.checkout_offsite_reason || "-",
                 (a.check_in_latitude && a.check_in_longitude)
                     ? `${parseFloat(a.check_in_latitude).toFixed(6)}, ${parseFloat(a.check_in_longitude).toFixed(6)}` : "-",
                 (a.check_out_latitude && a.check_out_longitude)
                     ? `${parseFloat(a.check_out_latitude).toFixed(6)}, ${parseFloat(a.check_out_longitude).toFixed(6)}` : "-",
-                (a.check_in_photo || a.check_out_photo) ? "\u2713 Ada" : "-",
+                a.check_in_photo ? "\u2713 Ada" : "-", a.check_out_photo ? "\u2713 Ada" : "-",
                 a.notes || "-", a.rejection_reason || "-",
             ];
             vals.forEach((v, c) => { worksheet.getCell(row, c + 1).value = v; });
 
             if (idx % 2 === 0) {
-                for (let c = 1; c <= 21; c++) {
+                for (let c = 1; c <= 22; c++) {
                     const cell = worksheet.getCell(row, c);
                     if (!cell.fill || !cell.fill.fgColor) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8F9FA" } };
                 }
             }
-            [1, 2, 8, 9, 10, 11, 12, 19].forEach(c => { worksheet.getCell(row, c).alignment = { horizontal: "center", vertical: "middle" }; });
-            [13, 14, 15, 16, 20, 21].forEach(c => { worksheet.getCell(row, c).alignment = { wrapText: true, vertical: "top" }; });
+            [1, 2, 8, 9, 10, 11, 12, 19, 20].forEach(c => { worksheet.getCell(row, c).alignment = { horizontal: "center", vertical: "middle" }; });
+            [13, 14, 15, 16, 21, 22].forEach(c => { worksheet.getCell(row, c).alignment = { wrapText: true, vertical: "top" }; });
 
             const sc = worksheet.getCell(row, 11);
             if (a.status === "present") { sc.font = { bold: true, color: { argb: "FF155724" } }; sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD4EDDA" } }; }
@@ -1169,7 +1171,7 @@ class ExportService {
             else if (wt.includes("\u2192")) { wtc.font = { bold: true, color: { argb: "FF3D0A60" } }; wtc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEFE0FF" } }; }
         });
 
-        worksheet.autoFilter = { from: { row: headerRow, column: 1 }, to: { row: headerRow, column: 21 } };
+        worksheet.autoFilter = { from: { row: headerRow, column: 1 }, to: { row: headerRow, column: 22 } };
         worksheet.eachRow({ includeEmpty: false }, (row, rn) => {
             if (rn >= headerRow) {
                 row.eachCell(cell => { cell.border = { top: { style: "thin", color: { argb: "FFD3D3D3" } }, left: { style: "thin", color: { argb: "FFD3D3D3" } }, bottom: { style: "thin", color: { argb: "FFD3D3D3" } }, right: { style: "thin", color: { argb: "FFD3D3D3" } } }; });
@@ -1179,161 +1181,148 @@ class ExportService {
     }
     async addLogbookSheet(workbook, logbooks, dateRange) {
         const worksheet = workbook.addWorksheet("Logbook", {
-            pageSetup: {
-                paperSize: 9,
-                orientation: "landscape",
-                fitToPage: true,
-                fitToWidth: 1,
-                fitToHeight: 0,
-            },
+            pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
         });
 
-        // Title
         worksheet.mergeCells("A1:L1");
         const titleCell = worksheet.getCell("A1");
         titleCell.value = "LAPORAN LOGBOOK";
         titleCell.font = { size: 16, bold: true, color: { argb: "FF000000" } };
         titleCell.alignment = { vertical: "middle", horizontal: "center" };
-        titleCell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFE7E6E6" },
-        };
+        titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE7E6E6" } };
         worksheet.getRow(1).height = 30;
 
-        // Date range
         worksheet.mergeCells("A2:L2");
         const dateCell = worksheet.getCell("A2");
-        dateCell.value = `Periode: ${this.formatDate(
-            dateRange.start_date,
-        )} - ${this.formatDate(dateRange.end_date)}`;
+        dateCell.value = `Periode: ${this.formatDate(dateRange.start_date)} - ${this.formatDate(dateRange.end_date)}`;
         dateCell.font = { size: 11, italic: true };
         worksheet.getRow(2).height = 20;
 
-        // Headers
-        const headers = [
-            "No",
-            "Tanggal",
-            "Nama",
-            "NIP",
-            "Divisi",
-            "Aktivitas",
-            "Deskripsi",
-            "Periode",
-            "Sumber Magang",
-            "Status Approval",
-            "Reviewer",
-            "Catatan",
+        const colDefs = [
+            { h: "No", w: 5 }, { h: "Tanggal", w: 12 }, { h: "Nama", w: 25 }, { h: "NIP", w: 15 },
+            { h: "Divisi", w: 20 }, { h: "Periode", w: 12 }, { h: "Waktu", w: 10 },
+            { h: "Aktivitas", w: 35 }, { h: "Deskripsi", w: 50 }, { h: "Status", w: 12 },
+            { h: "Reviewer", w: 25 }, { h: "Catatan Review", w: 40 },
         ];
+        worksheet.columns = colDefs.map(c => ({ width: c.w }));
 
         const headerRow = 4;
-        headers.forEach((header, index) => {
-            const cell = worksheet.getCell(headerRow, index + 1);
-            cell.value = header;
+        colDefs.forEach((col, i) => {
+            const cell = worksheet.getCell(headerRow, i + 1);
+            cell.value = col.h;
             cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-            cell.fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "FF70AD47" },
-            };
-            cell.alignment = {
-                vertical: "center",
-                horizontal: "center",
-                wrapText: true,
-            };
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF70AD47" } };
+            cell.alignment = { vertical: "center", horizontal: "center", wrapText: true };
         });
         worksheet.getRow(headerRow).height = 25;
 
-        // Data rows
-        logbooks.forEach((logbook, index) => {
-            const row = headerRow + index + 1;
-            worksheet.getCell(row, 1).value = index + 1;
-            worksheet.getCell(row, 2).value = this.formatDate(logbook.date);
-            worksheet.getCell(row, 3).value = logbook.user?.name || "-";
-            worksheet.getCell(row, 4).value = logbook.user?.nip || "-";
-            worksheet.getCell(row, 5).value =
-                logbook.user?.division?.name || "-";
-            worksheet.getCell(row, 6).value = logbook.activity || "-";
-            worksheet.getCell(row, 7).value = logbook.description || "-";
-            worksheet.getCell(row, 8).value = logbook.user?.periode || "-";
-            worksheet.getCell(row, 9).value =
-                logbook.user?.sumber_magang || "-";
-            worksheet.getCell(row, 10).value = this.translateStatus(
-                logbook.status,
-            );
-            worksheet.getCell(row, 11).value = logbook.reviewer?.name || "-";
-            worksheet.getCell(row, 12).value = logbook.notes || "-";
+        logbooks.forEach((logbook, idx) => {
+            const row = headerRow + idx + 1;
+            const vals = [
+                idx + 1, this.formatDate(logbook.date), logbook.user?.name || "-", logbook.user?.nip || "-",
+                logbook.user?.division?.name || "-", logbook.user?.periode || "-",
+                logbook.time || "-", logbook.activity || "-", logbook.description || "-",
+                this.translateStatus(logbook.status), logbook.reviewer?.name || "-", logbook.notes || "-",
+            ];
+            vals.forEach((v, c) => { worksheet.getCell(row, c + 1).value = v; });
+
+            if (idx % 2 === 0) {
+                for (let c = 1; c <= 12; c++) {
+                    const cell = worksheet.getCell(row, c);
+                    if (!cell.fill || !cell.fill.fgColor) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8F9FA" } };
+                }
+            }
+            [1, 2, 7, 10].forEach(c => { worksheet.getCell(row, c).alignment = { horizontal: "center", vertical: "middle" }; });
+            [8, 9, 12].forEach(c => { worksheet.getCell(row, c).alignment = { wrapText: true, vertical: "top" }; });
+
+            const sc = worksheet.getCell(row, 10);
+            sc.font = { bold: true };
+            if (logbook.status === "approved") { sc.font = { ...sc.font, color: { argb: "FF008000" } }; sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD4EDDA" } }; }
+            else if (logbook.status === "pending") { sc.font = { ...sc.font, color: { argb: "FFFF6600" } }; sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF3CD" } }; }
+            else if (logbook.status === "rejected") { sc.font = { ...sc.font, color: { argb: "FFFF0000" } }; sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8D7DA" } }; }
         });
 
-        // Column widths
-        worksheet.columns = [
-            { width: 5 },
-            { width: 12 },
-            { width: 15 },
-            { width: 12 },
-            { width: 15 },
-            { width: 15 },
-            { width: 20 },
-            { width: 10 },
-            { width: 15 },
-            { width: 15 },
-            { width: 15 },
-            { width: 20 },
-        ];
-
-        // Add filters
-        worksheet.autoFilter = {
-            from: { row: headerRow, column: 1 },
-            to: { row: headerRow, column: 12 },
-        };
-
-        // Add borders
-        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-            if (rowNumber >= headerRow) {
-                row.eachCell((cell) => {
-                    cell.border = {
-                        top: { style: "thin", color: { argb: "FFD3D3D3" } },
-                        left: { style: "thin", color: { argb: "FFD3D3D3" } },
-                        bottom: { style: "thin", color: { argb: "FFD3D3D3" } },
-                        right: { style: "thin", color: { argb: "FFD3D3D3" } },
-                    };
-                });
+        worksheet.autoFilter = { from: { row: headerRow, column: 1 }, to: { row: headerRow, column: 12 } };
+        worksheet.eachRow({ includeEmpty: false }, (row, rn) => {
+            if (rn >= headerRow) {
+                row.eachCell(cell => { cell.border = { top: { style: "thin", color: { argb: "FFD3D3D3" } }, left: { style: "thin", color: { argb: "FFD3D3D3" } }, bottom: { style: "thin", color: { argb: "FFD3D3D3" } }, right: { style: "thin", color: { argb: "FFD3D3D3" } } }; });
             }
         });
-
-        // Freeze header
-        worksheet.views = [{ state: "frozen", xSplit: 0, ySplit: headerRow }];
+        worksheet.views = [{ state: "frozen", xSplit: 2, ySplit: headerRow }];
     }
-
-    /**
-     * Add leave data to workbook
-     */
     async addLeaveSheet(workbook, leaves, dateRange) {
         const worksheet = workbook.addWorksheet("Izin Cuti", {
-            pageSetup: {
-                paperSize: 9,
-                orientation: "landscape",
-                fitToPage: true,
-                fitToWidth: 1,
-                fitToHeight: 0,
-            },
+            pageSetup: { paperSize: 9, orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
         });
 
-        // Title
         worksheet.mergeCells("A1:N1");
         const titleCell = worksheet.getCell("A1");
-        titleCell.value = "LAPORAN IZIN/CUTI";
+        titleCell.value = "LAPORAN IZIN CUTI";
         titleCell.font = { size: 16, bold: true, color: { argb: "FF000000" } };
         titleCell.alignment = { vertical: "middle", horizontal: "center" };
-        titleCell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FFE7E6E6" },
-        };
+        titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE7E6E6" } };
         worksheet.getRow(1).height = 30;
 
-        // Date range
         worksheet.mergeCells("A2:N2");
+        const dateCell = worksheet.getCell("A2");
+        dateCell.value = `Periode: ${this.formatDate(dateRange.start_date)} - ${this.formatDate(dateRange.end_date)}`;
+        dateCell.font = { size: 11, italic: true };
+        worksheet.getRow(2).height = 20;
+
+        const colDefs = [
+            { h: "No", w: 5 }, { h: "Nama", w: 25 }, { h: "NIP", w: 15 }, { h: "Divisi", w: 20 },
+            { h: "Periode", w: 12 }, { h: "Sumber Magang", w: 15 }, { h: "Jenis", w: 15 },
+            { h: "Tanggal Mulai", w: 15 }, { h: "Tanggal Selesai", w: 15 }, { h: "Durasi (Hari)", w: 12 },
+            { h: "Alasan", w: 50 }, { h: "Status", w: 12 }, { h: "Reviewer", w: 25 }, { h: "Catatan Review", w: 40 },
+        ];
+        worksheet.columns = colDefs.map(c => ({ width: c.w }));
+
+        const headerRow = 4;
+        colDefs.forEach((col, i) => {
+            const cell = worksheet.getCell(headerRow, i + 1);
+            cell.value = col.h;
+            cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFC55A11" } };
+            cell.alignment = { vertical: "center", horizontal: "center", wrapText: true };
+        });
+        worksheet.getRow(headerRow).height = 25;
+
+        leaves.forEach((leave, idx) => {
+            const row = headerRow + idx + 1;
+            const vals = [
+                idx + 1, leave.user?.name || "-", leave.user?.nip || "-", leave.user?.division?.name || "-",
+                leave.user?.periode || "-", leave.user?.sumber_magang || "-",
+                leave.type === "izin_sakit" ? "Izin Sakit" : "Izin Keperluan",
+                this.formatDate(leave.start_date), this.formatDate(leave.end_date),
+                leave.duration || 0, leave.reason || "-", this.translateStatus(leave.status),
+                leave.reviewer?.name || "-", leave.review_notes || leave.notes || "-",
+            ];
+            vals.forEach((v, c) => { worksheet.getCell(row, c + 1).value = v; });
+
+            if (idx % 2 === 0) {
+                for (let c = 1; c <= 14; c++) {
+                    const cell = worksheet.getCell(row, c);
+                    if (!cell.fill || !cell.fill.fgColor) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8F9FA" } };
+                }
+            }
+            [1, 7, 8, 9, 10, 12].forEach(c => { worksheet.getCell(row, c).alignment = { horizontal: "center", vertical: "middle" }; });
+            [11, 14].forEach(c => { worksheet.getCell(row, c).alignment = { wrapText: true, vertical: "top" }; });
+
+            const sc = worksheet.getCell(row, 12);
+            sc.font = { bold: true };
+            if (leave.status === "approved") { sc.font = { ...sc.font, color: { argb: "FF008000" } }; sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD4EDDA" } }; }
+            else if (leave.status === "pending") { sc.font = { ...sc.font, color: { argb: "FFFF6600" } }; sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF3CD" } }; }
+            else if (leave.status === "rejected") { sc.font = { ...sc.font, color: { argb: "FFFF0000" } }; sc.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8D7DA" } }; }
+        });
+
+        worksheet.autoFilter = { from: { row: headerRow, column: 1 }, to: { row: headerRow, column: 14 } };
+        worksheet.eachRow({ includeEmpty: false }, (row, rn) => {
+            if (rn >= headerRow) {
+                row.eachCell(cell => { cell.border = { top: { style: "thin", color: { argb: "FFD3D3D3" } }, left: { style: "thin", color: { argb: "FFD3D3D3" } }, bottom: { style: "thin", color: { argb: "FFD3D3D3" } }, right: { style: "thin", color: { argb: "FFD3D3D3" } } }; });
+            }
+        });
+        worksheet.views = [{ state: "frozen", xSplit: 2, ySplit: headerRow }];
+    }
         const dateCell = worksheet.getCell("A2");
         dateCell.value = `Periode: ${this.formatDate(
             dateRange.start_date,
