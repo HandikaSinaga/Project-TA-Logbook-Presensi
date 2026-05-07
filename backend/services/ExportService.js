@@ -81,7 +81,7 @@ class ExportService {
         };
 
         // Set column widths and headers (row 5)
-        worksheet.columns = [
+        const colDefs = [
             { header: "No", key: "no", width: 5 },
             { header: "Tanggal", key: "date", width: 13 },
             { header: "Nama", key: "name", width: 25 },
@@ -105,9 +105,9 @@ class ExportService {
             { header: "Catatan", key: "notes", width: 35 },
             { header: "Alasan Penolakan", key: "rejection_reason", width: 35 },
         ];
-
-        // Style header row (row 5)
+        worksheet.columns = colDefs.map(c => ({ key: c.key, width: c.width }));
         const headerRow = worksheet.getRow(5);
+        colDefs.forEach((c, i) => { headerRow.getCell(i + 1).value = c.header; });
         headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
         headerRow.fill = {
             type: "pattern",
@@ -357,23 +357,33 @@ class ExportService {
         worksheet.addRow([]);
 
         // Set column widths and headers
-        worksheet.columns = [
+        const colDefs = [
             { header: "No", key: "no", width: 5 },
-            { header: "Tanggal", key: "date", width: 12 },
+            { header: "Tanggal", key: "date", width: 13 },
             { header: "Nama", key: "name", width: 25 },
             { header: "NIP", key: "nip", width: 15 },
             { header: "Divisi", key: "division", width: 20 },
             { header: "Periode", key: "periode", width: 12 },
-            { header: "Waktu", key: "time", width: 10 },
-            { header: "Aktivitas", key: "activity", width: 35 },
-            { header: "Deskripsi", key: "description", width: 50 },
-            { header: "Status", key: "status", width: 12 },
-            { header: "Reviewer", key: "reviewer", width: 25 },
-            { header: "Catatan Review", key: "review_notes", width: 40 },
+            { header: "Sumber Magang", key: "sumber_magang", width: 15 },
+            { header: "Jam Masuk", key: "check_in", width: 12 },
+            { header: "Jam Keluar", key: "check_out", width: 12 },
+            { header: "Tipe Kerja", key: "work_type", width: 18 },
+            { header: "Status Kehadiran", key: "status", width: 16 },
+            { header: "Status Approval", key: "approval_status", width: 16 },
+            { header: "Lokasi Check-In", key: "location_in", width: 38 },
+            { header: "Lokasi Check-Out", key: "location_out", width: 38 },
+            { header: "Keterangan Offsite Check-In", key: "offsite_reason", width: 35 },
+            { header: "Keterangan Offsite Check-Out", key: "checkout_offsite_reason", width: 35 },
+            { header: "Koordinat Check-In", key: "coord_in", width: 25 },
+            { header: "Koordinat Check-Out", key: "coord_out", width: 25 },
+            { header: "Foto Check-In", key: "photo_in", width: 14 },
+            { header: "Foto Check-Out", key: "photo_out", width: 14 },
+            { header: "Catatan", key: "notes", width: 35 },
+            { header: "Alasan Penolakan", key: "rejection_reason", width: 35 },
         ];
-
-        // Style header row
+        worksheet.columns = colDefs.map(c => ({ key: c.key, width: c.width }));
         const headerRow = worksheet.getRow(5);
+        colDefs.forEach((c, i) => { headerRow.getCell(i + 1).value = c.header; });
         headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
         headerRow.fill = {
             type: "pattern",
@@ -603,25 +613,33 @@ class ExportService {
         worksheet.addRow([]);
 
         // Set column widths and headers
-        worksheet.columns = [
+        const colDefs = [
             { header: "No", key: "no", width: 5 },
+            { header: "Tanggal", key: "date", width: 13 },
             { header: "Nama", key: "name", width: 25 },
             { header: "NIP", key: "nip", width: 15 },
             { header: "Divisi", key: "division", width: 20 },
             { header: "Periode", key: "periode", width: 12 },
             { header: "Sumber Magang", key: "sumber_magang", width: 15 },
-            { header: "Jenis", key: "type", width: 15 },
-            { header: "Tanggal Mulai", key: "start_date", width: 15 },
-            { header: "Tanggal Selesai", key: "end_date", width: 15 },
-            { header: "Durasi (Hari)", key: "duration", width: 12 },
-            { header: "Alasan", key: "reason", width: 50 },
-            { header: "Status", key: "status", width: 12 },
-            { header: "Reviewer", key: "reviewer", width: 25 },
-            { header: "Catatan Review", key: "review_notes", width: 40 },
+            { header: "Jam Masuk", key: "check_in", width: 12 },
+            { header: "Jam Keluar", key: "check_out", width: 12 },
+            { header: "Tipe Kerja", key: "work_type", width: 18 },
+            { header: "Status Kehadiran", key: "status", width: 16 },
+            { header: "Status Approval", key: "approval_status", width: 16 },
+            { header: "Lokasi Check-In", key: "location_in", width: 38 },
+            { header: "Lokasi Check-Out", key: "location_out", width: 38 },
+            { header: "Keterangan Offsite Check-In", key: "offsite_reason", width: 35 },
+            { header: "Keterangan Offsite Check-Out", key: "checkout_offsite_reason", width: 35 },
+            { header: "Koordinat Check-In", key: "coord_in", width: 25 },
+            { header: "Koordinat Check-Out", key: "coord_out", width: 25 },
+            { header: "Foto Check-In", key: "photo_in", width: 14 },
+            { header: "Foto Check-Out", key: "photo_out", width: 14 },
+            { header: "Catatan", key: "notes", width: 35 },
+            { header: "Alasan Penolakan", key: "rejection_reason", width: 35 },
         ];
-
-        // Style header row
+        worksheet.columns = colDefs.map(c => ({ key: c.key, width: c.width }));
         const headerRow = worksheet.getRow(5);
+        colDefs.forEach((c, i) => { headerRow.getCell(i + 1).value = c.header; });
         headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
         headerRow.fill = {
             type: "pattern",
