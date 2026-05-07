@@ -1,4 +1,4 @@
-import { Op } from "sequelize";
+﻿import { Op } from "sequelize";
 import models from "../models/index.js";
 import { validateDateInput, isFutureDate } from "../utils/dateHelper.js";
 import AlphaCalculationService from "../services/AlphaCalculationService.js";
@@ -88,7 +88,7 @@ class CalendarController {
 
             // Get user info (needed for join date validation)
             const user = await User.findByPk(userId, {
-                attributes: ["id", "name", "email", "created_at"],
+                attributes: ["id", "name", "email", "created_at", "division_id", "division_assigned_at"],
                 raw: true,
             });
 
@@ -231,6 +231,8 @@ class CalendarController {
                         name: user.name,
                         email: user.email,
                         created_at: user.created_at,
+                        division_id: user.division_id,
+                        division_assigned_at: user.division_assigned_at,
                     },
                     workingDays,
                     holidays,
@@ -738,7 +740,7 @@ class CalendarController {
 
                 // Get selected user info (including created_at for join date validation)
                 const selectedUser = await User.findByPk(targetUserId, {
-                    attributes: ["id", "name", "email", "created_at"],
+                    attributes: ["id", "name", "email", "created_at", "division_id", "division_assigned_at"],
                     raw: true,
                 });
 
@@ -930,7 +932,7 @@ class CalendarController {
                         division_id: supervisor.division_id,
                         role: "user",
                     },
-                    attributes: ["id", "name", "email", "created_at"],
+                    attributes: ["id", "name", "email", "created_at", "division_id", "division_assigned_at"],
                     raw: true,
                 });
 

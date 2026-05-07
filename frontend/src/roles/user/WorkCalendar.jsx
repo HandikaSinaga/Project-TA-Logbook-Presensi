@@ -132,9 +132,9 @@ const UserWorkCalendar = () => {
         const absentDates = [];
 
         // Get user join date
-        const userJoinDate = data.user?.created_at
-            ? moment(data.user.created_at).startOf("day")
-            : null;
+        const userJoinDate = data.user?.division_assigned_at
+            ? moment(data.user.division_assigned_at).startOf("day")
+            : (data.user?.created_at ? moment(data.user.created_at).startOf("day") : null);
 
         console.log("👤 User Info:", {
             name: data.user?.name,
@@ -493,9 +493,9 @@ const UserWorkCalendar = () => {
             const isWorkingDay = calendarData?.workingDays?.includes(dayOfWeek);
 
             // Check if date is before user join date
-            const userJoinDate = calendarData?.user?.created_at
-                ? moment(calendarData.user.created_at).startOf("day")
-                : null;
+            const userJoinDate = calendarData?.user?.division_assigned_at
+                ? moment(calendarData.user.division_assigned_at).startOf("day")
+                : (calendarData?.user?.created_at ? moment(calendarData.user.created_at).startOf("day") : null);
             const isBeforeJoin =
                 userJoinDate && moment(date).isBefore(userJoinDate);
 
@@ -626,6 +626,38 @@ const UserWorkCalendar = () => {
                 style={{ minHeight: "400px" }}
             >
                 <Spinner animation="border" variant="primary" />
+            </div>
+        );
+    }
+
+    if (calendarData && !calendarData.user?.division_id) {
+        return (
+            <div className="work-calendar-container p-3">
+                <div className="mb-4">
+                    <h3
+                        className="mb-1 fw-bold"
+                        style={{
+                            background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            backgroundClip: "text",
+                        }}
+                    >
+                        <i className="bi bi-calendar-week me-2" style={{ color: "#667eea" }}></i>
+                        Kalender Kerja Saya
+                    </h3>
+                </div>
+                <Card className="border-0 shadow-sm text-center p-5">
+                    <Card.Body>
+                        <div className="mb-4">
+                            <i className="bi bi-calendar-x text-muted" style={{ fontSize: "4rem" }}></i>
+                        </div>
+                        <h4 className="fw-bold mb-3">Belum Memiliki Divisi</h4>
+                        <p className="text-muted mb-0">
+                            Anda belum ditempatkan di divisi mana pun. Kalender kerja akan tersedia setelah Anda dimasukkan ke dalam sebuah divisi oleh Admin.
+                        </p>
+                    </Card.Body>
+                </Card>
             </div>
         );
     }
