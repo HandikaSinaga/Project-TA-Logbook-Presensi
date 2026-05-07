@@ -134,6 +134,15 @@ class LeaveController {
             const userId = req.user.id;
             const { type, start_date, end_date, reason } = req.body;
 
+            // Check if user has division
+            const user = await User.findByPk(userId);
+            if (!user.division_id) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Anda belum ditempatkan di divisi mana pun. Silakan hubungi admin.",
+                });
+            }
+
             if (!type || !start_date || !end_date || !reason) {
                 return res.status(400).json({
                     success: false,

@@ -44,11 +44,23 @@ const Leave = () => {
     const [pagination, setPagination] = useState(null);
     const [historyLoading, setHistoryLoading] = useState(false);
 
+    const [user, setUser] = useState(null);
+
     useEffect(() => {
+        fetchUserProfile();
         fetchLeaveQuota();
         fetchSystemSettings();
         fetchLeaveHistory().finally(() => setLoading(false));
     }, []);
+
+    const fetchUserProfile = async () => {
+        try {
+            const response = await axiosInstance.get("/user/profile");
+            setUser(response.data.data);
+        } catch (error) {
+            console.error("Error fetching profile:", error);
+        }
+    };
 
     // Fetch history when page or filters change
     useEffect(() => {
@@ -415,6 +427,30 @@ const Leave = () => {
             >
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (user && !user.division_id) {
+        return (
+            <div className="user-leave p-4">
+                <div className="mb-4">
+                    <h2 className="mb-1">
+                        <i className="bi bi-calendar-x me-2"></i>
+                        Pengajuan Izin
+                    </h2>
+                </div>
+                <div className="card border-0 shadow-sm text-center p-5">
+                    <div className="card-body">
+                        <div className="mb-4">
+                            <i className="bi bi-building-lock text-muted" style={{ fontSize: "4rem" }}></i>
+                        </div>
+                        <h4 className="fw-bold mb-3">Belum Memiliki Divisi</h4>
+                        <p className="text-muted mb-0">
+                            Anda belum ditempatkan di divisi mana pun. Pengajuan izin hanya dapat dilakukan setelah Anda dimasukkan ke dalam sebuah divisi oleh Admin.
+                        </p>
+                    </div>
                 </div>
             </div>
         );

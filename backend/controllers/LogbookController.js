@@ -132,6 +132,15 @@ class LogbookController {
             const { date, time, activity, description, location, attachments } =
                 req.body;
 
+            // Check if user has division
+            const user = await User.findByPk(userId);
+            if (!user.division_id) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Anda belum ditempatkan di divisi mana pun. Silakan hubungi admin.",
+                });
+            }
+
             // Validate required fields
             if (!date || !activity) {
                 return res.status(400).json({

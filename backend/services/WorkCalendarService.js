@@ -376,7 +376,17 @@ class WorkCalendarService {
                 }
             }
 
-            // 3. Check if date is not today (only allow today's check-in)
+            // 3. Check if user has division
+            if (!user.division_id) {
+                return {
+                    canCheckIn: false,
+                    reason: "no_division",
+                    message: "Anda belum ditempatkan di divisi mana pun. Silakan hubungi admin.",
+                    holiday: null,
+                };
+            }
+
+            // 4. Check if date is not today (only allow today's check-in)
             if (dateStr !== today) {
                 return {
                     canCheckIn: false,

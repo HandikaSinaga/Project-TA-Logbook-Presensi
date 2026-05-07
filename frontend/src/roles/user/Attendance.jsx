@@ -47,8 +47,10 @@ const Attendance = () => {
 
     // Prevent toast spam
     const [hasShownWorkTypeToast, setHasShownWorkTypeToast] = useState(false);
+    const [user, setUser] = useState(null);
 
     useEffect(() => {
+        fetchUserProfile();
         fetchAttendanceData();
         fetchTimeSettings();
         fetchWorkdayStatus(); // Check if today is workday
@@ -158,6 +160,15 @@ const Attendance = () => {
             toast.error(errorMsg, { id: "detect-error" });
         } finally {
             setIsDetectingWorkType(false);
+        }
+    };
+
+    const fetchUserProfile = async () => {
+        try {
+            const response = await axiosInstance.get("/user/profile");
+            setUser(response.data.data);
+        } catch (error) {
+            console.error("Error fetching profile:", error);
         }
     };
 
@@ -736,6 +747,32 @@ const Attendance = () => {
     }
 
     // Main render
+    if (user && !user.division_id) {
+        return (
+            <div className="user-attendance p-4">
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 className="mb-1">
+                            <i className="bi bi-calendar-check me-2"></i>
+                            Presensi Saya
+                        </h2>
+                    </div>
+                </div>
+                <div className="card border-0 shadow-sm text-center p-5">
+                    <div className="card-body">
+                        <div className="mb-4">
+                            <i className="bi bi-building-exclamation text-muted" style={{ fontSize: "4rem" }}></i>
+                        </div>
+                        <h4 className="fw-bold mb-3">Belum Memiliki Divisi</h4>
+                        <p className="text-muted mb-0">
+                            Anda belum ditempatkan di divisi mana pun. Aktivitas presensi hanya dapat dimulai setelah Anda dimasukkan ke dalam sebuah divisi oleh Admin.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="user-attendance p-4">
             {/* Header Section */}

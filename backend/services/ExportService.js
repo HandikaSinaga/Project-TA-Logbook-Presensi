@@ -1,4 +1,4 @@
-﻿import ExcelJS from "exceljs";
+import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -29,7 +29,7 @@ class ExportService {
         });
 
         // Add title and header info
-        worksheet.mergeCells("A1:N1");
+        worksheet.mergeCells("A1:V1");
         const titleCell = worksheet.getCell("A1");
         titleCell.value = "LAPORAN PRESENSI KARYAWAN";
         titleCell.font = { size: 16, bold: true, color: { argb: "FF000000" } };
@@ -42,7 +42,7 @@ class ExportService {
         worksheet.getRow(1).height = 30;
 
         // Add date range info
-        worksheet.mergeCells("A2:N2");
+        worksheet.mergeCells("A2:V2");
         const dateCell = worksheet.getCell("A2");
         dateCell.value = `Periode: ${this.formatDate(
             dateRange.start_date,
@@ -52,7 +52,7 @@ class ExportService {
         worksheet.getRow(2).height = 20;
 
         // Add generated date
-        worksheet.mergeCells("A3:N3");
+        worksheet.mergeCells("A3:V3");
         const generatedCell = worksheet.getCell("A3");
         generatedCell.value = `Digenerate pada: ${new Date().toLocaleString(
             "id-ID",
@@ -573,7 +573,7 @@ class ExportService {
         });
 
         // Add title
-        worksheet.mergeCells("A1:M1");
+        worksheet.mergeCells("A1:N1");
         const titleCell = worksheet.getCell("A1");
         titleCell.value = "LAPORAN IZIN / CUTI KARYAWAN";
         titleCell.font = { size: 16, bold: true };
@@ -586,7 +586,7 @@ class ExportService {
         worksheet.getRow(1).height = 30;
 
         // Date range
-        worksheet.mergeCells("A2:M2");
+        worksheet.mergeCells("A2:N2");
         const dateCell = worksheet.getCell("A2");
         dateCell.value = `Periode: ${this.formatDate(
             dateRange.start_date,
@@ -596,7 +596,7 @@ class ExportService {
         worksheet.getRow(2).height = 20;
 
         // Generated date
-        worksheet.mergeCells("A3:M3");
+        worksheet.mergeCells("A3:N3");
         const generatedCell = worksheet.getCell("A3");
         generatedCell.value = `Digenerate pada: ${new Date().toLocaleString(
             "id-ID",
