@@ -21,7 +21,8 @@ const Division = () => {
             const response = await axiosInstance.get(
                 "/user/divisions/my-division"
             );
-            const divisionData = response.data.data || response.data;
+            const divisionData = response.data.data;
+            console.log("Division data received:", divisionData);
             setDivision(divisionData);
             setMembers(divisionData?.members || []);
         } catch (error) {
@@ -174,7 +175,7 @@ const Division = () => {
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
 
             {/* Search Bar */}
             <div className="card border-0 shadow-sm mb-4">
