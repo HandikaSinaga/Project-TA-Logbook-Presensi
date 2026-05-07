@@ -175,7 +175,6 @@ const Division = () => {
                         </div>
                     </div>
                 </div>
-            </div>
 
             {/* Search Bar */}
             <div className="card border-0 shadow-sm mb-4">
