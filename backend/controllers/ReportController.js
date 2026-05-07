@@ -1,4 +1,4 @@
-import models from "../models/index.js";
+﻿import models from "../models/index.js";
 import { Op } from "sequelize";
 import ExportService from "../services/ExportService.js";
 import {
@@ -735,14 +735,19 @@ class ReportController {
                 order: [["created_at", "DESC"]],
             });
 
+
             // Generate Excel file with all data
+            const dateRange = {
+                start_date: start_date || Semua Data,
+                end_date: end_date || new Date().toISOString().split('T')[0],
+            };
             const buffer = await ExportService.exportSummaryToExcel(
                 {
                     attendances,
                     logbooks,
                     leaves,
                 },
-                { start_date, end_date },
+                dateRange,
             );
 
             // Set response headers
@@ -1169,8 +1174,8 @@ class ReportController {
 
             // Generate Excel file
             const buffer = await ExportService.exportLeaveToExcel(leaves, {
-                start_date,
-                end_date,
+                start_date: start_date || Semua Data,
+                end_date: end_date || new Date().toISOString().split('T')[0],
             });
 
             // Set response headers

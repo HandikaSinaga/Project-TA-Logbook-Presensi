@@ -1377,17 +1377,15 @@ const AdminReports = () => {
                                                                                         )}
                                                                                     </small>
                                                                                 </td>
-                                                                                 <td>
-                                                                                     {(() => {
- wt = item.work_type;
- (wt === "onsite" && item.checkout_offsite_reason)
-                                                                                             return <span className="badge" style={{background:"#EFE0FF",color:"#3D0A60",fontSize:"0.72rem"}}>Onsite &rarr; Offsite</span>;
- (wt === "onsite")
-                                                                                             return <span className="badge" style={{background:"#D0E8FF",color:"#0D3B66",fontSize:"0.72rem"}}>Onsite</span>;
- (wt === "offsite")
-                                                                                             return <span className="badge" style={{background:"#FDE8D0",color:"#5C3317",fontSize:"0.72rem"}}>Offsite</span>;
- <span className="text-muted">-</span>;
-                                                                                     })()}
+                                                                                  <td>
+                                                                                      {(() => {
+                                                                                          const wt = item.work_type;
+                                                                                          if (wt === "onsite" && item.checkout_offsite_reason)
+                                                                                              return <span className="badge" style={{background:"#EFE0FF",color:"#3D0A60",fontSize:"0.72rem"}}>Onsite &rarr; Offsite</span>;
+                                                                                          if (wt === "onsite") return <span className="badge" style={{background:"#D0E8FF",color:"#0D3B66",fontSize:"0.72rem"}}>Onsite</span>;
+                                                                                          if (wt === "offsite") return <span className="badge" style={{background:"#FDE8D0",color:"#5C3317",fontSize:"0.72rem"}}>Offsite</span>;
+                                                                                          return <span className="text-muted">-</span>;
+                                                                                      })()}
                                                                                  </td>
                                                                                  <td style={{maxWidth:"200px"}}>
                                                                                      <small className="text-muted d-block text-truncate" title={item.check_in_address || ""}>{item.check_in_address ? <><i className="bi bi-geo-alt-fill text-primary me-1"></i>{item.check_in_address}</> : <span className="text-muted">-</span>}</small>
@@ -2236,8 +2234,6 @@ const AdminReports = () => {
                                                                                          })()}
                                                                                          {item.check_in_address && <div className="text-truncate mt-1" style={{fontSize:"0.7rem",maxWidth:"200px"}} title={item.check_in_address}><i className="bi bi-geo-alt-fill text-primary me-1"></i>{item.check_in_address}</div>}
                                                                                      </div>
-                                                                                 )}
-                                                                                )}
                                                                             </>
                                                                         )}
                                                                         {reportType ===
