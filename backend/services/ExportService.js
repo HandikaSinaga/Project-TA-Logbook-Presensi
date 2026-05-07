@@ -1,4 +1,4 @@
-﻿import ExcelJS from "exceljs";
+import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -560,7 +560,7 @@ class ExportService {
         workbook.creator = "Admin System";
         workbook.created = new Date();
 
-        const worksheet = workbook.addWorksheet("Laporan Izin/Cuti", {
+        const worksheet = workbook.addWorksheet("Laporan Izin Cuti", {
             pageSetup: {
                 paperSize: 9,
                 orientation: "landscape",
