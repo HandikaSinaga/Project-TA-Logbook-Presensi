@@ -14,6 +14,10 @@ const AttendanceModel = (DataTypes) => {
                 type: DataTypes.INTEGER,
                 allowNull: false,
             },
+            division_id: {
+                type: DataTypes.INTEGER,
+                allowNull: true,
+            },
             date: {
                 type: DataTypes.DATEONLY,
                 allowNull: false,

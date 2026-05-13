@@ -37,6 +37,7 @@ User.hasMany(User, { foreignKey: "supervisor_id", as: "subordinates" });
 // User - Attendance relationship
 User.hasMany(Attendance, { foreignKey: "user_id", as: "attendances" });
 Attendance.belongsTo(User, { foreignKey: "user_id", as: "user" });
+Attendance.belongsTo(Division, { foreignKey: "division_id", as: "division" });
 
 // Attendance approval relationships
 Attendance.belongsTo(User, { foreignKey: "approved_by", as: "approver" });

@@ -2,7 +2,7 @@ import models from "../models/index.js";
 import { Op } from "sequelize";
 import { getJakartaDate, getTodayJakarta } from "../utils/dateHelper.js";
 
-const { Logbook, User } = models;
+const { Logbook, User, Division } = models;
 
 class LogbookController {
     // Get user's logbooks
@@ -138,6 +138,15 @@ class LogbookController {
                 return res.status(403).json({
                     success: false,
                     message: "Anda belum ditempatkan di divisi mana pun. Silakan hubungi admin.",
+                });
+            }
+
+            // Check if division is active
+            const division = await Division.findByPk(user.division_id);
+            if (!division || !division.is_active) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Divisi Anda sedang dinonaktifkan atau Anda telah dikeluarkan dari divisi. Silakan hubungi admin.",
                 });
             }
 

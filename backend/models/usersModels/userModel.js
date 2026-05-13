@@ -67,6 +67,12 @@ const UserModel = (DataTypes) => {
                 comment:
                     "Date when supervisor was assigned to division. Used to restrict calendar data access.",
             },
+            division_assigned_at: {
+                type: DataTypes.DATE,
+                allowNull: true,
+                comment:
+                    "Date when user was assigned to their current division. Used to start attendance tracking.",
+            },
             avatar: {
                 type: DataTypes.STRING(255),
                 allowNull: true,
@@ -79,6 +85,11 @@ const UserModel = (DataTypes) => {
                 type: DataTypes.STRING(50),
                 allowNull: true,
                 comment: "Nomor Induk Pegawai/Peserta",
+            },
+            position: {
+                type: DataTypes.STRING(100),
+                allowNull: true,
+                comment: "Jabatan/Posisi User",
             },
             linkedin: {
                 type: DataTypes.STRING(255),

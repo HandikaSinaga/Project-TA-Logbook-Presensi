@@ -100,27 +100,27 @@ const ComboSelect = ({ label, placeholder, options, value, onChange, onClear, re
                 {value && (
                     <button className="btn btn-outline-secondary btn-sm" type="button"
                         onClick={handleClear} title="Hapus pilihan"
-                        style={{ border: "1px solid #dee2e6", borderLeft: "none", padding: "0 8px" }}
+                        style={{ border: "1px solid var(--border-color)", borderLeft: "none", padding: "0 8px" }}
                     >✕</button>
                 )}
                 <button className="btn btn-outline-secondary btn-sm" type="button"
                     onClick={() => setOpen(o => !o)}
-                    style={{ border: "1px solid #dee2e6", borderLeft: "none", padding: "0 8px" }}
+                    style={{ border: "1px solid var(--border-color)", borderLeft: "none", padding: "0 8px" }}
                 >{open ? "▲" : "▼"}</button>
             </div>
             {open && (
                 <div style={{ position:"absolute", top:"calc(100% + 2px)", left:0, right:0, zIndex:2000,
-                    background:"#fff", border:"1px solid #dee2e6", borderRadius:6,
-                    maxHeight:220, overflowY:"auto", boxShadow:"0 6px 20px rgba(0,0,0,0.12)" }}>
+                    background:"var(--bg-card)", border:"1px solid var(--border-color)", borderRadius:6,
+                    maxHeight:220, overflowY:"auto", boxShadow:"0 6px 20px rgba(0,0,0,0.2)" }}>
                     {/* Semua item */}
-                    <div className="px-2 py-1 small text-muted fw-medium" style={{background:"#f8f9fa",borderBottom:"1px solid #eee"}}>
+                    <div className="px-2 py-1 small text-muted fw-medium" style={{background:"var(--bg-body)",borderBottom:"1px solid var(--border-color)"}}>
                         {filtered.length} dari {options.length} {label.toLowerCase()}
                     </div>
                     {filtered.length === 0 ? (
                         <div className="px-2 py-2 small text-muted text-center">Tidak ditemukan</div>
                     ) : (
                         <>
-                            <div className="px-2 py-1 small text-muted" style={{cursor:"pointer",borderBottom:"1px solid #f5f5f5"}}
+                            <div className="px-2 py-1 small text-muted" style={{cursor:"pointer",borderBottom:"1px solid var(--border-color)"}}
                                 onMouseDown={e => { e.preventDefault(); handleClear(); }}>
                                 — Semua {label}
                             </div>
@@ -128,10 +128,11 @@ const ComboSelect = ({ label, placeholder, options, value, onChange, onClear, re
                                 <div key={opt.id}
                                     className="px-2 py-1 small"
                                     style={{ cursor:"pointer",
-                                        background: String(value) === String(opt.id) ? "#e8f4fd" : "transparent",
+                                        background: String(value) === String(opt.id) ? "var(--bg-body)" : "transparent",
+                                        color: String(value) === String(opt.id) ? "var(--text-primary)" : "inherit",
                                         fontWeight: String(value) === String(opt.id) ? 600 : 400 }}
-                                    onMouseOver={e => { if(String(value) !== String(opt.id)) e.currentTarget.style.background="#f5f5f5"; }}
-                                    onMouseOut={e => { e.currentTarget.style.background = String(value) === String(opt.id) ? "#e8f4fd" : "transparent"; }}
+                                    onMouseOver={e => { if(String(value) !== String(opt.id)) e.currentTarget.style.background="rgba(0,0,0,0.05)"; }}
+                                    onMouseOut={e => { e.currentTarget.style.background = String(value) === String(opt.id) ? "var(--bg-body)" : "transparent"; }}
                                     onMouseDown={e => { e.preventDefault(); handleSelect(opt); }}
                                 >
                                     {renderOption ? renderOption(opt) : getLabel(opt)}
@@ -264,46 +265,106 @@ const AdminWorkCalendar = () => {
             // ── USER-SPECIFIC VIEW: single event per day, priority-based ──
             const userJoinDate = moment(data.user.created_at).startOf("day");
 
-            // Alpha markers
+            // Add "Belum Bergabung" event if before join date
             if (data.period && data.workingDays) {
                 const today = moment().startOf("day");
-                const attendanceDates = new Set(data.attendances?.map(a => a.date) || []);
-                const leaveDates = new Set();
-                data.leaves?.forEach(leave => {
-                    for (let d = moment(leave.start_date).clone(); d.isSameOrBefore(moment(leave.end_date)); d.add(1, "day"))
-                        leaveDates.add(d.format("YYYY-MM-DD"));
-                });
                 for (let d = moment(data.period.firstDay).clone(); d.isSameOrBefore(moment(data.period.lastDay)); d.add(1, "day")) {
                     const ds = d.format("YYYY-MM-DD");
-                    if (d.isBefore(userJoinDate)) {
-                        if (data.workingDays.includes(d.day()) && d.day() !== 0 && d.day() !== 6) {
+                    if (d.isBefore(userJoinDate) && d.isSameOrBefore(today)) {
+                        if (data.workingDays.includes(d.day()) && d.day() !== 0 && d.day() !== 6 && !holidayDates.has(ds)) {
                             addEvent(ds, { id: `prejoin-${ds}`, title: "Belum Bergabung", start: new Date(ds + "T00:00:00"), end: new Date(ds + "T23:59:59"), allDay: true, type: "prejoin", color: "#e2e8f0", textColor: "#64748b", resource: { date: ds } }, EVENT_PRIORITY.absent);
                         }
-                        continue;
                     }
-                    if (d.isAfter(today)) continue;
-                    if (!data.workingDays.includes(d.day()) || holidayDates.has(ds) || attendanceDates.has(ds) || leaveDates.has(ds)) continue;
-                    addEvent(ds, { id: `absent-${ds}`, title: "❌ Alpha", start: new Date(ds + "T00:00:00"), end: new Date(ds + "T23:59:59"), allDay: true, type: "absent", color: COLORS.absent, resource: { date: ds } }, EVENT_PRIORITY.absent);
                 }
             }
-            // Leaves
-            data.leaves?.forEach(leave => {
-                for (let d = moment(leave.start_date).clone(); d.isSameOrBefore(moment(leave.end_date)); d.add(1, "day")) {
-                    const ds = d.format("YYYY-MM-DD");
-                    addEvent(ds, { id: `leave-${leave.id}-${ds}`, title: `🏖️ ${leave.type?.replace("izin_", "") || "Izin"}`, start: new Date(ds + "T00:00:00"), end: new Date(ds + "T23:59:59"), allDay: true, type: "leave", color: COLORS.leave, resource: leave }, EVENT_PRIORITY.leave);
+
+            // 2. Attendance (Present, Late, Absent)
+            data.attendances?.forEach((att) => {
+                const date = att.date;
+                let title = "Hadir";
+                let type = "present";
+                let color = COLORS.present;
+                let priority = EVENT_PRIORITY.present;
+
+                if (att.status === "late") {
+                    title = `⏰ Telat (${att.check_in_time?.substring(0, 5)})`;
+                    type = "late";
+                    color = COLORS.late;
+                    priority = EVENT_PRIORITY.late;
+                } else if (att.status === "absent") {
+                    title = "❌ Alpha";
+                    type = "absent";
+                    color = COLORS.absent;
+                    priority = EVENT_PRIORITY.absent;
+                } else {
+                    const timeStr = att.check_in_time?.substring(0, 5) || "";
+                    title = `✓ Hadir (${timeStr})`;
+                }
+
+                addEvent(
+                    date,
+                    {
+                        id: `att-${att.id}`,
+                        title,
+                        start: new Date(date + "T00:00:00"),
+                        end: new Date(date + "T23:59:59"),
+                        allDay: true,
+                        type,
+                        color,
+                        resource: att,
+                    },
+                    priority,
+                );
+            });
+
+            // 3. Leaves (Izin/Cuti)
+            data.leaves?.forEach((leave) => {
+                const start = moment(leave.start_date);
+                const end = moment(leave.end_date);
+
+                for (let d = start.clone(); d.isSameOrBefore(end); d.add(1, "day")) {
+                    const dateStr = d.format("YYYY-MM-DD");
+                    addEvent(
+                        dateStr,
+                        {
+                            id: `leave-${leave.id}-${dateStr}`,
+                            title: `🏖️ Izin: ${leave.type?.replace("izin_", "").toUpperCase() || "IZIN"}`,
+                            start: new Date(dateStr + "T00:00:00"),
+                            end: new Date(dateStr + "T23:59:59"),
+                            allDay: true,
+                            type: "leave",
+                            color: COLORS.leave,
+                            resource: leave,
+                        },
+                        EVENT_PRIORITY.leave,
+                    );
                 }
             });
-            // Attendances
-            data.attendances?.forEach(att => {
-                const time = att.check_in_time?.substring(0, 5) || "";
-                const isLate = att.status === "late";
-                addEvent(att.date, { id: `att-${att.id}`, title: isLate ? `⏰ ${time}` : `✓ ${time}`, start: new Date(att.date + "T00:00:00"), end: new Date(att.date + "T23:59:59"), allDay: true, type: "attendance", color: isLate ? COLORS.late : COLORS.present, resource: att }, isLate ? EVENT_PRIORITY.late : EVENT_PRIORITY.present);
+
+            // 4. Logbooks
+            data.logbooks?.forEach((lb) => {
+                const date = lb.date;
+                addEvent(
+                    date,
+                    {
+                        id: `lb-${lb.id}`,
+                        title: `📝 Logbook: ${lb.activity}`,
+                        start: new Date(date + "T00:00:00"),
+                        end: new Date(date + "T23:59:59"),
+                        allDay: true,
+                        type: "logbook",
+                        color: COLORS.logbook,
+                        resource: lb,
+                    },
+                    6, // Lowest priority
+                );
             });
         } else {
             // ── TEAM/ORG VIEW: multi-event per day, no suppression ──
             const totalUsers = data.users?.length || data.summary?.totalUsers || 0;
             const attByDate = {};
             data.attendances?.forEach(a => {
+                if (a.status === "absent") return; // Skip synthesized absent records
                 if (!attByDate[a.date]) attByDate[a.date] = { onTime: 0, late: 0 };
                 attByDate[a.date][a.status === "late" ? "late" : "onTime"]++;
             });
@@ -646,6 +707,17 @@ const AdminWorkCalendar = () => {
                     style = { backgroundColor: COLORS.weekend, color: "#adb5bd" };
                     className = "weekend";
                 }
+
+                // Check for holidays in user view (Overrides weekend)
+                const holiday = calendarData?.holidays?.find(h => h.date === dateStr);
+                if (holiday) {
+                    style = {
+                        ...style,
+                        backgroundColor: holiday.is_national ? "#fff5f5" : "#fff9db",
+                        borderBottom: `2px solid ${holiday.is_national ? COLORS.holiday : COLORS.holidayCustom}`,
+                    };
+                    className = `${className} ${holiday.is_national ? 'holiday-national' : 'holiday-custom'}`.trim();
+                }
             } else {
                 // Org/team view heatmap
                 if (isTodayDate) {
@@ -654,16 +726,16 @@ const AdminWorkCalendar = () => {
                 } else if (!isWorkingDay) {
                     style = { backgroundColor: "#f0f0f0", color: "#adb5bd" };
                     className = "weekend";
-                } else {
-                    const dayStats = orgDateStats[dateStr];
-                    const totalUsers = calendarData?.users?.length || calendarData?.summary?.totalUsers || 0;
-                    if (dayStats && totalUsers > 0) {
-                        const rate = Math.round((dayStats.present / totalUsers) * 100);
-                        if (rate >= 90) style = { backgroundColor: "#e8f5e9" };
-                        else if (rate >= 70) style = { backgroundColor: "#fff9c4" };
-                        else if (rate >= 50) style = { backgroundColor: "#fff3e0" };
-                        else style = { backgroundColor: "#ffebee" };
-                    }
+                }
+
+                // Check for holidays in org view (Override heatmap if holiday)
+                const holiday = calendarData?.holidays?.find(h => h.date === dateStr);
+                if (holiday) {
+                    style = {
+                        backgroundColor: holiday.is_national ? "#fff5f5" : "#fff9db",
+                        borderBottom: `2px solid ${holiday.is_national ? COLORS.holiday : COLORS.holidayCustom}`,
+                    };
+                    className = `${className} ${holiday.is_national ? 'holiday-national' : 'holiday-custom'}`.trim();
                 }
             }
 
@@ -838,7 +910,7 @@ const AdminWorkCalendar = () => {
                         </Col>
                     </Row>
                     {selectedUserId && (
-                        <div className="mt-2 p-2 rounded d-flex align-items-center gap-2" style={{background:"#e3f2fd",fontSize:"0.82rem"}}>
+                        <div className="mt-2 p-2 rounded d-flex align-items-center gap-2 bg-info bg-opacity-10 text-info" style={{fontSize:"0.82rem"}}>
                             <i className="bi bi-person-circle text-primary"></i>
                             <span>
                                 <strong>Mode Individual:</strong>{" "}
@@ -858,7 +930,7 @@ const AdminWorkCalendar = () => {
                         { gradient: "linear-gradient(135deg,#667eea,#764ba2)", icon: "bi-people", label: selectedUserId ? "User Dipilih" : "Total Anggota", value: calendarData.summary.totalUsers || 0 },
                         { gradient: "linear-gradient(135deg,#43e97b,#38f9d7)", icon: "bi-check-circle", label: "Kehadiran", value: calendarData.summary.totalAttendances || 0 },
                         { gradient: "linear-gradient(135deg,#f6d365,#fda085)", icon: "bi-clock-history", label: "Terlambat", value: calendarData.summary.lateCount || 0 },
-                        { gradient: "linear-gradient(135deg,#f093fb,#f5576c)", icon: "bi-x-circle", label: "Alpha/Absen", value: (() => { const exp = (calendarData.summary.totalUsers || 0) * (calendarData.summary.workingDaysElapsed || 0); return Math.max(0, exp - (calendarData.summary.totalAttendances || 0) - (calendarData.summary.leaveStats?.approved || 0)); })() },
+                        { gradient: "linear-gradient(135deg,#f093fb,#f5576c)", icon: "bi-x-circle", label: "Alpha/Absen", value: calendarData.summary.absentCount || 0 },
                         { gradient: "linear-gradient(135deg,#6f42c1,#a855f7)", icon: "bi-briefcase", label: "Izin Disetujui", value: calendarData.summary.leaveStats?.approved || 0 },
                         { gradient: "linear-gradient(135deg,#17a2b8,#4facfe)", icon: "bi-journal-text", label: "Logbook", value: calendarData.summary.totalLogbooks || 0 },
                     ].map((card, i) => (
@@ -886,16 +958,16 @@ const AdminWorkCalendar = () => {
                         </span>
                     </div>
                     <Row className="g-2">
-                        {[
+                        { [
                             { color: COLORS.holiday, label: "Libur Nasional", icon: "🎉" },
-                            { color: COLORS.holidayCustom, label: "Hari Libur", icon: "📅" },
+                            { color: COLORS.holidayCustom, label: "Libur Kantor", icon: "📅" },
                             { color: COLORS.present, label: "Hadir Tepat", icon: "✓" },
                             { color: COLORS.late, label: "Terlambat", icon: "⏰" },
                             { color: COLORS.leave, label: "Izin/Cuti", icon: "🏖️" },
                             { color: COLORS.absent, label: "Alpha", icon: "❌" },
                         ].map((item, i) => (
                             <Col xs={6} md={4} lg={2} key={i}>
-                                <div className="d-flex align-items-center gap-2 p-2 rounded" style={{ background: "#f8f9fa" }}>
+                                <div className="d-flex align-items-center gap-2 p-2 rounded bg-light">
                                     <span style={{ display: "inline-block", width: 16, height: 16, borderRadius: 4, backgroundColor: item.color, flexShrink: 0 }}></span>
                                     <span style={{ fontSize: "0.8rem" }}>{item.icon} {item.label}</span>
                                 </div>
@@ -940,7 +1012,7 @@ const AdminWorkCalendar = () => {
                     <Card.Body className="p-0">
                         <div className="table-responsive">
                             <table className="table table-hover table-sm mb-0">
-                                <thead style={{ background: "linear-gradient(135deg,#f8f9fa,#e9ecef)", position: "sticky", top: 0, zIndex: 2 }}>
+                                <thead className="bg-light" style={{ position: "sticky", top: 0, zIndex: 2 }}>
                                     <tr>
                                         {[
                                             { key: "name", label: "Divisi", align: "start" },
@@ -967,7 +1039,7 @@ const AdminWorkCalendar = () => {
                                         const isWorst = divisionInsight?.worst?.id === div.id && sortedDivisionStats.length > 1;
                                         const rateColor = div.attendanceRate >= 90 ? "#28a745" : div.attendanceRate >= 70 ? "#ffc107" : "#dc3545";
                                         return (
-                                            <tr key={div.id} style={{ cursor: "pointer", background: isBest ? "#f0fff4" : isWorst ? "#fff5f5" : "white" }}
+                                            <tr key={div.id} style={{ cursor: "pointer" }} className={isBest ? "table-success" : isWorst ? "table-danger" : "bg-white"}
                                                 onClick={() => { setSelectedDivisionId(String(div.id)); handleApplyFilter(); }}>
                                                 <td className="ps-3 py-2 small">
                                                     <span className="fw-medium">{div.name}</span>
@@ -1059,7 +1131,7 @@ const AdminWorkCalendar = () => {
                     <Card.Body className="p-0">
                         <div className="table-responsive" style={{ maxHeight: 520, overflowY: "auto" }}>
                             <table className="table table-hover table-sm mb-0">
-                                <thead style={{ background: "linear-gradient(135deg,#f8f9fa,#e9ecef)", position: "sticky", top: 0, zIndex: 2 }}>
+                                <thead className="bg-light" style={{ position: "sticky", top: 0, zIndex: 2 }}>
                                     <tr>
                                         <th className="ps-3 py-2 small text-muted">#</th>
                                         {[

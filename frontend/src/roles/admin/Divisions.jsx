@@ -219,22 +219,7 @@ const AdminDivisions = () => {
         }
     };
 
-    const handleToggleStatus = async (id, currentStatus) => {
-        try {
-            await axiosInstance.put(`/admin/divisions/${id}`, {
-                is_active: !currentStatus,
-            });
-            toast.success(
-                `Divisi berhasil ${
-                    !currentStatus ? "diaktifkan" : "dinonaktifkan"
-                }`
-            );
-            fetchDivisions();
-        } catch (error) {
-            console.error("Error toggling status:", error);
-            toast.error("Gagal mengubah status divisi");
-        }
-    };
+
 
     const handleDelete = async (id) => {
         try {
@@ -651,23 +636,12 @@ const AdminDivisions = () => {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <button
-                                                    className={`btn btn-sm ${
+                                                <span
+                                                    className={`badge ${
                                                         division.is_active
-                                                            ? "btn-success"
-                                                            : "btn-secondary"
+                                                            ? "bg-success"
+                                                            : "bg-secondary"
                                                     }`}
-                                                    onClick={() =>
-                                                        handleToggleStatus(
-                                                            division.id,
-                                                            division.is_active
-                                                        )
-                                                    }
-                                                    title={
-                                                        division.is_active
-                                                            ? "Klik untuk nonaktifkan"
-                                                            : "Klik untuk aktifkan"
-                                                    }
                                                 >
                                                     <i
                                                         className={`bi ${
@@ -679,7 +653,7 @@ const AdminDivisions = () => {
                                                     {division.is_active
                                                         ? "Aktif"
                                                         : "Nonaktif"}
-                                                </button>
+                                                </span>
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <div className="btn-group btn-group-sm">

@@ -94,6 +94,9 @@ class DivisionController {
                             "facebook",
                             "telegram",
                             "github",
+                            "address",
+                            "sumber_magang",
+                            "periode",
                         ],
                         where: { is_active: true },
                     },
@@ -114,6 +117,9 @@ class DivisionController {
                             "facebook",
                             "telegram",
                             "github",
+                            "address",
+                            "sumber_magang",
+                            "periode",
                         ],
                     },
                 ],
@@ -162,6 +168,9 @@ class DivisionController {
                                     "facebook",
                                     "telegram",
                                     "github",
+                                    "address",
+                                    "sumber_magang",
+                                    "periode",
                                 ],
                             },
                         ],
@@ -219,6 +228,15 @@ class DivisionController {
                     "phone",
                     "nip",
                     "position",
+                    "instagram",
+                    "linkedin",
+                    "twitter",
+                    "facebook",
+                    "telegram",
+                    "github",
+                    "address",
+                    "sumber_magang",
+                    "periode",
                     "created_at",
                 ],
                 order: [["name", "ASC"]],
@@ -474,6 +492,43 @@ class DivisionController {
         }
     }
 
+    // Toggle division status (Admin)
+    async toggleStatus(req, res) {
+        try {
+            const { id } = req.params;
+
+            const division = await Division.findByPk(id);
+
+            if (!division) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Division not found",
+                });
+            }
+
+            await division.update({
+                is_active: !division.is_active,
+            });
+
+            res.json({
+                success: true,
+                message: `Division ${
+                    division.is_active ? "activated" : "deactivated"
+                } successfully`,
+                data: {
+                    id: division.id,
+                    is_active: division.is_active,
+                },
+            });
+        } catch (error) {
+            console.error("Toggle status error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to toggle division status",
+            });
+        }
+    }
+
     // Get members of specific division (Admin)
     async getMembers(req, res) {
         try {
@@ -535,6 +590,15 @@ class DivisionController {
                     "phone",
                     "nip",
                     "position",
+                    "instagram",
+                    "linkedin",
+                    "twitter",
+                    "facebook",
+                    "telegram",
+                    "github",
+                    "address",
+                    "sumber_magang",
+                    "periode",
                     "created_at",
                 ],
                 order: [["name", "ASC"]],
@@ -604,6 +668,7 @@ class DivisionController {
             await user.update({
                 division_id: supervisor.division_id,
                 supervisor_id: supervisorId,
+                division_assigned_at: new Date(),
             });
 
             res.json({
@@ -676,7 +741,13 @@ class DivisionController {
             }
 
             // Bulk update users to assign them to division
-            await User.update({ division_id: id }, { where: { id: user_ids } });
+            await User.update(
+                {
+                    division_id: id,
+                    division_assigned_at: new Date(),
+                },
+                { where: { id: user_ids } }
+            );
 
             res.json({
                 success: true,
@@ -730,6 +801,7 @@ class DivisionController {
             await user.update({
                 division_id: null,
                 supervisor_id: null,
+                division_assigned_at: null,
             });
 
             res.json({

@@ -29,13 +29,14 @@ const localizer = momentLocalizer(moment);
 
 // Enhanced Color palette with industry best practices
 const COLORS = {
-    holiday: "#dc3545", // Red - National holiday (Priority 1 - Highest)
+    holiday: "#dc3545", // Red - National holiday (Priority 1)
     holidayCustom: "#fd7e14", // Orange - Custom holiday (Priority 2)
     absent: "#6c757d", // Gray - Absent/Alpha (Priority 3)
     leave: "#6f42c1", // Purple - Approved leave (Priority 4)
     late: "#ffc107", // Yellow - Late (Priority 5)
-    present: "#28a745", // Green - On time (Priority 6 - Lowest)
-    weekend: "#f8f9fa", // Light gray - Weekend
+    present: "#28a745", // Green - On time (Priority 6)
+    logbook: "#17a2b8", // Cyan - Logbook (Priority 7)
+    weekend: "#f8f9fa", // Light gray - Weekend background
 };
 
 // Event priority for conflict resolution (lower number = higher priority)
@@ -180,124 +181,57 @@ const UserWorkCalendar = () => {
             );
         });
 
-        // 2. Check for working days without attendance (Absent/Alpha) - ONLY for past dates
-        if (data.period && data.workingDays) {
-            const startDate = moment(data.period.firstDay);
-            const endDate = moment(data.period.lastDay);
-            const today = moment().startOf("day");
-            const attendanceDates = new Set(
-                data.attendances?.map((att) => att.date) || [],
-            );
-            const leaveDates = new Set();
+        // 2. Attendance (Present, Late, Absent)
+        data.attendances?.forEach((att) => {
+            const date = att.date;
+            let title = "Hadir";
+            let type = "present";
+            let color = COLORS.present;
+            let priority = EVENT_PRIORITY.present;
 
-            // Collect all leave dates
-            data.leaves?.forEach((leave) => {
-                const leaveStart = moment(leave.start_date);
-                const leaveEnd = moment(leave.end_date);
-                for (
-                    let d = leaveStart.clone();
-                    d.isSameOrBefore(leaveEnd);
-                    d.add(1, "day")
-                ) {
-                    leaveDates.add(d.format("YYYY-MM-DD"));
-                }
-            });
-
-            // Check each working day
-            // For PAST months: all days
-            // For CURRENT month: up to today (include today if it's a workday with no attendance)
-            // For FUTURE dates: don't mark as absent
-            for (
-                let date = startDate.clone();
-                date.isSameOrBefore(endDate);
-                date.add(1, "day")
-            ) {
-                const dateStr = date.format("YYYY-MM-DD");
-                const dayOfWeek = date.day();
-
-                // CRITICAL: Weekend (0=Sunday, 6=Saturday) should NEVER be marked as absent
-                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                const isWorkingDay = data.workingDays.includes(dayOfWeek);
-
-                // Add "Belum Bergabung" event if before join date
-                if (userJoinDate && date.isBefore(userJoinDate)) {
-                    if (!isWeekend && isWorkingDay) {
-                        addEvent(
-                            dateStr,
-                            {
-                                id: `prejoin-${dateStr}`,
-                                title: "Belum Bergabung",
-                                start: new Date(dateStr + "T00:00:00"),
-                                end: new Date(dateStr + "T23:59:59"),
-                                allDay: true,
-                                type: "prejoin",
-                                color: "#e2e8f0",
-                                textColor: "#64748b",
-                                resource: { date: dateStr, type: "prejoin" },
-                            },
-                            EVENT_PRIORITY.absent,
-                        );
-                    }
-                    continue;
-                }
-                const hasHoliday = eventsByDate[dateStr]?.some(
-                    (e) => e.type === "holiday",
-                );
-                const hasAttendance = attendanceDates.has(dateStr);
-                const hasLeave = leaveDates.has(dateStr);
-                const isFuture = date.isAfter(today);
-
-                // Mark as absent if:
-                // - NOT weekend
-                // - IS working day
-                // - NO holiday
-                // - NO attendance
-                // - NO leave
-                // - NOT future (date <= today)
-                // - NOT before join date (already checked above)
-                if (
-                    !isWeekend &&
-                    isWorkingDay &&
-                    !hasHoliday &&
-                    !hasAttendance &&
-                    !hasLeave &&
-                    !isFuture
-                ) {
-                    addEvent(
-                        dateStr,
-                        {
-                            id: `absent-${dateStr}`,
-                            title: "❌ Alpha",
-                            start: new Date(dateStr + "T00:00:00"),
-                            end: new Date(dateStr + "T23:59:59"),
-                            allDay: true,
-                            type: "absent",
-                            color: COLORS.absent,
-                            resource: { date: dateStr, type: "absent" },
-                        },
-                        EVENT_PRIORITY.absent,
-                    );
-                }
+            if (att.status === "late") {
+                title = `⏰ Telat (${att.check_in_time?.substring(0, 5)})`;
+                type = "late";
+                color = COLORS.late;
+                priority = EVENT_PRIORITY.late;
+            } else if (att.status === "absent") {
+                title = "❌ Alpha";
+                type = "absent";
+                color = COLORS.absent;
+                priority = EVENT_PRIORITY.absent;
+            } else {
+                const timeStr = att.check_in_time?.substring(0, 5) || "";
+                title = `✓ Hadir (${timeStr})`;
             }
-        }
 
-        // 3. Leaves (Higher priority than attendance)
+            addEvent(
+                date,
+                {
+                    id: `att-${att.id}`,
+                    title,
+                    start: new Date(date + "T00:00:00"),
+                    end: new Date(date + "T23:59:59"),
+                    allDay: true,
+                    type,
+                    color,
+                    resource: att,
+                },
+                priority,
+            );
+        });
+
+        // 3. Leaves (Izin/Cuti)
         data.leaves?.forEach((leave) => {
-            const leaveStart = moment(leave.start_date);
-            const leaveEnd = moment(leave.end_date);
+            const start = moment(leave.start_date);
+            const end = moment(leave.end_date);
 
-            // Create event for each day in leave period
-            for (
-                let date = leaveStart.clone();
-                date.isSameOrBefore(leaveEnd);
-                date.add(1, "day")
-            ) {
-                const dateStr = date.format("YYYY-MM-DD");
+            for (let d = start.clone(); d.isSameOrBefore(end); d.add(1, "day")) {
+                const dateStr = d.format("YYYY-MM-DD");
                 addEvent(
                     dateStr,
                     {
                         id: `leave-${leave.id}-${dateStr}`,
-                        title: `🏖️ ${leave.type.replace("izin_", "")}`,
+                        title: `🏖️ Izin: ${leave.type.replace("izin_", "").toUpperCase()}`,
                         start: new Date(dateStr + "T00:00:00"),
                         end: new Date(dateStr + "T23:59:59"),
                         allDay: true,
@@ -310,29 +244,23 @@ const UserWorkCalendar = () => {
             }
         });
 
-        // 4. Attendances (Late has higher priority than present)
-        data.attendances?.forEach((att) => {
-            const time = att.check_in_time?.substring(0, 5) || "";
-            const isLate = att.status === "late";
-            const isAbsent = att.status === "absent";
-
-            // Skip if already marked as absent above (this is actual attendance record)
-            if (!isAbsent) {
-                addEvent(
-                    att.date,
-                    {
-                        id: `attendance-${att.id}`,
-                        title: isLate ? `⏰ ${time}` : `✓ ${time}`,
-                        start: new Date(att.date + "T00:00:00"),
-                        end: new Date(att.date + "T23:59:59"),
-                        allDay: true,
-                        type: "attendance",
-                        color: isLate ? COLORS.late : COLORS.present,
-                        resource: att,
-                    },
-                    isLate ? EVENT_PRIORITY.late : EVENT_PRIORITY.present,
-                );
-            }
+        // 4. Logbooks
+        data.logbooks?.forEach((lb) => {
+            const date = lb.date;
+            addEvent(
+                date,
+                {
+                    id: `lb-${lb.id}`,
+                    title: `📝 Logbook: ${lb.activity}`,
+                    start: new Date(date + "T00:00:00"),
+                    end: new Date(date + "T23:59:59"),
+                    allDay: true,
+                    type: "logbook",
+                    color: COLORS.logbook,
+                    resource: lb,
+                },
+                6, // Lowest priority
+            );
         });
 
         // Resolve conflicts: Keep only highest priority event per date
@@ -347,42 +275,15 @@ const UserWorkCalendar = () => {
             // Take only the highest priority event
             const topEvent = dateEvents[0];
             if (topEvent) {
-                const { priority, ...eventData } = topEvent; // Remove priority from final event
+                const { priority, ...eventData } = topEvent;
                 finalEvents.push(eventData);
 
-                // Count final absent events (after conflict resolution)
                 if (eventData.type === "absent") {
                     finalAbsentCount++;
                     finalAbsentDates.push(dateKey);
                 }
             }
         });
-
-        console.log("🔍 Frontend Event Generation Debug:");
-        console.log(`   - Total absent events generated: ${absentEventCount}`);
-        console.log(
-            `   - Absent dates (before conflict): [${absentDates.sort().join(", ")}]`,
-        );
-        console.log(
-            `   - Final absent events (after conflict): ${finalAbsentCount}`,
-        );
-        console.log(
-            `   - Final absent dates: [${finalAbsentDates.sort().join(", ")}]`,
-        );
-        console.log(`   - Backend absentCount: ${data.summary?.absentCount}`);
-        console.log(
-            `   - Difference: ${Math.abs(finalAbsentCount - (data.summary?.absentCount || 0))}`,
-        );
-
-        if (finalAbsentCount !== data.summary?.absentCount) {
-            console.warn("⚠️  MISMATCH DETECTED!");
-            console.warn(
-                `   Frontend shows ${finalAbsentCount} alpha in calendar`,
-            );
-            console.warn(
-                `   Backend calculated ${data.summary?.absentCount} alpha in summary`,
-            );
-        }
 
         setEvents(finalEvents);
     }, []);
@@ -538,6 +439,17 @@ const UserWorkCalendar = () => {
                     backgroundColor: COLORS.weekend,
                     color: "#6c757d",
                 };
+            }
+
+            // Check for holidays (Background overrides weekend/workday)
+            const holiday = calendarData?.holidays?.find(h => h.date === dateStr);
+            if (holiday) {
+                style = {
+                    ...style,
+                    backgroundColor: holiday.is_national ? "#fff5f5" : "#fff9db",
+                    borderBottom: `2px solid ${holiday.is_national ? COLORS.holiday : COLORS.holidayCustom}`,
+                };
+                className = `${className} ${holiday.is_national ? 'holiday-national' : 'holiday-custom'}`.trim();
             }
 
             return { style, className };
@@ -850,7 +762,7 @@ const UserWorkCalendar = () => {
                             },
                             {
                                 color: COLORS.holidayCustom,
-                                label: "Hari Libur",
+                                label: "Libur Kantor",
                                 icon: "📅",
                                 priority: 2,
                             },
@@ -881,9 +793,8 @@ const UserWorkCalendar = () => {
                         ].map((item) => (
                             <Col xs={6} md={4} lg={2} key={item.priority}>
                                 <div
-                                    className="d-flex align-items-center p-3 rounded-3 h-100"
+                                    className="d-flex align-items-center p-3 rounded-3 h-100 bg-white"
                                     style={{
-                                        background: "white",
                                         border: "1px solid rgba(0,0,0,0.08)",
                                         boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                                         transition: "all 0.3s ease",
@@ -1445,6 +1356,68 @@ const UserWorkCalendar = () => {
                                     Gagal memuat detail tanggal
                                 </Alert>
                             )}
+                        </Card.Body>
+                    </Card>
+                    {/* Legend & Summary Section */}
+                    <Card className="mb-4 border-0 shadow-sm mt-4">
+                        <Card.Body className="p-4">
+                            <div className="d-flex align-items-center mb-4">
+                                <i className="bi bi-palette text-primary me-2" style={{ fontSize: "1.2rem" }}></i>
+                                <span className="fw-bold text-dark">Panduan Warna & Keterangan</span>
+                            </div>
+                            <Row className="g-3">
+                                {[
+                                    { color: COLORS.holiday, label: "Libur Nasional", icon: "🎉", desc: "Hari libur resmi negara" },
+                                    { color: COLORS.holidayCustom, label: "Libur Kantor", icon: "🏢", desc: "Kebijakan internal kantor" },
+                                    { color: COLORS.present, label: "Hadir Tepat Waktu", icon: "✓", desc: "Presensi masuk < 08:00" },
+                                    { color: COLORS.late, label: "Terlambat", icon: "⏰", desc: "Presensi masuk > 08:00" },
+                                    { color: COLORS.leave, label: "Izin Disetujui", icon: "🏖️", desc: "Cuti atau izin resmi" },
+                                    { color: COLORS.absent, label: "Alpha / Tidak Hadir", icon: "❌", desc: "Tidak ada keterangan hadir" },
+                                ].map((item, i) => (
+                                    <Col xs={12} sm={6} md={4} key={i}>
+                                        <div className="d-flex align-items-start gap-3 p-3 rounded-3 border bg-light h-100">
+                                            <div
+                                                style={{
+                                                    width: "32px",
+                                                    height: "32px",
+                                                    backgroundColor: item.color,
+                                                    borderRadius: "8px",
+                                                    flexShrink: 0,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    color: "white",
+                                                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                                                }}
+                                            >
+                                                <span style={{ fontSize: "0.9rem" }}>{item.icon}</span>
+                                            </div>
+                                            <div>
+                                                <div className="fw-bold small">{item.label}</div>
+                                                <div className="text-muted" style={{ fontSize: "0.7rem" }}>{item.desc}</div>
+                                            </div>
+                                        </div>
+                                    </Col>
+                                ))}
+                            </Row>
+
+                            <div className="mt-4 pt-3 border-top">
+                                <div className="d-flex align-items-center gap-4 flex-wrap">
+                                    <div className="d-flex align-items-center gap-2">
+                                        <div style={{ width: 14, height: 14, backgroundColor: COLORS.weekend, border: "1px solid #dee2e6", borderRadius: 3 }}></div>
+                                        <small className="text-muted" style={{ fontSize: "0.75rem" }}>Akhir Pekan / Hari Libur</small>
+                                    </div>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <div style={{ width: 14, height: 14, backgroundColor: "#e3f2fd", border: "2px solid #2196f3", borderRadius: 3 }}></div>
+                                        <small className="text-muted" style={{ fontSize: "0.75rem" }}>Hari Ini</small>
+                                    </div>
+                                    <div className="ms-auto">
+                                        <small className="text-muted" style={{ fontSize: "0.75rem" }}>
+                                            * Statistik alpha dihitung berdasarkan hari kerja efektif
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
                         </Card.Body>
                     </Card>
                 </div>

@@ -118,13 +118,6 @@ class AlphaCalculationService {
      */
     static async calculateMonthlyAlpha(userId, year, month) {
         try {
-            console.log(
-                `\n[AlphaService] ========== CALCULATING ALPHA FOR USER ${userId} ==========`,
-            );
-            console.log(
-                `[AlphaService] Period: ${year}-${String(month).padStart(2, "0")}`,
-            );
-
             // 1. Get user info (must include created_at)
             const user = await User.findByPk(userId, {
                 attributes: ["id", "name", "email", "created_at"],
@@ -135,19 +128,11 @@ class AlphaCalculationService {
                 throw new Error(`User ${userId} not found`);
             }
 
-            console.log(
-                `[AlphaService] User joined: ${this.formatLocalDate(new Date(user.created_at))}`,
-            );
-
             // 2. Define month date range
             const firstDay = new Date(year, month - 1, 1);
             const lastDay = new Date(year, month, 0);
             const firstDayStr = this.formatLocalDate(firstDay);
             const lastDayStr = this.formatLocalDate(lastDay);
-
-            console.log(
-                `[AlphaService] Month range: ${firstDayStr} to ${lastDayStr}`,
-            );
 
             // 3. Determine calculation boundary
             // Only calculate up to today (inclusive)
@@ -160,7 +145,6 @@ class AlphaCalculationService {
                 checkUntil = new Date(lastDay);
             } else if (firstDay > today) {
                 // Future month: no calculation needed
-                console.log(`[AlphaService] Future month, returning 0 alpha`);
                 return {
                     alphaCount: 0,
                     expectedWorkingDays: 0,
@@ -178,10 +162,6 @@ class AlphaCalculationService {
                 checkUntil = new Date(today);
             }
 
-            console.log(
-                `[AlphaService] Calculating until: ${this.formatLocalDate(checkUntil)}`,
-            );
-
             // 4. Get working days config and holidays
             const [workingDays, holidays] = await Promise.all([
                 this.getWorkingDaysConfig(),
@@ -196,12 +176,6 @@ class AlphaCalculationService {
             ]);
 
             const holidayDates = new Set(holidays.map((h) => h.date));
-            console.log(
-                `[AlphaService] Working days config: [${workingDays.join(", ")}]`,
-            );
-            console.log(
-                `[AlphaService] Holidays in period: ${holidayDates.size} days`,
-            );
 
             // 5. Count expected working days
             // Rule: Must be workday, not holiday, not weekend, >= join date, <= today
@@ -233,18 +207,12 @@ class AlphaCalculationService {
                 }
             }
 
-            console.log(
-                `[AlphaService] Expected working days: ${expectedWorkingDays}`,
-            );
-            console.log(
-                `[AlphaService] Expected dates: [${expectedDates.join(", ")}]`,
-            );
-
-            // 6. Get attendance data
+            // 6. Get attendance data (Exclude synthesized 'absent' records for calculation)
             const attendances = await Attendance.findAll({
                 where: {
                     user_id: userId,
                     date: { [Op.between]: [firstDayStr, lastDayStr] },
+                    status: { [Op.ne]: "absent" },
                 },
                 attributes: ["date"],
                 raw: true,
@@ -257,10 +225,6 @@ class AlphaCalculationService {
                         return attDate <= checkUntil;
                     })
                     .map((att) => att.date),
-            );
-
-            console.log(
-                `[AlphaService] Attendance days: ${attendanceDates.size}`,
             );
 
             // 7. Get approved leave data
@@ -318,8 +282,6 @@ class AlphaCalculationService {
                 }
             });
 
-            console.log(`[AlphaService] Leave days: ${leaveDates.size}`);
-
             // 8. Calculate alpha
             // Alpha = Expected working days - Attendance - Leave
             const alphaCount = Math.max(
@@ -337,28 +299,6 @@ class AlphaCalculationService {
                     absentDates.push(expectedDate);
                 }
             }
-
-            console.log(
-                `[AlphaService] Calculation: ${expectedWorkingDays} - ${attendanceDates.size} - ${leaveDates.size} = ${alphaCount}`,
-            );
-            console.log(
-                `[AlphaService] Absent dates: [${absentDates.join(", ")}]`,
-            );
-
-            // Verification
-            if (absentDates.length !== alphaCount) {
-                console.warn(
-                    `[AlphaService] ⚠️ MISMATCH! Direct count (${absentDates.length}) != Calculated (${alphaCount})`,
-                );
-            } else {
-                console.log(
-                    `[AlphaService] ✅ Calculation verified: ${alphaCount} alpha days`,
-                );
-            }
-
-            console.log(
-                `[AlphaService] ========== CALCULATION COMPLETE ==========\n`,
-            );
 
             return {
                 alphaCount,

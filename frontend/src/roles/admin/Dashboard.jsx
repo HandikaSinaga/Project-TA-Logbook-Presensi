@@ -129,8 +129,9 @@ const AdminDashboard = () => {
                                 <p className="text-white mb-1 small opacity-75">
                                     Total Users
                                 </p>
-                                <h3 className="mb-0 fw-bold text-white">
+                                <h3 className="mb-0 fw-bold text-white d-flex align-items-baseline gap-2">
                                     {stats.total_users || 0}
+                                    <span className="fs-6 fw-normal" style={{opacity: 0.85}}>({stats.active_users || 0} Aktif)</span>
                                 </h3>
                             </div>
                             <div className="rounded-circle bg-white bg-opacity-25 p-3">

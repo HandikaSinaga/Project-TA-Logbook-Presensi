@@ -16,6 +16,7 @@ import {
     loadUserData as loadUserFromStorage,
 } from "../../../utils/navbarHelpers";
 import logoutIllustration from "../../../assets/images/logout.png";
+import ThemeToggle from "../../ui/ThemeToggle";
 
 const AVATAR_SIZE = 24;
 const MAX_NAME_WIDTH = "112px";
@@ -77,7 +78,7 @@ const AdminNavbar = ({ onToggleSidebar }) => {
                         aria-label="Toggle sidebar"
                         style={{ background: "none" }}
                     >
-                        <i className="bi bi-list fs-3"></i>
+                        <i className="bi bi-list fs-3 theme-text"></i>
                     </Button>
                     <div>
                         <span className="fw-bold text-navy">
@@ -87,10 +88,15 @@ const AdminNavbar = ({ onToggleSidebar }) => {
                             className="fw-light text-grey d-block"
                             style={{ fontSize: SUBTITLE_SIZE }}
                         >
-                            CMS Attendance & Logbook System
+                            Admin Portal
                         </span>
                     </div>
                 </Navbar.Brand>
+
+                {/* Theme Toggle centered on desktop */}
+                <div className={`${isDesktop ? 'position-absolute start-50 translate-middle-x' : 'ms-auto me-2'}`}>
+                    <ThemeToggle />
+                </div>
 
                 {isDesktop && (
                     <Dropdown

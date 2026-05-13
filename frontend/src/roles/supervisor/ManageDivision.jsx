@@ -327,9 +327,16 @@ const ManageDivision = () => {
                                                 <div className="fw-semibold">
                                                     {user.name}
                                                 </div>
-                                                <small className="text-muted">
-                                                    {user.email}
-                                                </small>
+                                                <div className="d-flex flex-column">
+                                                    <small className="text-muted">
+                                                        <i className="bi bi-envelope me-1"></i>{user.email}
+                                                    </small>
+                                                    {user.position && (
+                                                        <small className="text-muted">
+                                                            <i className="bi bi-briefcase me-1"></i>{user.position}
+                                                        </small>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="d-flex gap-2 align-items-center">
                                                 <Button
@@ -445,9 +452,16 @@ const ManageDivision = () => {
                                                 <div className="fw-semibold">
                                                     {user.name}
                                                 </div>
-                                                <small className="text-muted">
-                                                    {user.email}
-                                                </small>
+                                                <div className="d-flex flex-column">
+                                                    <small className="text-muted">
+                                                        <i className="bi bi-envelope me-1"></i>{user.email}
+                                                    </small>
+                                                    {user.position && (
+                                                        <small className="text-muted">
+                                                            <i className="bi bi-briefcase me-1"></i>{user.position}
+                                                        </small>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="d-flex gap-2 align-items-center">
                                                 <Button
@@ -843,6 +857,12 @@ const ManageDivision = () => {
                                                 : "Member"}
                                         </Badge>
                                     )}
+                                    {detailUser.position && (
+                                        <div className="text-muted mt-2">
+                                            <i className="bi bi-briefcase-fill me-2"></i>
+                                            {detailUser.position}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {detailUser.bio && (
@@ -856,6 +876,40 @@ const ManageDivision = () => {
                                         </p>
                                     </div>
                                 )}
+
+                                {/* Personal Info */}
+                                <div className="card bg-light border-0 mb-4">
+                                    <div className="card-body">
+                                        <h6 className="mb-3">
+                                            <i className="bi bi-person-lines-fill text-primary me-2"></i>
+                                            Informasi Personal
+                                        </h6>
+                                        
+                                        <div className="row g-3">
+                                            <div className="col-md-6">
+                                                <label className="small text-muted mb-1">Periode</label>
+                                                <div className="d-flex align-items-center">
+                                                    <i className="bi bi-calendar-event text-secondary me-2"></i>
+                                                    <span className="fw-medium">{detailUser.periode || '-'}</span>
+                                                </div>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="small text-muted mb-1">Sumber Magang</label>
+                                                <div className="d-flex align-items-center">
+                                                    <i className="bi bi-building text-secondary me-2"></i>
+                                                    <span className="fw-medium text-capitalize">{detailUser.sumber_magang || '-'}</span>
+                                                </div>
+                                            </div>
+                                            <div className="col-12 mt-3">
+                                                <label className="small text-muted mb-1">Alamat</label>
+                                                <div className="d-flex">
+                                                    <i className="bi bi-geo-alt-fill text-danger me-2 mt-1"></i>
+                                                    <span>{detailUser.address || 'Alamat belum diatur'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <div className="card bg-light border-0">
                                     <div className="card-body">
@@ -907,21 +961,58 @@ const ManageDivision = () => {
                                             </div>
                                         )}
 
-                                        {detailUser.position && (
-                                            <div>
-                                                <label className="small text-muted mb-1">
-                                                    Posisi
-                                                </label>
-                                                <div className="d-flex align-items-center">
-                                                    <i className="bi bi-briefcase-fill text-warning me-2"></i>
-                                                    <span>
-                                                        {detailUser.position}
-                                                    </span>
-                                                </div>
-                                            </div>
                                         )}
                                     </div>
                                 </div>
+
+                                {/* Social Media Links */}
+                                {(detailUser.instagram ||
+                                    detailUser.linkedin ||
+                                    detailUser.twitter ||
+                                    detailUser.facebook ||
+                                    detailUser.telegram ||
+                                    detailUser.github) && (
+                                    <div className="card bg-light border-0 mt-4">
+                                        <div className="card-body">
+                                            <h6 className="mb-3">
+                                                <i className="bi bi-share-fill text-primary me-2"></i>
+                                                Media Sosial
+                                            </h6>
+                                            <div className="d-flex flex-wrap gap-2">
+                                                {detailUser.instagram && (
+                                                    <a href={detailUser.instagram.startsWith("http") ? detailUser.instagram : `https://instagram.com/${detailUser.instagram}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-danger btn-sm" title="Instagram">
+                                                        <i className="bi bi-instagram me-1"></i> Instagram
+                                                    </a>
+                                                )}
+                                                {detailUser.linkedin && (
+                                                    <a href={detailUser.linkedin.startsWith("http") ? detailUser.linkedin : `https://linkedin.com/in/${detailUser.linkedin}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm" title="LinkedIn">
+                                                        <i className="bi bi-linkedin me-1"></i> LinkedIn
+                                                    </a>
+                                                )}
+                                                {detailUser.twitter && (
+                                                    <a href={detailUser.twitter.startsWith("http") ? detailUser.twitter : `https://twitter.com/${detailUser.twitter}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-info btn-sm" title="Twitter/X">
+                                                        <i className="bi bi-twitter me-1"></i> Twitter
+                                                    </a>
+                                                )}
+                                                {detailUser.facebook && (
+                                                    <a href={detailUser.facebook.startsWith("http") ? detailUser.facebook : `https://facebook.com/${detailUser.facebook}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm" title="Facebook">
+                                                        <i className="bi bi-facebook me-1"></i> Facebook
+                                                    </a>
+                                                )}
+                                                {detailUser.telegram && (
+                                                    <a href={detailUser.telegram.startsWith("http") ? detailUser.telegram : `https://t.me/${detailUser.telegram}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-info btn-sm" title="Telegram">
+                                                        <i className="bi bi-telegram me-1"></i> Telegram
+                                                    </a>
+                                                )}
+                                                {detailUser.github && (
+                                                    <a href={detailUser.github.startsWith("http") ? detailUser.github : `https://github.com/${detailUser.github}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-dark btn-sm" title="GitHub">
+                                                        <i className="bi bi-github me-1"></i> GitHub
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                             <div className="modal-footer border-0 bg-light">
                                 <Button

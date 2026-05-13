@@ -13,6 +13,8 @@ const AVATAR_SIZE = 24;
 const MAX_NAME_WIDTH = "112px";
 const SUBTITLE_SIZE = "14px";
 
+import ThemeToggle from "../../ui/ThemeToggle";
+
 const SupervisorNavbar = ({ onToggleSidebar }) => {
     const [show, setShow] = useState(false);
     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 992);
@@ -65,7 +67,7 @@ const SupervisorNavbar = ({ onToggleSidebar }) => {
                         aria-label="Toggle sidebar"
                         style={{ background: "none" }}
                     >
-                        <i className="bi bi-list fs-3"></i>
+                        <i className="bi bi-list fs-3 theme-text"></i>
                     </Button>
                     <div>
                         <span className="fw-bold text-navy">
@@ -79,6 +81,11 @@ const SupervisorNavbar = ({ onToggleSidebar }) => {
                         </span>
                     </div>
                 </Navbar.Brand>
+
+                {/* Theme Toggle centered on desktop */}
+                <div className={`${isDesktop ? 'position-absolute start-50 translate-middle-x' : 'ms-auto me-2'}`}>
+                    <ThemeToggle />
+                </div>
 
                 {/* Dropdown Profile - Only render on desktop */}
                 {isDesktop && (

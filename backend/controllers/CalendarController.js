@@ -3,6 +3,7 @@ import models from "../models/index.js";
 import { validateDateInput, isFutureDate } from "../utils/dateHelper.js";
 import AlphaCalculationService from "../services/AlphaCalculationService.js";
 import WorkCalendarService from "../services/WorkCalendarService.js";
+import AttendanceService from "../services/AttendanceService.js";
 
 const { Holiday, Attendance, Logbook, Leave, User, Division, AppSetting } =
     models;
@@ -98,6 +99,13 @@ class CalendarController {
                     message: "User tidak ditemukan",
                 });
             }
+
+            // Backfill missing absences before querying
+            await AttendanceService.ensureAttendanceRecords(
+                userId,
+                firstDay,
+                lastDay,
+            );
 
             // Parallel queries untuk performance optimal
             const [
@@ -204,7 +212,7 @@ class CalendarController {
 
             // Build summary from AlphaCalculationService + other counts
             const summary = {
-                totalAttendances: attendances.length,
+                totalAttendances: attendances.filter((att) => att.status !== "absent").length,
                 lateCount: attendances.filter((att) => att.status === "late")
                     .length,
                 offsiteCount: attendances.filter(
@@ -501,6 +509,19 @@ class CalendarController {
 
             const teamMemberIds = teamMembers.map((member) => member.id);
 
+            // Backfill missing absences for all team members
+            if (teamMemberIds.length > 0) {
+                await Promise.all(
+                    teamMemberIds.map((id) =>
+                        AttendanceService.ensureAttendanceRecords(
+                            id,
+                            effectiveFirstDay,
+                            effectiveLastDay,
+                        ),
+                    ),
+                );
+            }
+
             if (teamMemberIds.length === 0) {
                 return res.status(200).json({
                     success: true,
@@ -690,7 +711,7 @@ class CalendarController {
             // Calculate detailed summary for supervisor view
             // Attendance breakdown
             const attendanceStats = {
-                total: attendances.length,
+                total: attendances.filter((a) => a.status !== "absent").length,
                 onTime: attendances.filter((a) => a.status === "on-time")
                     .length,
                 late: attendances.filter((a) => a.status === "late").length,
@@ -1184,7 +1205,7 @@ class CalendarController {
             const { firstDay, lastDay } = period;
 
             // Build user filter — only role:user (exclude admin and supervisor)
-            const userWhereClause = { role: "user" };
+            const userWhereClause = { role: "user", is_active: true };
             if (division_id) userWhereClause.division_id = parseInt(division_id);
             if (user_id) userWhereClause.id = parseInt(user_id);
 
@@ -1208,6 +1229,15 @@ class CalendarController {
             });
 
             const userIds = users.map((u) => u.id);
+
+            // Backfill missing absences for all filtered users
+            if (userIds.length > 0) {
+                await Promise.all(
+                    userIds.map((id) =>
+                        AttendanceService.ensureAttendanceRecords(id, firstDay, lastDay),
+                    ),
+                );
+            }
             if (userIds.length === 0) {
                 return res.status(200).json({
                     success: true,
@@ -1283,7 +1313,7 @@ class CalendarController {
             const approvedLeaves = leavesRaw.filter(l => l.status === "approved");
             const summary = {
                 totalUsers: users.length,
-                totalAttendances: attendancesRaw.length,
+                totalAttendances: attendancesRaw.filter(a => a.status !== "absent").length,
                 lateCount: attendancesRaw.filter(a => a.status === "late").length,
                 totalHolidays: holidays.length,
                 totalLogbooks: logbooksRaw.length,
@@ -1418,7 +1448,7 @@ class CalendarController {
             const dayOfWeek = targetDate.getDay();
 
             // Build user filter — only role:user (exclude admin and supervisor)
-            const userWhereClause = { role: "user" };
+            const userWhereClause = { role: "user", is_active: true };
             if (division_id) {
                 userWhereClause.division_id = parseInt(division_id);
             }

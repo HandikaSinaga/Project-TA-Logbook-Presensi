@@ -13,7 +13,7 @@ import models from "../models/index.js";
 import { Op } from "sequelize";
 import moment from "moment-timezone";
 
-const { AppSetting, User } = models;
+const { AppSetting, User, Division } = models;
 
 const TIMEZONE = "Asia/Jakarta";
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
@@ -382,6 +382,17 @@ class WorkCalendarService {
                     canCheckIn: false,
                     reason: "no_division",
                     message: "Anda belum ditempatkan di divisi mana pun. Silakan hubungi admin.",
+                    holiday: null,
+                };
+            }
+
+            // 3.1 Check if division is active
+            const division = await Division.findByPk(user.division_id);
+            if (!division || !division.is_active) {
+                return {
+                    canCheckIn: false,
+                    reason: "inactive_division",
+                    message: "Divisi Anda sedang dinonaktifkan atau Anda telah dikeluarkan dari divisi. Silakan hubungi admin.",
                     holiday: null,
                 };
             }

@@ -69,5 +69,4 @@ app.listen(PORT, async () => {
     testConnection();
     await startAutoCheckoutScheduler(); // Initialize auto checkout scheduler
     console.log(`Server running on port ${PORT}`);
-    console.log(`Auto checkout scheduler initialized`);
 });

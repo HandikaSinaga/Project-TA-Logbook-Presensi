@@ -1,4 +1,5 @@
 import models from "../models/index.js";
+import AttendanceService from "../services/AttendanceService.js";
 import { Op } from "sequelize";
 import {
     getJakartaDate,
@@ -25,12 +26,26 @@ class DashboardController {
                 now.getMonth() + 1,
             );
 
+            // Backfill missing absences for current month
+            try {
+                await AttendanceService.ensureAttendanceRecords(userId, startOfMonth, endOfMonth);
+            } catch (backfillError) {
+                // Continue loading dashboard even if backfill fails
+            }
+
             // Get user with division
             const user = await User.findByPk(userId, {
                 include: [
                     { association: "division", attributes: ["id", "name"] },
                 ],
             });
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found",
+                });
+            }
 
             // Check today's attendance
             const todayStart = getTodayJakarta();
@@ -63,6 +78,7 @@ class DashboardController {
                     date: {
                         [Op.between]: [startOfMonth, endOfMonth],
                     },
+                    status: { [Op.ne]: "absent" },
                 },
             });
 
@@ -114,6 +130,7 @@ class DashboardController {
                 ? "Sudah Mengisi"
                 : "Belum Mengisi";
 
+            console.log(`[DashboardController] Sending success response for user ${userId}`);
             res.json({
                 success: true,
                 data: {
@@ -136,10 +153,6 @@ class DashboardController {
                 },
             });
         } catch (error) {
-            console.error(
-                "[DashboardController.getUserDashboard] Error:",
-                error.message,
-            );
             res.status(500).json({
                 success: false,
                 message: "Failed to get dashboard data",
@@ -199,6 +212,7 @@ class DashboardController {
                     date: {
                         [Op.between]: [todayStart, todayEnd],
                     },
+                    status: { [Op.ne]: "absent" },
                 },
                 include: [
                     {
@@ -281,8 +295,11 @@ class DashboardController {
                 now.getMonth() + 1,
             );
 
-            // Total users
-            const totalUsers = await User.count({
+            // Total users (all)
+            const totalUsers = await User.count();
+
+            // Total active users
+            const activeUsers = await User.count({
                 where: { is_active: true },
             });
 
@@ -311,6 +328,7 @@ class DashboardController {
                     date: {
                         [Op.between]: [todayStart, todayEnd],
                     },
+                    status: { [Op.ne]: "absent" },
                 },
             });
 
@@ -326,8 +344,8 @@ class DashboardController {
 
             // Average attendance rate
             const avgAttendanceRate =
-                totalUsers > 0
-                    ? ((todayAttendance / totalUsers) * 100).toFixed(1)
+                activeUsers > 0
+                    ? ((todayAttendance / activeUsers) * 100).toFixed(1)
                     : 0;
 
             // Recent activities from real data
@@ -364,6 +382,7 @@ class DashboardController {
                 data: {
                     stats: {
                         total_users: totalUsers,
+                        active_users: activeUsers,
                         new_users_this_month: newUsersThisMonth,
                         total_divisions: totalDivisions,
                         total_locations: totalLocations,

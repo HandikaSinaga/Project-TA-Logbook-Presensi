@@ -11,6 +11,7 @@ import {
     validateCheckInTime,
     validateCheckOutTime,
 } from "../utils/timeValidationHelper.js";
+import AttendanceService from "../services/AttendanceService.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
@@ -25,7 +26,11 @@ class AttendanceController {
     async getUserAttendance(req, res) {
         try {
             const userId = req.user.id;
-            const { month, year, date_from, date_to } = req.query;
+            const { month, year, date_from, date_to, page = 1, limit = 20 } = req.query;
+
+            const pageNum = parseInt(page) || 1;
+            const limitNum = parseInt(limit) || 20;
+            const offset = (pageNum - 1) * limitNum;
 
             const whereClause = { user_id: userId };
 
@@ -46,15 +51,33 @@ class AttendanceController {
                 whereClause.date = { [Op.between]: [startDate, endDate] };
             }
 
-            const attendances = await Attendance.findAll({
+            // Backfill missing absences for the requested range (before querying)
+            if (whereClause.date) {
+                const start = whereClause.date[Op.between] ? whereClause.date[Op.between][0] : whereClause.date[Op.gte];
+                const end = whereClause.date[Op.between] ? whereClause.date[Op.between][1] : whereClause.date[Op.lte] || new Date();
+                await AttendanceService.ensureAttendanceRecords(userId, start, end);
+            }
+
+            const { count, rows: attendances } = await Attendance.findAndCountAll({
                 where: whereClause,
                 order: [["date", "DESC"]],
-                limit: 100,
+                limit: limitNum,
+                offset: offset,
             });
+
+            const totalPages = Math.ceil(count / limitNum);
 
             res.json({
                 success: true,
                 data: attendances,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total_records: count,
+                    total_pages: totalPages,
+                    has_next: pageNum < totalPages,
+                    has_prev: pageNum > 1,
+                },
             });
         } catch (error) {
             console.error("Get user attendance error:", error);
@@ -303,6 +326,7 @@ class AttendanceController {
 
             const attendanceData = {
                 user_id: userId,
+                division_id: user.division_id,
                 date: today,
                 check_in_time: checkInTime,
                 check_in_latitude: latitude,
@@ -629,6 +653,12 @@ class AttendanceController {
                 whereClause.date = { [Op.between]: [startDate, endDate] };
             }
 
+            // For supervisors, we don't backfill everyone on every request (too heavy)
+            // But we might want to backfill if a specific search or filter is applied
+            // Or better yet, just return what's in the DB and rely on the end-of-day scheduler.
+            // However, to satisfy the user's request for visibility, let's at least backfill for today's active users if they are not present.
+
+
             // Filter by work type
             if (work_type && work_type !== "all") {
                 whereClause.work_type = work_type;
@@ -737,28 +767,48 @@ class AttendanceController {
             const supervisor = await User.findByPk(supervisorId);
             const today = getTodayJakarta();
 
+            // 1. Get all active members in division
+            const members = await User.findAll({
+                where: { 
+                    division_id: supervisor.division_id,
+                    is_active: true,
+                    role: 'user'
+                },
+                attributes: ["id", "name", "email", "avatar", "nip", "position"],
+            });
+
+            // 2. Get attendance records for today
             const attendances = await Attendance.findAll({
                 where: { date: today },
-                include: [
-                    {
-                        model: User,
-                        as: "user",
-                        where: { division_id: supervisor.division_id },
-                        attributes: [
-                            "id",
-                            "name",
-                            "email",
-                            "avatar",
-                            "nip",
-                            "position",
-                        ],
-                    },
-                ],
+                raw: true
+            });
+
+            // 3. Map attendance to members
+            const attendanceMap = new Map(attendances.map(a => [a.user_id, a]));
+
+            const data = members.map(member => {
+                const attendance = attendanceMap.get(member.id);
+                if (attendance) {
+                    return {
+                        ...attendance,
+                        user: member
+                    };
+                } else {
+                    // Synthesize "Belum Absen" status for today
+                    return {
+                        user_id: member.id,
+                        user: member,
+                        date: today,
+                        status: 'absent', // Visual status for today
+                        is_not_checked_in: true, // Flag for UI
+                        notes: 'Belum melakukan presensi hari ini'
+                    };
+                }
             });
 
             res.json({
                 success: true,
-                data: attendances,
+                data: data,
             });
         } catch (error) {
             console.error("Get team today attendance error:", error);

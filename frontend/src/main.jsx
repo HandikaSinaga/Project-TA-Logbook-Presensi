@@ -6,10 +6,13 @@ import "./assets/styles/index.css";
 import "./assets/styles/admin.css";
 import "./assets/styles/user.css";
 import "react-loading-skeleton/dist/skeleton.css";
+import { ThemeProvider } from "./context/ThemeContext.jsx";
 import App from "./App.jsx";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
     <React.StrictMode>
-        <App />
+        <ThemeProvider>
+            <App />
+        </ThemeProvider>
     </React.StrictMode>
 );

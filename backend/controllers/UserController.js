@@ -115,6 +115,7 @@ class UserController {
                 address: address || null,
                 supervisor_id: supervisor_id || null,
                 division_id: division_id || null,
+                division_assigned_at: division_id ? new Date() : null,
                 periode: periode || null,
                 is_active_periode: true,
                 sumber_magang: sumber_magang || null,
@@ -228,6 +229,12 @@ class UserController {
                 supervisor_id: supervisor_id !== undefined ? supervisor_id : user.supervisor_id,
                 division_id:
                     division_id !== undefined ? division_id : user.division_id,
+                division_assigned_at:
+                    division_id !== undefined && division_id !== user.division_id
+                        ? division_id
+                            ? new Date()
+                            : null
+                        : user.division_assigned_at,
                 periode: periode !== undefined ? periode : user.periode,
                 is_active_periode:
                     is_active_periode !== undefined

@@ -3,7 +3,7 @@ import { Op } from "sequelize";
 import { getPublicPath } from "../utils/uploadHelper.js";
 import { getJakartaDate } from "../utils/dateHelper.js";
 
-const { Leave, User, AppSetting } = models;
+const { Leave, User, AppSetting, Division } = models;
 
 class LeaveController {
     // Get leave quota for user
@@ -140,6 +140,15 @@ class LeaveController {
                 return res.status(403).json({
                     success: false,
                     message: "Anda belum ditempatkan di divisi mana pun. Silakan hubungi admin.",
+                });
+            }
+
+            // Check if division is active
+            const division = await Division.findByPk(user.division_id);
+            if (!division || !division.is_active) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Divisi Anda sedang dinonaktifkan atau Anda telah dikeluarkan dari divisi. Silakan hubungi admin.",
                 });
             }
 

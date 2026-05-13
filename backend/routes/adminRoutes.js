@@ -50,6 +50,7 @@ router.get("/divisions", DivisionController.getAll);
 router.post("/divisions", DivisionController.create);
 router.get("/divisions/:id", DivisionController.getById);
 router.put("/divisions/:id", DivisionController.update);
+router.put("/divisions/:id/toggle-status", DivisionController.toggleStatus);
 router.delete("/divisions/:id", DivisionController.delete);
 router.get("/divisions/:id/members", DivisionController.getMembers);
 router.put(

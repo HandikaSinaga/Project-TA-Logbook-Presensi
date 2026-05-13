@@ -1,11 +1,13 @@
 import cron from "node-cron";
 import models from "../models/index.js";
 import { Op } from "sequelize";
+import { getJakartaDate, getTodayJakarta, formatDateToString } from "./dateHelper.js";
 
-const { Attendance, AppSetting, User } = models;
+const { Attendance, AppSetting, User, Division, Leave, Holiday } = models;
 
 let cronJob = null;
 let midnightCronJob = null;
+let absenceCronJob = null;
 
 /**
  * Auto Checkout Scheduler
@@ -82,6 +84,9 @@ export const startAutoCheckoutScheduler = async () => {
 
         // ALWAYS setup end-of-day force checkout (regardless of auto_checkout_enabled)
         startMidnightForceCheckout();
+        
+        // Setup end-of-day absence marking
+        startAbsenceScheduler();
     } catch (error) {
         console.error("[AutoCheckout] Failed to start scheduler:", error);
     }
@@ -250,6 +255,123 @@ const performAutoCheckout = async (isForceCheckout = false) => {
 };
 
 /**
+ * Start absence marking scheduler
+ * Runs at 23:55 every day to mark users who didn't check in as absent
+ */
+const startAbsenceScheduler = () => {
+    try {
+        if (absenceCronJob) {
+            absenceCronJob.stop();
+        }
+
+        // Run at 23:55 every day
+        const cronExpression = "55 23 * * *";
+
+        absenceCronJob = cron.schedule(
+            cronExpression,
+            async () => {
+                await markAbsences();
+            },
+            {
+                scheduled: true,
+                timezone: "Asia/Jakarta",
+            }
+        );
+
+        console.log("[AbsenceTracker] Absence scheduler started (23:55)");
+    } catch (error) {
+        console.error("[AbsenceTracker] Failed to start absence scheduler:", error);
+    }
+};
+
+/**
+ * Mark absences for users who didn't check in today
+ */
+const markAbsences = async () => {
+    try {
+        console.log("[AbsenceTracker] Running absence check...");
+        const today = getTodayJakarta();
+        const dateString = formatDateToString(today);
+
+        // Check if today is a holiday
+        const holiday = await Holiday.findOne({
+            where: { date: dateString }
+        });
+        if (holiday) {
+            console.log(`[AbsenceTracker] Today is a holiday: ${holiday.name}. Skipping.`);
+            return;
+        }
+
+        // Check if today is weekend
+        const dayOfWeek = today.getDay(); // 0 = Sunday, 1-5 = Mon-Fri, 6 = Saturday
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+            console.log("[AbsenceTracker] Today is weekend. Skipping.");
+            return;
+        }
+
+        // Find all active users with active divisions
+        // Only those who were assigned to a division on or before today
+        const users = await User.findAll({
+            where: {
+                is_active: true,
+                division_id: { [Op.ne]: null },
+                [Op.or]: [
+                    { division_assigned_at: { [Op.lte]: today } },
+                    { division_assigned_at: null } // Fallback for old users
+                ]
+            },
+            include: [{
+                model: Division,
+                as: 'division',
+                where: { is_active: true }
+            }]
+        });
+
+        console.log(`[AbsenceTracker] Checking ${users.length} users for absence...`);
+
+        for (const user of users) {
+            // Check if user already has attendance today
+            const attendance = await Attendance.findOne({
+                where: {
+                    user_id: user.id,
+                    date: today
+                }
+            });
+
+            if (!attendance) {
+                // Check if user is on leave (approved)
+                const leave = await Leave.findOne({
+                    where: {
+                        user_id: user.id,
+                        status: 'approved',
+                        start_date: { [Op.lte]: today },
+                        end_date: { [Op.gte]: today }
+                    }
+                });
+
+                if (!leave) {
+                    // Create absent record
+                    await Attendance.create({
+                        user_id: user.id,
+                        division_id: user.division_id,
+                        date: today,
+                        status: 'absent',
+                        notes: 'Tidak melakukan presensi (Sistem)',
+                        approval_status: 'approved' // Automatically approved as absent
+                    });
+                    console.log(`[AbsenceTracker] Marked user ${user.name} as absent`);
+                } else {
+                    console.log(`[AbsenceTracker] User ${user.name} is on leave. Skipping.`);
+                }
+            }
+        }
+        console.log("[AbsenceTracker] Absence check completed");
+    } catch (error) {
+        console.error("[AbsenceTracker] Error marking absences:", error);
+    }
+};
+
+/**
  * Stop the auto checkout scheduler
  */
 export const stopAutoCheckoutScheduler = () => {
@@ -262,6 +384,11 @@ export const stopAutoCheckoutScheduler = () => {
         midnightCronJob.stop();
         console.log("[ForceCheckout] Midnight scheduler stopped");
         midnightCronJob = null;
+    }
+    if (absenceCronJob) {
+        absenceCronJob.stop();
+        console.log("[AbsenceTracker] Absence scheduler stopped");
+        absenceCronJob = null;
     }
 };
 

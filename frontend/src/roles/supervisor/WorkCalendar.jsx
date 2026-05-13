@@ -168,114 +168,57 @@ const SupervisorWorkCalendar = () => {
                     );
                 });
 
-                // 2. Mark absent/alpha for working days without attendance
-                if (data.period && data.workingDays) {
-                    const startDate = moment(data.period.firstDay);
-                    const endDate = moment(data.period.lastDay);
-                    const today = moment().startOf("day");
-                    const attendanceDates = new Set(
-                        data.attendances?.map((att) => att.date) || [],
-                    );
-                    const leaveDates = new Set();
+                // 2. Attendance (Present, Late, Absent)
+                data.attendances?.forEach((att) => {
+                    const date = att.date;
+                    let title = "Hadir";
+                    let type = "present";
+                    let color = COLORS.present;
+                    let priority = EVENT_PRIORITY.present;
 
-                    // Collect all leave dates
-                    data.leaves?.forEach((leave) => {
-                        const leaveStart = moment(leave.start_date);
-                        const leaveEnd = moment(leave.end_date);
-                        for (
-                            let d = leaveStart.clone();
-                            d.isSameOrBefore(leaveEnd);
-                            d.add(1, "day")
-                        ) {
-                            leaveDates.add(d.format("YYYY-MM-DD"));
-                        }
-                    });
-
-                    // Check each working day
-                    for (
-                        let date = startDate.clone();
-                        date.isSameOrBefore(endDate);
-                        date.add(1, "day")
-                    ) {
-                        const dateStr = date.format("YYYY-MM-DD");
-                        const dayOfWeek = date.day();
-
-                        // Weekend check
-                        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-                        const isWorkingDay =
-                            data.workingDays.includes(dayOfWeek);
-
-                        // Add "Belum Bergabung" event if before join date
-                        if (userJoinDate && date.isBefore(userJoinDate)) {
-                            if (!isWeekend && isWorkingDay) {
-                                addEvent(
-                                    dateStr,
-                                    {
-                                        id: `prejoin-${dateStr}`,
-                                        title: "Belum Bergabung",
-                                        start: new Date(dateStr + "T00:00:00"),
-                                        end: new Date(dateStr + "T23:59:59"),
-                                        allDay: true,
-                                        type: "prejoin",
-                                        color: "#e2e8f0",
-                                        textColor: "#64748b",
-                                        resource: { date: dateStr, type: "prejoin" },
-                                    },
-                                    EVENT_PRIORITY.absent,
-                                );
-                            }
-                            continue;
-                        }
-                        const hasHoliday = eventsByDate[dateStr]?.some(
-                            (e) => e.type === "holiday",
-                        );
-                        const hasAttendance = attendanceDates.has(dateStr);
-                        const hasLeave = leaveDates.has(dateStr);
-                        const isFuture = date.isAfter(today);
-
-                        // Mark as absent if all conditions met
-                        if (
-                            !isWeekend &&
-                            isWorkingDay &&
-                            !hasHoliday &&
-                            !hasAttendance &&
-                            !hasLeave &&
-                            !isFuture
-                        ) {
-                            addEvent(
-                                dateStr,
-                                {
-                                    id: `absent-${dateStr}`,
-                                    title: "❌ Alpha",
-                                    start: new Date(dateStr + "T00:00:00"),
-                                    end: new Date(dateStr + "T23:59:59"),
-                                    allDay: true,
-                                    type: "absent",
-                                    color: COLORS.absent,
-                                    resource: { date: dateStr, type: "absent" },
-                                },
-                                EVENT_PRIORITY.absent,
-                            );
-                        }
+                    if (att.status === "late") {
+                        title = `⏰ Telat (${att.check_in_time?.substring(0, 5)})`;
+                        type = "late";
+                        color = COLORS.late;
+                        priority = EVENT_PRIORITY.late;
+                    } else if (att.status === "absent") {
+                        title = "❌ Alpha";
+                        type = "absent";
+                        color = COLORS.absent;
+                        priority = EVENT_PRIORITY.absent;
+                    } else {
+                        const timeStr = att.check_in_time?.substring(0, 5) || "";
+                        title = `✓ Hadir (${timeStr})`;
                     }
-                }
 
-                // 3. Leaves
+                    addEvent(
+                        date,
+                        {
+                            id: `att-${att.id}`,
+                            title,
+                            start: new Date(date + "T00:00:00"),
+                            end: new Date(date + "T23:59:59"),
+                            allDay: true,
+                            type,
+                            color,
+                            resource: att,
+                        },
+                        priority,
+                    );
+                });
+
+                // 3. Leaves (Izin/Cuti)
                 data.leaves?.forEach((leave) => {
-                    const leaveStart = moment(leave.start_date);
-                    const leaveEnd = moment(leave.end_date);
+                    const start = moment(leave.start_date);
+                    const end = moment(leave.end_date);
 
-                    for (
-                        let date = leaveStart.clone();
-                        date.isSameOrBefore(leaveEnd);
-                        date.add(1, "day")
-                    ) {
-                        const dateStr = date.format("YYYY-MM-DD");
+                    for (let d = start.clone(); d.isSameOrBefore(end); d.add(1, "day")) {
+                        const dateStr = d.format("YYYY-MM-DD");
                         addEvent(
                             dateStr,
                             {
                                 id: `leave-${leave.id}-${dateStr}`,
-                                title: `🏖️ ${leave.type.replace("izin_", "")}`,
+                                title: `🏖️ Izin: ${leave.type.replace("izin_", "").toUpperCase()}`,
                                 start: new Date(dateStr + "T00:00:00"),
                                 end: new Date(dateStr + "T23:59:59"),
                                 allDay: true,
@@ -288,31 +231,23 @@ const SupervisorWorkCalendar = () => {
                     }
                 });
 
-                // 4. Attendances
-                data.attendances?.forEach((att) => {
-                    const time = att.check_in_time?.substring(0, 5) || "";
-                    const isLate = att.status === "late";
-                    const isAbsent = att.status === "absent";
-
-                    // Skip if already marked as absent (this is actual attendance record)
-                    if (!isAbsent) {
-                        addEvent(
-                            att.date,
-                            {
-                                id: `attendance-${att.id}`,
-                                title: isLate ? `⏰ ${time}` : `✓ ${time}`,
-                                start: new Date(att.date + "T00:00:00"),
-                                end: new Date(att.date + "T23:59:59"),
-                                allDay: true,
-                                type: "attendance",
-                                color: isLate ? COLORS.late : COLORS.present,
-                                resource: att,
-                            },
-                            isLate
-                                ? EVENT_PRIORITY.late
-                                : EVENT_PRIORITY.present,
-                        );
-                    }
+                // 4. Logbooks
+                data.logbooks?.forEach((lb) => {
+                    const date = lb.date;
+                    addEvent(
+                        date,
+                        {
+                            id: `lb-${lb.id}`,
+                            title: `📝 Logbook: ${lb.activity}`,
+                            start: new Date(date + "T00:00:00"),
+                            end: new Date(date + "T23:59:59"),
+                            allDay: true,
+                            type: "logbook",
+                            color: COLORS.logbook,
+                            resource: lb,
+                        },
+                        6, // Lowest priority
+                    );
                 });
             } else {
                 // ============================================================
@@ -326,6 +261,7 @@ const SupervisorWorkCalendar = () => {
                 // Build lookup maps for O(1) access
                 const attendancesByDate = {};
                 data.attendances?.forEach((att) => {
+                    if (att.status === "absent") return; // Skip synthesized absent records
                     if (!attendancesByDate[att.date]) attendancesByDate[att.date] = { onTime: [], late: [], all: [] };
                     attendancesByDate[att.date].all.push(att);
                     if (att.status === "late") attendancesByDate[att.date].late.push(att);
@@ -753,6 +689,17 @@ const SupervisorWorkCalendar = () => {
                 } else if (!isWorkingDay) {
                     style = { backgroundColor: COLORS.weekend, color: "#6c757d" };
                 }
+
+                // Check for holidays in user view (Overrides weekend)
+                const holiday = calendarData?.holidays?.find(h => h.date === dateStr);
+                if (holiday) {
+                    style = {
+                        ...style,
+                        backgroundColor: holiday.is_national ? "#fff5f5" : "#fff9db",
+                        borderBottom: `2px solid ${holiday.is_national ? COLORS.holiday : COLORS.holidayCustom}`,
+                    };
+                    className = `${className} ${holiday.is_national ? 'holiday-national' : 'holiday-custom'}`.trim();
+                }
             } else {
                 // TEAM VIEW — heatmap coloring based on attendance rate
                 let isBeforeAssigned = false;
@@ -801,6 +748,17 @@ const SupervisorWorkCalendar = () => {
                         // Working day but no data
                         style = { backgroundColor: "#fff3e0", opacity: 0.8 };
                         className = "heatmap-day no-data";
+                    }
+
+                    // Check for holidays in team view (Override heatmap if holiday)
+                    const holiday = calendarData?.holidays?.find(h => h.date === dateStr);
+                    if (holiday) {
+                        style = {
+                            backgroundColor: holiday.is_national ? "#fff5f5" : "#fff9db",
+                            borderBottom: `2px solid ${holiday.is_national ? COLORS.holiday : COLORS.holidayCustom}`,
+                            opacity: 1
+                        };
+                        className = `${className} ${holiday.is_national ? 'holiday-national' : 'holiday-custom'}`.trim();
                     }
                 }
             }
@@ -1021,7 +979,7 @@ const SupervisorWorkCalendar = () => {
                         const attendanceRate = teamSize > 0 && workingDaysElapsed > 0
                             ? Math.round((totalAttendances / (teamSize * workingDaysElapsed)) * 100)
                             : 0;
-                        const absentTotal = Math.max(0, (teamSize * workingDaysElapsed) - totalAttendances - (calendarData.summary.leave?.approved || 0));
+                        const absentTotal = calendarData.summary.attendance?.absent || 0;
 
                         return (
                             <Row className="g-3 mb-4">
@@ -1211,7 +1169,7 @@ const SupervisorWorkCalendar = () => {
                             <Row className="g-2">
                                 {[
                                     { color: COLORS.holiday, label: "Libur Nasional", icon: "🎉" },
-                                    { color: COLORS.holidayCustom, label: "Hari Libur", icon: "📅" },
+                                    { color: COLORS.holidayCustom, label: "Libur Kantor", icon: "📅" },
                                     { color: COLORS.present, label: "Hadir Tepat Waktu", icon: "✓" },
                                     { color: COLORS.late, label: "Terlambat", icon: "⏰" },
                                     { color: COLORS.leave, label: "Izin Disetujui", icon: "🏖️" },
@@ -1402,7 +1360,7 @@ const SupervisorWorkCalendar = () => {
                                     },
                                     {
                                         color: COLORS.holidayCustom,
-                                        label: "Hari Libur",
+                                        label: "Libur Kantor",
                                         icon: "📅",
                                         priority: 2,
                                     },
@@ -1438,9 +1396,8 @@ const SupervisorWorkCalendar = () => {
                                         key={item.priority}
                                     >
                                         <div
-                                            className="d-flex align-items-center p-3 rounded-3 h-100"
+                                            className="d-flex align-items-center p-3 rounded-3 h-100 bg-white"
                                             style={{
-                                                background: "white",
                                                 border: "1px solid rgba(0,0,0,0.08)",
                                                 boxShadow:
                                                     "0 2px 8px rgba(0,0,0,0.05)",

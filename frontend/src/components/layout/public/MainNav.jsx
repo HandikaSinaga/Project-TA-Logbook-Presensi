@@ -3,6 +3,7 @@ import { Navbar, Nav, Container, Button } from "react-bootstrap";
 import logo from "../../../assets/images/logo.png";
 import logoWhite from "../../../assets/images/logo-w.png";
 import { useLocation, useNavigate } from "react-router-dom";
+import ThemeToggle from "../../ui/ThemeToggle";
 
 const MainNav = () => {
     const location = useLocation();
@@ -59,6 +60,11 @@ const MainNav = () => {
                         className="d-inline-block align-top"
                     />{" "}
                 </Navbar.Brand>
+                
+                {/* Theme Toggle centered on desktop */}
+                <div className="mx-auto order-0 d-flex">
+                    <ThemeToggle />
+                </div>
                 <div className={getNavbarMenu()}>
                     <Navbar.Toggle
                         aria-controls="responsive-navbar-nav"

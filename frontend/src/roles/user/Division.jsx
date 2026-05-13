@@ -273,6 +273,12 @@ const Division = () => {
                                             ? "Supervisor"
                                             : "Member"}
                                     </span>
+                                    {member.position && (
+                                        <div className="text-muted small mb-3">
+                                            <i className="bi bi-briefcase-fill me-1"></i>
+                                            {member.position}
+                                        </div>
+                                    )}
 
                                     <div className="text-start mt-3">
                                         <div className="d-flex align-items-center mb-2 p-2 rounded bg-light">
@@ -383,6 +389,12 @@ const Division = () => {
                                             ? "Supervisor"
                                             : "Member"}
                                     </span>
+                                    {selectedMember.position && (
+                                        <div className="text-muted mt-2">
+                                            <i className="bi bi-briefcase-fill me-2"></i>
+                                            {selectedMember.position}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {selectedMember.bio && (
@@ -398,6 +410,42 @@ const Division = () => {
                                 )}
 
                                 <div className="row g-3">
+                                    {/* Personal Info */}
+                                    <div className="col-12">
+                                        <div className="card bg-light border-0">
+                                            <div className="card-body">
+                                                <h6 className="mb-3">
+                                                    <i className="bi bi-person-lines-fill text-primary me-2"></i>
+                                                    Informasi Personal
+                                                </h6>
+                                                
+                                                <div className="row g-3">
+                                                    <div className="col-md-6">
+                                                        <label className="small text-muted mb-1">Periode</label>
+                                                        <div className="d-flex align-items-center">
+                                                            <i className="bi bi-calendar-event text-secondary me-2"></i>
+                                                            <span className="fw-medium">{selectedMember.periode || '-'}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-md-6">
+                                                        <label className="small text-muted mb-1">Sumber Magang</label>
+                                                        <div className="d-flex align-items-center">
+                                                            <i className="bi bi-building text-secondary me-2"></i>
+                                                            <span className="fw-medium text-capitalize">{selectedMember.sumber_magang || '-'}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-12 mt-3">
+                                                        <label className="small text-muted mb-1">Alamat</label>
+                                                        <div className="d-flex">
+                                                            <i className="bi bi-geo-alt-fill text-danger me-2 mt-1"></i>
+                                                            <span>{selectedMember.address || 'Alamat belum diatur'}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div className="col-12">
                                         <div className="card bg-light border-0">
                                             <div className="card-body">

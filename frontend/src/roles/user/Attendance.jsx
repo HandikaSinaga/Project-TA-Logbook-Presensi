@@ -2471,8 +2471,7 @@ const Attendance = () => {
                                 <div className="row g-3 mb-4">
                                     <div className="col-md-6">
                                         <div
-                                            className="border rounded p-3"
-                                            style={{ background: "#e8f5e9" }}
+                                            className="border rounded p-3 bg-success bg-opacity-10 border-success border-opacity-25"
                                         >
                                             <small className="text-muted d-block mb-1">
                                                 <i className="bi bi-box-arrow-in-right me-2 text-success"></i>
@@ -2487,8 +2486,7 @@ const Attendance = () => {
                                     </div>
                                     <div className="col-md-6">
                                         <div
-                                            className="border rounded p-3"
-                                            style={{ background: "#ffebee" }}
+                                            className="border rounded p-3 bg-danger bg-opacity-10 border-danger border-opacity-25"
                                         >
                                             <small className="text-muted d-block mb-1">
                                                 <i className="bi bi-box-arrow-right me-2 text-danger"></i>
