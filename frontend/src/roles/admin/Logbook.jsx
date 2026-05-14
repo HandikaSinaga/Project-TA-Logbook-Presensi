@@ -220,6 +220,7 @@ const AdminLogbook = () => {
             pending: "warning",
             approved: "success",
             rejected: "danger",
+            not_filled: "secondary",
         };
         return badges[status] || "secondary";
     };
@@ -229,6 +230,7 @@ const AdminLogbook = () => {
             pending: "Menunggu",
             approved: "Disetujui",
             rejected: "Ditolak",
+            not_filled: "Tidak Mengisi",
         };
         return texts[status] || status;
     };
@@ -591,6 +593,7 @@ const AdminLogbook = () => {
                                 <option value="pending">Menunggu</option>
                                 <option value="approved">Disetujui</option>
                                 <option value="rejected">Ditolak</option>
+                                <option value="not_filled">Tidak Mengisi</option>
                             </Form.Select>
                         </Col>
                         <Col md={2}>

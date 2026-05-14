@@ -170,6 +170,20 @@ class LogbookController {
                     .toString()
                     .padStart(2, "0")}`;
 
+            // If there's a system-generated 'not_filled' record for this date, delete it first
+            const existingNotFilled = await Logbook.findOne({
+                where: {
+                    user_id: userId,
+                    date: date,
+                    status: "not_filled",
+                    is_system_generated: true,
+                },
+            });
+            if (existingNotFilled) {
+                await existingNotFilled.destroy();
+                console.log(`[LogbookController] Removed not_filled record for user ${userId} on ${date}`);
+            }
+
             const logbook = await Logbook.create({
                 user_id: userId,
                 date,
@@ -289,6 +303,14 @@ class LogbookController {
                 });
             }
 
+            // Cannot update system-generated not_filled logbook
+            if (logbook.status === "not_filled" || logbook.is_system_generated) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Logbook yang dibuat otomatis oleh sistem tidak dapat diubah",
+                });
+            }
+
             await logbook.update({
                 date: date || logbook.date,
                 activity: activity || logbook.activity,
@@ -337,6 +359,14 @@ class LogbookController {
                 return res.status(400).json({
                     success: false,
                     message: "Cannot delete reviewed logbook",
+                });
+            }
+
+            // Cannot delete system-generated not_filled logbook
+            if (logbook.status === "not_filled" || logbook.is_system_generated) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Logbook yang dibuat otomatis oleh sistem tidak dapat dihapus",
                 });
             }
 

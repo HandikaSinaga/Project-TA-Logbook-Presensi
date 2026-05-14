@@ -74,10 +74,13 @@ const Logbook = () => {
     };
 
     // Helper function to check if logbook exists for today
+    // Excludes 'not_filled' records so users can still fill in their logbook
     const checkTodayLogbook = () => {
         const today = new Date().toISOString().split("T")[0];
         const logbookToday = logbooks.find(
-            (log) => new Date(log.date).toISOString().split("T")[0] === today
+            (log) =>
+                new Date(log.date).toISOString().split("T")[0] === today &&
+                log.status !== "not_filled" // Exclude system-generated records
         );
         setTodayLogbook(logbookToday || null);
         return logbookToday;
@@ -227,6 +230,7 @@ const Logbook = () => {
             approved: "success",
             pending: "warning",
             rejected: "danger",
+            not_filled: "secondary",
         };
         return badges[status] || "secondary";
     };
@@ -313,6 +317,7 @@ const Logbook = () => {
                             const freshLogbooks = await fetchLogbookHistory();
 
                             // Check if logbook already exists for today
+                            // Note: 'not_filled' records are excluded - user can still fill logbook
                             const today = new Date()
                                 .toISOString()
                                 .split("T")[0];
@@ -320,7 +325,8 @@ const Logbook = () => {
                                 (log) =>
                                     new Date(log.date)
                                         .toISOString()
-                                        .split("T")[0] === today
+                                        .split("T")[0] === today &&
+                                    log.status !== "not_filled" // Ignore system-generated records
                             );
 
                             if (existingLogbook) {
@@ -412,6 +418,8 @@ const Logbook = () => {
                             ? "alert-info"
                             : todayLogbook.status === "approved"
                             ? "alert-success"
+                            : todayLogbook.status === "not_filled"
+                            ? "alert-secondary"
                             : "alert-danger"
                     }`}
                     role="alert"
@@ -424,6 +432,8 @@ const Logbook = () => {
                                         ? "bi-info-circle-fill"
                                         : todayLogbook.status === "approved"
                                         ? "bi-check-circle-fill"
+                                        : todayLogbook.status === "not_filled"
+                                        ? "bi-dash-circle-fill"
                                         : "bi-x-circle-fill"
                                 } fs-2 me-3`}
                             ></i>
@@ -435,6 +445,8 @@ const Logbook = () => {
                                         ? "Logbook Hari Ini (Pending)"
                                         : todayLogbook.status === "approved"
                                         ? "Logbook Hari Ini (Disetujui)"
+                                        : todayLogbook.status === "not_filled"
+                                        ? "Logbook Belum Diisi"
                                         : "Logbook Hari Ini (Ditolak)"}
                                 </strong>
                             </h5>
@@ -616,6 +628,7 @@ const Logbook = () => {
                                 <option value="pending">⏳ Pending</option>
                                 <option value="approved">✅ Approved</option>
                                 <option value="rejected">❌ Rejected</option>
+                                <option value="not_filled">⚪ Tidak Mengisi</option>
                             </select>
                         </div>
                         <div className="col-md-3">
@@ -825,6 +838,9 @@ const Logbook = () => {
                                                                         : logbook.status ===
                                                                           "rejected"
                                                                         ? "bi-x-circle-fill"
+                                                                        : logbook.status ===
+                                                                          "not_filled"
+                                                                        ? "bi-dash-circle-fill"
                                                                         : "bi-clock-fill"
                                                                 } me-1`}
                                                             ></i>
@@ -834,6 +850,9 @@ const Logbook = () => {
                                                                 : logbook.status ===
                                                                   "rejected"
                                                                 ? "Ditolak"
+                                                                : logbook.status ===
+                                                                  "not_filled"
+                                                                ? "Tidak Mengisi"
                                                                 : "Pending"}
                                                         </span>
                                                     </td>

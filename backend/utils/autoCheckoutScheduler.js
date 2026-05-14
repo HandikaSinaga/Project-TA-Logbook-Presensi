@@ -3,11 +3,14 @@ import models from "../models/index.js";
 import { Op } from "sequelize";
 import { getJakartaDate, getTodayJakarta, formatDateToString } from "./dateHelper.js";
 
-const { Attendance, AppSetting, User, Division, Leave, Holiday } = models;
+const { Attendance, AppSetting, User, Division, Leave, Holiday, Logbook } = models;
+
 
 let cronJob = null;
 let midnightCronJob = null;
 let absenceCronJob = null;
+let logbookScheduler = null;
+
 
 /**
  * Auto Checkout Scheduler
@@ -87,6 +90,9 @@ export const startAutoCheckoutScheduler = async () => {
         
         // Setup end-of-day absence marking
         startAbsenceScheduler();
+
+        // Setup end-of-day logbook missing marker
+        startLogbookMissingScheduler();
     } catch (error) {
         console.error("[AutoCheckout] Failed to start scheduler:", error);
     }
@@ -372,6 +378,117 @@ const markAbsences = async () => {
 };
 
 /**
+ * Start scheduler untuk menandai logbook yang tidak diisi
+ * Berjalan setelah absenceScheduler (23:56) setiap hari kerja
+ */
+const startLogbookMissingScheduler = () => {
+    try {
+        if (logbookScheduler) {
+            logbookScheduler.stop();
+        }
+
+        // Run at 23:56 every day (after absence marking at 23:55)
+        const cronExpression = "56 23 * * *";
+
+        logbookScheduler = cron.schedule(
+            cronExpression,
+            async () => {
+                await markMissingLogbooks();
+            },
+            {
+                scheduled: true,
+                timezone: "Asia/Jakarta",
+            }
+        );
+
+        console.log("[LogbookTracker] Logbook missing scheduler started (23:56)");
+    } catch (error) {
+        console.error("[LogbookTracker] Failed to start logbook scheduler:", error);
+    }
+};
+
+/**
+ * Tandai logbook yang tidak diisi pada hari kerja
+ * Membuat record logbook dengan status 'not_filled' dan is_system_generated = true
+ * untuk setiap user aktif yang tidak mengisi logbook pada hari ini
+ */
+const markMissingLogbooks = async () => {
+    try {
+        console.log("[LogbookTracker] Running logbook missing check...");
+        const today = getTodayJakarta();
+        const dateString = formatDateToString(today);
+
+        // Check if today is a holiday
+        const holiday = await Holiday.findOne({
+            where: { date: dateString }
+        });
+        if (holiday) {
+            console.log(`[LogbookTracker] Today is a holiday: ${holiday.name}. Skipping.`);
+            return;
+        }
+
+        // Check if today is weekend
+        const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
+        if (dayOfWeek === 0 || dayOfWeek === 6) {
+            console.log("[LogbookTracker] Today is weekend. Skipping.");
+            return;
+        }
+
+        // Find all active users with active divisions
+        const users = await User.findAll({
+            where: {
+                is_active: true,
+                division_id: { [Op.ne]: null },
+                [Op.or]: [
+                    { division_assigned_at: { [Op.lte]: today } },
+                    { division_assigned_at: null } // Fallback for old users
+                ]
+            },
+            include: [{
+                model: Division,
+                as: 'division',
+                where: { is_active: true }
+            }]
+        });
+
+        console.log(`[LogbookTracker] Checking ${users.length} users for missing logbook...`);
+
+        const now = new Date();
+        const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+        for (const user of users) {
+            // Check if user already has a logbook for today (including not_filled ones)
+            const existingLogbook = await Logbook.findOne({
+                where: {
+                    user_id: user.id,
+                    date: dateString
+                }
+            });
+
+            if (!existingLogbook) {
+                // Create 'not_filled' logbook record
+                await Logbook.create({
+                    user_id: user.id,
+                    date: dateString,
+                    time: currentTime,
+                    activity: 'Tidak Mengisi Logbook',
+                    description: 'User tidak mengisi logbook pada hari ini (dicatat otomatis oleh sistem)',
+                    status: 'not_filled',
+                    is_system_generated: true,
+                    attachments: []
+                });
+                console.log(`[LogbookTracker] Marked user ${user.name} as not_filled logbook`);
+            } else {
+                console.log(`[LogbookTracker] User ${user.name} already has logbook. Skipping.`);
+            }
+        }
+        console.log("[LogbookTracker] Logbook missing check completed");
+    } catch (error) {
+        console.error("[LogbookTracker] Error marking missing logbooks:", error);
+    }
+};
+
+/**
  * Stop the auto checkout scheduler
  */
 export const stopAutoCheckoutScheduler = () => {
@@ -389,6 +506,11 @@ export const stopAutoCheckoutScheduler = () => {
         absenceCronJob.stop();
         console.log("[AbsenceTracker] Absence scheduler stopped");
         absenceCronJob = null;
+    }
+    if (logbookScheduler) {
+        logbookScheduler.stop();
+        console.log("[LogbookTracker] Logbook scheduler stopped");
+        logbookScheduler = null;
     }
 };
 

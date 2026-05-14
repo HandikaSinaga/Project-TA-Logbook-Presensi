@@ -43,8 +43,14 @@ const LogbookModel = (DataTypes) => {
                 comment: "Array of attachment URLs",
             },
             status: {
-                type: DataTypes.ENUM("pending", "approved", "rejected"),
+                type: DataTypes.ENUM("pending", "approved", "rejected", "not_filled"),
                 defaultValue: "pending",
+            },
+            is_system_generated: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+                allowNull: false,
+                comment: "True jika record dibuat otomatis oleh sistem (not_filled)",
             },
             reviewed_by: {
                 type: DataTypes.INTEGER,

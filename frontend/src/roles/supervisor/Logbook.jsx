@@ -176,6 +176,7 @@ const SupervisorLogbook = () => {
             },
             pending: { bg: "warning", icon: "clock-history", text: "Pending" },
             rejected: { bg: "danger", icon: "x-circle", text: "Ditolak" },
+            not_filled: { bg: "secondary", icon: "dash-circle", text: "Tidak Mengisi" },
         };
         return (
             badges[status] || {
@@ -327,6 +328,7 @@ const SupervisorLogbook = () => {
                                 <option value="pending">Pending</option>
                                 <option value="approved">Disetujui</option>
                                 <option value="rejected">Ditolak</option>
+                                <option value="not_filled">Tidak Mengisi</option>
                             </Form.Select>
                         </div>
                         <div className="col-md-6">
