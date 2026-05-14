@@ -270,8 +270,8 @@ const startAbsenceScheduler = () => {
             absenceCronJob.stop();
         }
 
-        // Run at 23:55 every day
-        const cronExpression = "55 23 * * *";
+        // Run at 23:59 every day
+        const cronExpression = "59 23 * * *";
 
         absenceCronJob = cron.schedule(
             cronExpression,
@@ -284,7 +284,7 @@ const startAbsenceScheduler = () => {
             }
         );
 
-        console.log("[AbsenceTracker] Absence scheduler started (23:55)");
+        console.log("[AbsenceTracker] Absence scheduler started (23:59)");
     } catch (error) {
         console.error("[AbsenceTracker] Failed to start absence scheduler:", error);
     }
@@ -387,8 +387,8 @@ const startLogbookMissingScheduler = () => {
             logbookScheduler.stop();
         }
 
-        // Run at 23:56 every day (after absence marking at 23:55)
-        const cronExpression = "56 23 * * *";
+        // Run at 23:59 every day (same time as absence marking)
+        const cronExpression = "59 23 * * *";
 
         logbookScheduler = cron.schedule(
             cronExpression,
@@ -401,7 +401,7 @@ const startLogbookMissingScheduler = () => {
             }
         );
 
-        console.log("[LogbookTracker] Logbook missing scheduler started (23:56)");
+        console.log("[LogbookTracker] Logbook missing scheduler started (23:59)");
     } catch (error) {
         console.error("[LogbookTracker] Failed to start logbook scheduler:", error);
     }
