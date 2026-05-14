@@ -11,9 +11,6 @@
  * 4. Exclude: weekend, holiday, future dates, pre-join dates
  * 5. Reset otomatis per bulan (1-31/30/28)
  * 6. TIDAK ADA LIMIT HARDCODED (alpha bisa >21, >50, dst)
- *
- * @author GitHub Copilot
- * @date 2026-03-03
  */
 
 import Holiday from "../models/settingsModels/Holiday.js";

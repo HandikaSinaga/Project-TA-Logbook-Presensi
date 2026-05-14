@@ -26,6 +26,7 @@ import {
     FaCamera,
     FaEye,
     FaEyeSlash,
+    FaTrash,
 } from "react-icons/fa";
 import axiosInstance from "../utils/axiosInstance";
 import ImageCropModal from "./common/ImageCropModal";
@@ -49,6 +50,55 @@ const ProfileSettings = ({ role = "user" }) => {
         twitter: "",
         facebook: "",
     });
+    const [savingSocialMedia, setSavingSocialMedia] = useState(false);
+
+    // Helpers to clean social media inputs
+    const cleanSocialInput = (platform, value) => {
+        let text = value.trim();
+        if (!text) return "";
+
+        switch (platform) {
+            case "linkedin":
+                text = text
+                    .replace(/^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i, "")
+                    .replace(/\/$/, "");
+                return text ? `https://linkedin.com/in/${text}` : "";
+            case "github":
+                text = text
+                    .replace(/^(https?:\/\/)?(www\.)?github\.com\//i, "")
+                    .replace(/\/$/, "");
+                return text ? `https://github.com/${text}` : "";
+            case "facebook":
+                text = text
+                    .replace(/^(https?:\/\/)?(www\.)?facebook\.com\//i, "")
+                    .replace(/\/$/, "");
+                return text ? `https://facebook.com/${text}` : "";
+            case "instagram":
+                text = text.replace(
+                    /^(https?:\/\/)?(www\.)?instagram\.com\//i,
+                    "",
+                );
+                return text.replace(/^@/, "").replace(/\/$/, "");
+            case "telegram":
+                text = text.replace(/^(https?:\/\/)?(www\.)?t\.me\//i, "");
+                return text.replace(/^@/, "").replace(/\/$/, "");
+            case "twitter":
+                text = text
+                    .replace(/^(https?:\/\/)?(www\.)?(twitter|x)\.com\//i, "")
+                    .replace(/^@/, "")
+                    .replace(/\/$/, "");
+                return text;
+            default:
+                return text;
+        }
+    };
+
+    const handleSocialChange = (platform, value) => {
+        setSocialMedia({
+            ...socialMedia,
+            [platform]: cleanSocialInput(platform, value),
+        });
+    };
 
     // Password change
     const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -109,9 +159,16 @@ const ProfileSettings = ({ role = "user" }) => {
                 setError("Ukuran file maksimal 5MB");
                 return;
             }
-            setSelectedImage(file);
-            setShowCropModal(true);
+            // react-easy-crop requires a URL string, not a File object
+            const reader = new FileReader();
+            reader.onload = () => {
+                setSelectedImage(reader.result);
+                setShowCropModal(true);
+            };
+            reader.readAsDataURL(file);
         }
+        // Reset input value so the same file can be selected again if needed
+        e.target.value = null;
     };
 
     const handleCropComplete = async (croppedFile) => {
@@ -132,13 +189,14 @@ const ProfileSettings = ({ role = "user" }) => {
             await fetchProfile();
 
             setSuccess("Foto profil berhasil diperbarui");
+            toast.success("Foto profil berhasil diperbarui");
 
             // Update localStorage with the actual avatar path from backend response
             const avatarPath =
                 response.data.data?.avatar || response.data.avatar;
             if (avatarPath) {
                 const userFromStorage = JSON.parse(
-                    localStorage.getItem("user") || "{}"
+                    localStorage.getItem("user") || "{}",
                 );
                 const updatedUser = {
                     ...userFromStorage,
@@ -148,9 +206,10 @@ const ProfileSettings = ({ role = "user" }) => {
                 window.dispatchEvent(new Event("storage"));
             }
         } catch (err) {
-            setError(
-                err.response?.data?.message || "Gagal mengupload foto profil"
-            );
+            const msg =
+                err.response?.data?.message || "Gagal mengupload foto profil";
+            setError(msg);
+            toast.error(msg);
             console.error("Error uploading avatar:", err);
         } finally {
             setUploading(false);
@@ -158,9 +217,45 @@ const ProfileSettings = ({ role = "user" }) => {
         }
     };
 
+    const handleDeleteAvatar = async () => {
+        if (!window.confirm("Apakah Anda yakin ingin menghapus foto profil?"))
+            return;
+
+        try {
+            setUploading(true);
+            setError("");
+            setSuccess("");
+
+            const endpoint = `/${role}/profile/avatar`;
+            await axiosInstance.delete(endpoint);
+
+            toast.success("Foto profil berhasil dihapus");
+            await fetchProfile();
+
+            // Update localStorage
+            const userFromStorage = JSON.parse(
+                localStorage.getItem("user") || "{}",
+            );
+            const updatedUser = {
+                ...userFromStorage,
+                avatar: null,
+            };
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            window.dispatchEvent(new Event("storage"));
+        } catch (err) {
+            const msg =
+                err.response?.data?.message || "Gagal menghapus foto profil";
+            setError(msg);
+            toast.error(msg);
+        } finally {
+            setUploading(false);
+        }
+    };
+
     const handleUpdateSocialMedia = async (e) => {
         e.preventDefault();
         try {
+            setSavingSocialMedia(true);
             setError("");
             setSuccess("");
 
@@ -168,13 +263,17 @@ const ProfileSettings = ({ role = "user" }) => {
             await axiosInstance.put(endpoint, socialMedia);
 
             setSuccess("Media sosial berhasil diperbarui");
+            toast.success("Info profil berhasil disimpan");
             setEditMode(false);
             await fetchProfile();
         } catch (err) {
-            setError(
-                err.response?.data?.message || "Gagal memperbarui media sosial"
-            );
+            const msg =
+                err.response?.data?.message || "Gagal memperbarui profil";
+            setError(msg);
+            toast.error(msg);
             console.error("Error updating social media:", err);
+        } finally {
+            setSavingSocialMedia(false);
         }
     };
 
@@ -218,7 +317,8 @@ const ProfileSettings = ({ role = "user" }) => {
             setShowNewPassword(false);
             setShowConfirmPassword(false);
         } catch (err) {
-            const msg = err.response?.data?.message || "Gagal mengubah password";
+            const msg =
+                err.response?.data?.message || "Gagal mengubah password";
             setError(msg);
             toast.error(msg);
             console.error("Error changing password:", err);
@@ -283,26 +383,46 @@ const ProfileSettings = ({ role = "user" }) => {
                                         width: "150px",
                                         height: "150px",
                                         objectFit: "cover",
+                                        border: "3px solid #dee2e6",
                                     }}
                                     onError={(e) => {
                                         e.target.onerror = null;
                                         e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                            profile.name
+                                            profile.name,
                                         )}&background=random&size=150`;
                                     }}
                                 />
-                                <label
-                                    htmlFor="avatar-upload"
-                                    className="position-absolute bottom-0 end-0 btn btn-primary btn-sm rounded-circle"
-                                    style={{
-                                        width: "40px",
-                                        height: "40px",
-                                        cursor: "pointer",
-                                    }}
-                                    title="Ubah foto profil"
+                                <div
+                                    className="position-absolute bottom-0 end-0 d-flex gap-1"
+                                    style={{ transform: "translate(10%, 10%)" }}
                                 >
-                                    <FaCamera />
-                                </label>
+                                    <label
+                                        htmlFor="avatar-upload"
+                                        className="btn btn-primary btn-sm rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                                        style={{
+                                            width: "35px",
+                                            height: "35px",
+                                            cursor: "pointer",
+                                        }}
+                                        title="Ubah foto profil"
+                                    >
+                                        <FaCamera />
+                                    </label>
+                                    {profile.avatar && (
+                                        <button
+                                            className="btn btn-danger btn-sm rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                                            onClick={handleDeleteAvatar}
+                                            disabled={uploading}
+                                            style={{
+                                                width: "35px",
+                                                height: "35px",
+                                            }}
+                                            title="Hapus foto profil"
+                                        >
+                                            <FaTrash />
+                                        </button>
+                                    )}
+                                </div>
                                 <input
                                     id="avatar-upload"
                                     type="file"
@@ -313,15 +433,15 @@ const ProfileSettings = ({ role = "user" }) => {
                                 />
                             </div>
 
-                            <h4 className="mb-1">{profile.name}</h4>
+                            <h4 className="mb-1 fw-bold">{profile.name}</h4>
                             <p className="text-muted mb-2">{profile.email}</p>
                             <Badge
                                 bg={
                                     role === "admin"
                                         ? "danger"
                                         : role === "supervisor"
-                                        ? "warning"
-                                        : "primary"
+                                          ? "warning"
+                                          : "primary"
                                 }
                                 className="mb-3"
                             >
@@ -391,6 +511,18 @@ const ProfileSettings = ({ role = "user" }) => {
                                 </Col>
                                 <Col md={6} className="mb-3">
                                     <Form.Label className="text-muted small">
+                                        <i className="bi bi-briefcase me-1"></i>{" "}
+                                        Posisi / Jabatan
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={profile.position || "-"}
+                                        disabled
+                                        className="bg-light"
+                                    />
+                                </Col>
+                                <Col md={6} className="mb-3">
+                                    <Form.Label className="text-muted small">
                                         <FaPhone className="me-1" /> Telepon
                                     </Form.Label>
                                     <Form.Control
@@ -400,47 +532,42 @@ const ProfileSettings = ({ role = "user" }) => {
                                         className="bg-light"
                                     />
                                 </Col>
-                                {profile.periode && (
-                                    <Col md={6} className="mb-3">
-                                        <Form.Label className="text-muted small">
-                                            Periode
-                                        </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            value={profile.periode}
-                                            disabled
-                                            className="bg-light"
-                                        />
-                                    </Col>
-                                )}
-                                {profile.sumber_magang && (
-                                    <Col md={6} className="mb-3">
-                                        <Form.Label className="text-muted small">
-                                            Sumber Magang
-                                        </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            value={profile.sumber_magang}
-                                            disabled
-                                            className="bg-light"
-                                        />
-                                    </Col>
-                                )}
-                                {profile.address && (
-                                    <Col md={12} className="mb-3">
-                                        <Form.Label className="text-muted small">
-                                            <FaMapMarkerAlt className="me-1" />{" "}
-                                            Alamat
-                                        </Form.Label>
-                                        <Form.Control
-                                            as="textarea"
-                                            rows={2}
-                                            value={profile.address}
-                                            disabled
-                                            className="bg-light"
-                                        />
-                                    </Col>
-                                )}
+                                <Col md={6} className="mb-3">
+                                    <Form.Label className="text-muted small">
+                                        Periode
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={profile.periode || "-"}
+                                        disabled
+                                        className="bg-light"
+                                    />
+                                </Col>
+                                <Col md={6} className="mb-3">
+                                    <Form.Label className="text-muted small">
+                                        Sumber Magang
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={profile.sumber_magang || "-"}
+                                        disabled
+                                        className="bg-light"
+                                    />
+                                </Col>
+                                <Col md={12} className="mb-3">
+                                    <Form.Label className="text-muted small">
+                                        <FaMapMarkerAlt className="me-1" />{" "}
+                                        Alamat
+                                    </Form.Label>
+                                    <Form.Control
+                                        as="textarea"
+                                        rows={2}
+                                        value={profile.address || "-"}
+                                        disabled
+                                        className="bg-light"
+                                        style={{ resize: "none" }}
+                                    />
+                                </Col>
                             </Row>
                         </Card.Body>
                     </Card>
@@ -480,119 +607,206 @@ const ProfileSettings = ({ role = "user" }) => {
 
                                 <Row>
                                     <Col md={6} className="mb-3">
-                                        <Form.Label>
+                                        <Form.Label className="fw-semibold">
                                             <FaLinkedin className="me-2 text-primary" />
                                             LinkedIn
                                         </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="https://linkedin.com/in/username"
-                                            value={socialMedia.linkedin}
-                                            onChange={(e) =>
-                                                setSocialMedia({
-                                                    ...socialMedia,
-                                                    linkedin: e.target.value,
-                                                })
-                                            }
-                                            disabled={!editMode}
-                                        />
+                                        <InputGroup>
+                                            <InputGroup.Text className="bg-light text-muted">
+                                                linkedin.com/in/
+                                            </InputGroup.Text>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="username"
+                                                value={
+                                                    socialMedia.linkedin
+                                                        ? socialMedia.linkedin.replace(
+                                                              /^https?:\/\/(www\.)?linkedin\.com\/in\//i,
+                                                              "",
+                                                          )
+                                                        : ""
+                                                }
+                                                onChange={(e) =>
+                                                    handleSocialChange(
+                                                        "linkedin",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={!editMode}
+                                            />
+                                        </InputGroup>
                                     </Col>
                                     <Col md={6} className="mb-3">
-                                        <Form.Label>
+                                        <Form.Label className="fw-semibold">
                                             <FaGithub className="me-2" />
                                             GitHub
                                         </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="https://github.com/username"
-                                            value={socialMedia.github}
-                                            onChange={(e) =>
-                                                setSocialMedia({
-                                                    ...socialMedia,
-                                                    github: e.target.value,
-                                                })
-                                            }
-                                            disabled={!editMode}
-                                        />
+                                        <InputGroup>
+                                            <InputGroup.Text className="bg-light text-muted">
+                                                github.com/
+                                            </InputGroup.Text>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="username"
+                                                value={
+                                                    socialMedia.github
+                                                        ? socialMedia.github.replace(
+                                                              /^https?:\/\/(www\.)?github\.com\//i,
+                                                              "",
+                                                          )
+                                                        : ""
+                                                }
+                                                onChange={(e) =>
+                                                    handleSocialChange(
+                                                        "github",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={!editMode}
+                                            />
+                                        </InputGroup>
                                     </Col>
                                     <Col md={6} className="mb-3">
-                                        <Form.Label>
+                                        <Form.Label className="fw-semibold">
                                             <FaInstagram className="me-2 text-danger" />
                                             Instagram
                                         </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="@username atau URL"
-                                            value={socialMedia.instagram}
-                                            onChange={(e) =>
-                                                setSocialMedia({
-                                                    ...socialMedia,
-                                                    instagram: e.target.value,
-                                                })
-                                            }
-                                            disabled={!editMode}
-                                        />
+                                        <InputGroup>
+                                            <InputGroup.Text className="bg-light text-muted">
+                                                @
+                                            </InputGroup.Text>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="username"
+                                                value={
+                                                    socialMedia.instagram
+                                                        ? socialMedia.instagram.replace(
+                                                              /^@/,
+                                                              "",
+                                                          )
+                                                        : ""
+                                                }
+                                                onChange={(e) =>
+                                                    handleSocialChange(
+                                                        "instagram",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={!editMode}
+                                            />
+                                        </InputGroup>
                                     </Col>
                                     <Col md={6} className="mb-3">
-                                        <Form.Label>
+                                        <Form.Label className="fw-semibold">
                                             <FaTelegram className="me-2 text-info" />
                                             Telegram
                                         </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="@username"
-                                            value={socialMedia.telegram}
-                                            onChange={(e) =>
-                                                setSocialMedia({
-                                                    ...socialMedia,
-                                                    telegram: e.target.value,
-                                                })
-                                            }
-                                            disabled={!editMode}
-                                        />
+                                        <InputGroup>
+                                            <InputGroup.Text className="bg-light text-muted">
+                                                @
+                                            </InputGroup.Text>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="username"
+                                                value={
+                                                    socialMedia.telegram
+                                                        ? socialMedia.telegram.replace(
+                                                              /^@/,
+                                                              "",
+                                                          )
+                                                        : ""
+                                                }
+                                                onChange={(e) =>
+                                                    handleSocialChange(
+                                                        "telegram",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={!editMode}
+                                            />
+                                        </InputGroup>
                                     </Col>
                                     <Col md={6} className="mb-3">
-                                        <Form.Label>
+                                        <Form.Label className="fw-semibold">
                                             <FaTwitter className="me-2 text-info" />
                                             Twitter / X
                                         </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="@username atau URL"
-                                            value={socialMedia.twitter}
-                                            onChange={(e) =>
-                                                setSocialMedia({
-                                                    ...socialMedia,
-                                                    twitter: e.target.value,
-                                                })
-                                            }
-                                            disabled={!editMode}
-                                        />
+                                        <InputGroup>
+                                            <InputGroup.Text className="bg-light text-muted">
+                                                @
+                                            </InputGroup.Text>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="username"
+                                                value={
+                                                    socialMedia.twitter
+                                                        ? socialMedia.twitter.replace(
+                                                              /^@/,
+                                                              "",
+                                                          )
+                                                        : ""
+                                                }
+                                                onChange={(e) =>
+                                                    handleSocialChange(
+                                                        "twitter",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={!editMode}
+                                            />
+                                        </InputGroup>
                                     </Col>
                                     <Col md={6} className="mb-3">
-                                        <Form.Label>
+                                        <Form.Label className="fw-semibold">
                                             <FaFacebook className="me-2 text-primary" />
                                             Facebook
                                         </Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            placeholder="https://facebook.com/username"
-                                            value={socialMedia.facebook}
-                                            onChange={(e) =>
-                                                setSocialMedia({
-                                                    ...socialMedia,
-                                                    facebook: e.target.value,
-                                                })
-                                            }
-                                            disabled={!editMode}
-                                        />
+                                        <InputGroup>
+                                            <InputGroup.Text className="bg-light text-muted">
+                                                facebook.com/
+                                            </InputGroup.Text>
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="username"
+                                                value={
+                                                    socialMedia.facebook
+                                                        ? socialMedia.facebook.replace(
+                                                              /^https?:\/\/(www\.)?facebook\.com\//i,
+                                                              "",
+                                                          )
+                                                        : ""
+                                                }
+                                                onChange={(e) =>
+                                                    handleSocialChange(
+                                                        "facebook",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={!editMode}
+                                            />
+                                        </InputGroup>
                                     </Col>
                                 </Row>
 
                                 {editMode && (
                                     <div className="d-flex gap-2">
-                                        <Button type="submit" variant="primary">
-                                            Simpan Perubahan
+                                        <Button
+                                            type="submit"
+                                            variant="primary"
+                                            disabled={savingSocialMedia}
+                                        >
+                                            {savingSocialMedia ? (
+                                                <>
+                                                    <span
+                                                        className="spinner-border spinner-border-sm me-2"
+                                                        role="status"
+                                                        aria-hidden="true"
+                                                    ></span>
+                                                    Menyimpan...
+                                                </>
+                                            ) : (
+                                                "Simpan Perubahan"
+                                            )}
                                         </Button>
                                         <Button
                                             type="button"
@@ -645,8 +859,24 @@ const ProfileSettings = ({ role = "user" }) => {
                             <Card.Body>
                                 {(error || success) && (
                                     <div className="mb-3">
-                                        {error && <Alert variant="danger" onClose={() => setError("")} dismissible>{error}</Alert>}
-                                        {success && <Alert variant="success" onClose={() => setSuccess("")} dismissible>{success}</Alert>}
+                                        {error && (
+                                            <Alert
+                                                variant="danger"
+                                                onClose={() => setError("")}
+                                                dismissible
+                                            >
+                                                {error}
+                                            </Alert>
+                                        )}
+                                        {success && (
+                                            <Alert
+                                                variant="success"
+                                                onClose={() => setSuccess("")}
+                                                dismissible
+                                            >
+                                                {success}
+                                            </Alert>
+                                        )}
                                     </div>
                                 )}
                                 <Form onSubmit={handleChangePassword}>
@@ -656,22 +886,37 @@ const ProfileSettings = ({ role = "user" }) => {
                                         </Form.Label>
                                         <InputGroup>
                                             <Form.Control
-                                                type={showCurrentPassword ? "text" : "password"}
+                                                type={
+                                                    showCurrentPassword
+                                                        ? "text"
+                                                        : "password"
+                                                }
                                                 placeholder="Masukkan password saat ini"
-                                                value={passwordData.current_password}
+                                                value={
+                                                    passwordData.current_password
+                                                }
                                                 onChange={(e) =>
                                                     setPasswordData({
                                                         ...passwordData,
-                                                        current_password: e.target.value,
+                                                        current_password:
+                                                            e.target.value,
                                                     })
                                                 }
                                                 required
                                             />
-                                            <Button 
+                                            <Button
                                                 variant="outline-secondary"
-                                                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                                onClick={() =>
+                                                    setShowCurrentPassword(
+                                                        !showCurrentPassword,
+                                                    )
+                                                }
                                             >
-                                                {showCurrentPassword ? <FaEyeSlash /> : <FaEye />}
+                                                {showCurrentPassword ? (
+                                                    <FaEyeSlash />
+                                                ) : (
+                                                    <FaEye />
+                                                )}
                                             </Button>
                                         </InputGroup>
                                     </Form.Group>
@@ -679,26 +924,42 @@ const ProfileSettings = ({ role = "user" }) => {
                                         <Form.Label>Password Baru</Form.Label>
                                         <InputGroup>
                                             <Form.Control
-                                                type={showNewPassword ? "text" : "password"}
+                                                type={
+                                                    showNewPassword
+                                                        ? "text"
+                                                        : "password"
+                                                }
                                                 placeholder="Minimal 6 karakter"
-                                                value={passwordData.new_password}
+                                                value={
+                                                    passwordData.new_password
+                                                }
                                                 onChange={(e) =>
                                                     setPasswordData({
                                                         ...passwordData,
-                                                        new_password: e.target.value,
+                                                        new_password:
+                                                            e.target.value,
                                                     })
                                                 }
                                                 required
                                             />
-                                            <Button 
+                                            <Button
                                                 variant="outline-secondary"
-                                                onClick={() => setShowNewPassword(!showNewPassword)}
+                                                onClick={() =>
+                                                    setShowNewPassword(
+                                                        !showNewPassword,
+                                                    )
+                                                }
                                             >
-                                                {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                                                {showNewPassword ? (
+                                                    <FaEyeSlash />
+                                                ) : (
+                                                    <FaEye />
+                                                )}
                                             </Button>
                                         </InputGroup>
                                         <Form.Text className="text-muted">
-                                            Gunakan minimal 6 karakter dengan kombinasi huruf dan angka.
+                                            Gunakan minimal 6 karakter dengan
+                                            kombinasi huruf dan angka.
                                         </Form.Text>
                                     </Form.Group>
                                     <Form.Group className="mb-3">
@@ -707,38 +968,59 @@ const ProfileSettings = ({ role = "user" }) => {
                                         </Form.Label>
                                         <InputGroup>
                                             <Form.Control
-                                                type={showConfirmPassword ? "text" : "password"}
+                                                type={
+                                                    showConfirmPassword
+                                                        ? "text"
+                                                        : "password"
+                                                }
                                                 placeholder="Ketik ulang password baru"
-                                                value={passwordData.confirm_password}
+                                                value={
+                                                    passwordData.confirm_password
+                                                }
                                                 onChange={(e) =>
                                                     setPasswordData({
                                                         ...passwordData,
-                                                        confirm_password: e.target.value,
+                                                        confirm_password:
+                                                            e.target.value,
                                                     })
                                                 }
                                                 required
                                             />
-                                            <Button 
+                                            <Button
                                                 variant="outline-secondary"
-                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                onClick={() =>
+                                                    setShowConfirmPassword(
+                                                        !showConfirmPassword,
+                                                    )
+                                                }
                                             >
-                                                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                                                {showConfirmPassword ? (
+                                                    <FaEyeSlash />
+                                                ) : (
+                                                    <FaEye />
+                                                )}
                                             </Button>
                                         </InputGroup>
                                     </Form.Group>
                                     <div className="d-flex gap-2">
-                                        <Button 
-                                            type="submit" 
-                                            variant="warning" 
+                                        <Button
+                                            type="submit"
+                                            variant="warning"
                                             className="fw-bold"
                                             disabled={passwordChanging}
                                         >
                                             {passwordChanging ? (
                                                 <>
-                                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                    <span
+                                                        className="spinner-border spinner-border-sm me-2"
+                                                        role="status"
+                                                        aria-hidden="true"
+                                                    ></span>
                                                     Menyimpan...
                                                 </>
-                                            ) : "Simpan Password Baru"}
+                                            ) : (
+                                                "Simpan Password Baru"
+                                            )}
                                         </Button>
                                         <Button
                                             type="button"

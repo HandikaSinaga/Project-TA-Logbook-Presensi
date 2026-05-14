@@ -11,9 +11,6 @@
  * ✅ Future month handling
  * ✅ Current month calculation (up to today)
  * ✅ Past month calculation (all days)
- *
- * @author GitHub Copilot
- * @date 2026-03-03
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "@jest/globals";

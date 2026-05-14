@@ -3,9 +3,6 @@
  *
  * Middleware untuk memvalidasi bahwa presensi hanya bisa dilakukan pada hari kerja.
  * Melindungi endpoint check-in/check-out dari bypass API.
- *
- * @author GitHub Copilot
- * @date 2026-03-03
  */
 
 import WorkCalendarService from "../services/WorkCalendarService.js";

@@ -50,10 +50,10 @@ const ManageDivision = () => {
 
             setDivision(divisionRes.data.data || divisionRes.data);
             setSupervisedUsers(
-                supervisedRes.data.data || supervisedRes.data || []
+                supervisedRes.data.data || supervisedRes.data || [],
             );
             setAvailableUsers(
-                availableRes.data.data || availableRes.data || []
+                availableRes.data.data || availableRes.data || [],
             );
             calculateStats(supervisedRes.data.data || supervisedRes.data || []);
         } catch (error) {
@@ -90,7 +90,7 @@ const ManageDivision = () => {
         } catch (error) {
             console.error("Error assigning user:", error);
             toast.error(
-                error.response?.data?.message || "Gagal menambahkan user"
+                error.response?.data?.message || "Gagal menambahkan user",
             );
         }
     };
@@ -122,7 +122,7 @@ const ManageDivision = () => {
         } catch (error) {
             console.error("Error removing user:", error);
             toast.error(
-                error.response?.data?.message || "Gagal menghapus user"
+                error.response?.data?.message || "Gagal menghapus user",
             );
         }
     };
@@ -142,11 +142,11 @@ const ManageDivision = () => {
     };
 
     const filteredSupervisedUsers = supervisedUsers.filter((user) =>
-        user.name.toLowerCase().includes(searchSupervised.toLowerCase())
+        user.name.toLowerCase().includes(searchSupervised.toLowerCase()),
     );
 
     const filteredAvailableUsers = availableUsers.filter((user) =>
-        user.name.toLowerCase().includes(searchAvailable.toLowerCase())
+        user.name.toLowerCase().includes(searchAvailable.toLowerCase()),
     );
 
     if (loading) {
@@ -319,7 +319,7 @@ const ManageDivision = () => {
                                                 }}
                                                 onError={(e) => {
                                                     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                        user.name || "User"
+                                                        user.name || "User",
                                                     )}&background=0D8ABC&color=fff&size=128`;
                                                 }}
                                             />
@@ -329,11 +329,13 @@ const ManageDivision = () => {
                                                 </div>
                                                 <div className="d-flex flex-column">
                                                     <small className="text-muted">
-                                                        <i className="bi bi-envelope me-1"></i>{user.email}
+                                                        <i className="bi bi-envelope me-1"></i>
+                                                        {user.email}
                                                     </small>
                                                     {user.position && (
                                                         <small className="text-muted">
-                                                            <i className="bi bi-briefcase me-1"></i>{user.position}
+                                                            <i className="bi bi-briefcase me-1"></i>
+                                                            {user.position}
                                                         </small>
                                                     )}
                                                 </div>
@@ -444,7 +446,7 @@ const ManageDivision = () => {
                                                 }}
                                                 onError={(e) => {
                                                     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                        user.name || "User"
+                                                        user.name || "User",
                                                     )}&background=0D8ABC&color=fff&size=128`;
                                                 }}
                                             />
@@ -454,11 +456,13 @@ const ManageDivision = () => {
                                                 </div>
                                                 <div className="d-flex flex-column">
                                                     <small className="text-muted">
-                                                        <i className="bi bi-envelope me-1"></i>{user.email}
+                                                        <i className="bi bi-envelope me-1"></i>
+                                                        {user.email}
                                                     </small>
                                                     {user.position && (
                                                         <small className="text-muted">
-                                                            <i className="bi bi-briefcase me-1"></i>{user.position}
+                                                            <i className="bi bi-briefcase me-1"></i>
+                                                            {user.position}
                                                         </small>
                                                     )}
                                                 </div>
@@ -601,7 +605,7 @@ const ManageDivision = () => {
                                                 }}
                                                 onError={(e) => {
                                                     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                        userToRemove.name
+                                                        userToRemove.name,
                                                     )}&background=random&color=fff&size=128`;
                                                 }}
                                             />
@@ -736,7 +740,7 @@ const ManageDivision = () => {
                                                 }}
                                                 onError={(e) => {
                                                     e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                        userToAdd.name
+                                                        userToAdd.name,
                                                     )}&background=random&color=fff&size=128`;
                                                 }}
                                             />
@@ -830,7 +834,7 @@ const ManageDivision = () => {
                                         }}
                                         onError={(e) => {
                                             e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                detailUser.name
+                                                detailUser.name,
                                             )}&background=random&color=fff&size=128`;
                                         }}
                                     />
@@ -884,27 +888,42 @@ const ManageDivision = () => {
                                             <i className="bi bi-person-lines-fill text-primary me-2"></i>
                                             Informasi Personal
                                         </h6>
-                                        
+
                                         <div className="row g-3">
                                             <div className="col-md-6">
-                                                <label className="small text-muted mb-1">Periode</label>
+                                                <label className="small text-muted mb-1">
+                                                    Periode
+                                                </label>
                                                 <div className="d-flex align-items-center">
                                                     <i className="bi bi-calendar-event text-secondary me-2"></i>
-                                                    <span className="fw-medium">{detailUser.periode || '-'}</span>
+                                                    <span className="fw-medium">
+                                                        {detailUser.periode ||
+                                                            "-"}
+                                                    </span>
                                                 </div>
                                             </div>
                                             <div className="col-md-6">
-                                                <label className="small text-muted mb-1">Sumber Magang</label>
+                                                <label className="small text-muted mb-1">
+                                                    Sumber Magang
+                                                </label>
                                                 <div className="d-flex align-items-center">
                                                     <i className="bi bi-building text-secondary me-2"></i>
-                                                    <span className="fw-medium text-capitalize">{detailUser.sumber_magang || '-'}</span>
+                                                    <span className="fw-medium text-capitalize">
+                                                        {detailUser.sumber_magang ||
+                                                            "-"}
+                                                    </span>
                                                 </div>
                                             </div>
                                             <div className="col-12 mt-3">
-                                                <label className="small text-muted mb-1">Alamat</label>
+                                                <label className="small text-muted mb-1">
+                                                    Alamat
+                                                </label>
                                                 <div className="d-flex">
                                                     <i className="bi bi-geo-alt-fill text-danger me-2 mt-1"></i>
-                                                    <span>{detailUser.address || 'Alamat belum diatur'}</span>
+                                                    <span>
+                                                        {detailUser.address ||
+                                                            "Alamat belum diatur"}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -960,8 +979,6 @@ const ManageDivision = () => {
                                                 </div>
                                             </div>
                                         )}
-
-                                        )}
                                     </div>
                                 </div>
 
@@ -980,33 +997,111 @@ const ManageDivision = () => {
                                             </h6>
                                             <div className="d-flex flex-wrap gap-2">
                                                 {detailUser.instagram && (
-                                                    <a href={detailUser.instagram.startsWith("http") ? detailUser.instagram : `https://instagram.com/${detailUser.instagram}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-danger btn-sm" title="Instagram">
-                                                        <i className="bi bi-instagram me-1"></i> Instagram
+                                                    <a
+                                                        href={
+                                                            detailUser.instagram.startsWith(
+                                                                "http",
+                                                            )
+                                                                ? detailUser.instagram
+                                                                : `https://instagram.com/${detailUser.instagram}`
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="btn btn-outline-danger btn-sm"
+                                                        title="Instagram"
+                                                    >
+                                                        <i className="bi bi-instagram me-1"></i>{" "}
+                                                        Instagram
                                                     </a>
                                                 )}
                                                 {detailUser.linkedin && (
-                                                    <a href={detailUser.linkedin.startsWith("http") ? detailUser.linkedin : `https://linkedin.com/in/${detailUser.linkedin}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm" title="LinkedIn">
-                                                        <i className="bi bi-linkedin me-1"></i> LinkedIn
+                                                    <a
+                                                        href={
+                                                            detailUser.linkedin.startsWith(
+                                                                "http",
+                                                            )
+                                                                ? detailUser.linkedin
+                                                                : `https://linkedin.com/in/${detailUser.linkedin}`
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="btn btn-outline-primary btn-sm"
+                                                        title="LinkedIn"
+                                                    >
+                                                        <i className="bi bi-linkedin me-1"></i>{" "}
+                                                        LinkedIn
                                                     </a>
                                                 )}
                                                 {detailUser.twitter && (
-                                                    <a href={detailUser.twitter.startsWith("http") ? detailUser.twitter : `https://twitter.com/${detailUser.twitter}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-info btn-sm" title="Twitter/X">
-                                                        <i className="bi bi-twitter me-1"></i> Twitter
+                                                    <a
+                                                        href={
+                                                            detailUser.twitter.startsWith(
+                                                                "http",
+                                                            )
+                                                                ? detailUser.twitter
+                                                                : `https://twitter.com/${detailUser.twitter}`
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="btn btn-outline-info btn-sm"
+                                                        title="Twitter/X"
+                                                    >
+                                                        <i className="bi bi-twitter me-1"></i>{" "}
+                                                        Twitter
                                                     </a>
                                                 )}
                                                 {detailUser.facebook && (
-                                                    <a href={detailUser.facebook.startsWith("http") ? detailUser.facebook : `https://facebook.com/${detailUser.facebook}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm" title="Facebook">
-                                                        <i className="bi bi-facebook me-1"></i> Facebook
+                                                    <a
+                                                        href={
+                                                            detailUser.facebook.startsWith(
+                                                                "http",
+                                                            )
+                                                                ? detailUser.facebook
+                                                                : `https://facebook.com/${detailUser.facebook}`
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="btn btn-outline-primary btn-sm"
+                                                        title="Facebook"
+                                                    >
+                                                        <i className="bi bi-facebook me-1"></i>{" "}
+                                                        Facebook
                                                     </a>
                                                 )}
                                                 {detailUser.telegram && (
-                                                    <a href={detailUser.telegram.startsWith("http") ? detailUser.telegram : `https://t.me/${detailUser.telegram}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-info btn-sm" title="Telegram">
-                                                        <i className="bi bi-telegram me-1"></i> Telegram
+                                                    <a
+                                                        href={
+                                                            detailUser.telegram.startsWith(
+                                                                "http",
+                                                            )
+                                                                ? detailUser.telegram
+                                                                : `https://t.me/${detailUser.telegram}`
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="btn btn-outline-info btn-sm"
+                                                        title="Telegram"
+                                                    >
+                                                        <i className="bi bi-telegram me-1"></i>{" "}
+                                                        Telegram
                                                     </a>
                                                 )}
                                                 {detailUser.github && (
-                                                    <a href={detailUser.github.startsWith("http") ? detailUser.github : `https://github.com/${detailUser.github}`} target="_blank" rel="noopener noreferrer" className="btn btn-outline-dark btn-sm" title="GitHub">
-                                                        <i className="bi bi-github me-1"></i> GitHub
+                                                    <a
+                                                        href={
+                                                            detailUser.github.startsWith(
+                                                                "http",
+                                                            )
+                                                                ? detailUser.github
+                                                                : `https://github.com/${detailUser.github}`
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="btn btn-outline-dark btn-sm"
+                                                        title="GitHub"
+                                                    >
+                                                        <i className="bi bi-github me-1"></i>{" "}
+                                                        GitHub
                                                     </a>
                                                 )}
                                             </div>

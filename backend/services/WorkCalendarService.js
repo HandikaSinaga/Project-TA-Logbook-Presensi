@@ -3,9 +3,6 @@
  *
  * Centralized service untuk business logic kalender kerja dan validasi presensi.
  * Menangani pengecekan hari kerja, hari libur, dan validasi eligibility user untuk presensi.
- *
- * @author GitHub Copilot
- * @date 2026-03-03
  */
 
 import Holiday from "../models/settingsModels/Holiday.js";
@@ -381,7 +378,8 @@ class WorkCalendarService {
                 return {
                     canCheckIn: false,
                     reason: "no_division",
-                    message: "Anda belum ditempatkan di divisi mana pun. Silakan hubungi admin.",
+                    message:
+                        "Anda belum ditempatkan di divisi mana pun. Silakan hubungi admin.",
                     holiday: null,
                 };
             }
@@ -392,7 +390,8 @@ class WorkCalendarService {
                 return {
                     canCheckIn: false,
                     reason: "inactive_division",
-                    message: "Divisi Anda sedang dinonaktifkan atau Anda telah dikeluarkan dari divisi. Silakan hubungi admin.",
+                    message:
+                        "Divisi Anda sedang dinonaktifkan atau Anda telah dikeluarkan dari divisi. Silakan hubungi admin.",
                     holiday: null,
                 };
             }

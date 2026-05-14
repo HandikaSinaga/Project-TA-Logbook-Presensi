@@ -72,6 +72,7 @@ router.get("/profile", ProfileController.getProfile);
 router.put("/profile", ProfileController.updateProfile);
 router.put("/profile/password", ProfileController.changePassword);
 router.post("/profile/avatar", uploadAvatar, ProfileController.uploadAvatar);
+router.delete("/profile/avatar", ProfileController.removeAvatar);
 
 // Settings (read-only for users)
 router.get("/settings", SettingsController.getSettings);

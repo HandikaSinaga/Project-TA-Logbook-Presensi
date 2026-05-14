@@ -39,6 +39,7 @@
     "pdfkit": "^0.17.2",
     "sequelize": "^6.37.3",
     "sequelize-cli": "^6.6.2",
+    "sharp": "^0.34.5",
     "uuid": "^10.0.0"
   }
 }

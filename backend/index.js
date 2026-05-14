@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { testConnection } from "./database/db.js";
 import router from "./routes/index.js";
 import { startAutoCheckoutScheduler } from "./utils/autoCheckoutScheduler.js";
+import { sanitizeBody } from "./middlewares/inputValidator.js";
 
 dotenv.config();
 
@@ -44,6 +45,9 @@ app.use(cors(corsOptions));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Global body sanitization against XSS
+app.use(sanitizeBody);
 
 // Centralized routes
 app.use("/api", router);

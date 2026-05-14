@@ -59,5 +59,6 @@ router.get("/profile", ProfileController.getProfile);
 router.put("/profile", ProfileController.updateProfile);
 router.put("/profile/password", ProfileController.changePassword);
 router.post("/profile/avatar", uploadAvatar, ProfileController.uploadAvatar);
+router.delete("/profile/avatar", ProfileController.removeAvatar);
 
 export default router;

@@ -1,6 +1,8 @@
 import models from "../models/index.js";
 import bcrypt from "bcryptjs";
 import { getPublicPath } from "../utils/uploadHelper.js";
+import fs from "fs";
+import path from "path";
 
 const { User } = models;
 
@@ -17,27 +19,9 @@ class ProfileController {
                         attributes: ["id", "name"],
                     },
                 ],
-                attributes: [
-                    "id",
-                    "name",
-                    "email",
-                    "role",
-                    "division_id",
-                    "avatar",
-                    "nip",
-                    "phone",
-                    "address",
-                    "bio",
-                    "linkedin",
-                    "instagram",
-                    "telegram",
-                    "github",
-                    "twitter",
-                    "facebook",
-                    "periode",
-                    "sumber_magang",
-                    "created_at",
-                ],
+                attributes: {
+                    exclude: ["password", "remember_token"],
+                },
             });
 
             if (!user) {
@@ -157,7 +141,7 @@ class ProfileController {
             // Verify current password
             const isPasswordValid = await bcrypt.compare(
                 current_password,
-                user.password
+                user.password,
             );
             if (!isPasswordValid) {
                 return res.status(400).json({
@@ -190,19 +174,31 @@ class ProfileController {
     async uploadAvatar(req, res) {
         try {
             const userId = req.user.id;
+            const user = await User.findByPk(userId);
+
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found",
+                });
+            }
 
             // Check if file was uploaded via multer
             if (req.file) {
+                // Remove old avatar if it's a local file
+                if (user.avatar && user.avatar.startsWith("/uploads/")) {
+                    const oldAvatarPath = path.join(
+                        process.cwd(),
+                        "public",
+                        user.avatar,
+                    );
+                    if (fs.existsSync(oldAvatarPath)) {
+                        fs.unlinkSync(oldAvatarPath);
+                    }
+                }
+
                 // Use organized path structure
                 const avatarPath = getPublicPath(req.file.path);
-
-                const user = await User.findByPk(userId);
-                if (!user) {
-                    return res.status(404).json({
-                        success: false,
-                        message: "User not found",
-                    });
-                }
 
                 await user.update({
                     avatar: avatarPath,
@@ -220,13 +216,56 @@ class ProfileController {
             // Fallback: manual URL from body (for external URLs like Google)
             const { avatar_url } = req.body;
 
-            if (!avatar_url) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Avatar file or URL is required",
+            if (avatar_url !== undefined) {
+                // If there's an old avatar and we are changing to a new external URL or deleting it (empty string)
+                if (
+                    user.avatar &&
+                    user.avatar.startsWith("/uploads/") &&
+                    user.avatar !== avatar_url
+                ) {
+                    const oldAvatarPath = path.join(
+                        process.cwd(),
+                        "public",
+                        user.avatar,
+                    );
+                    if (fs.existsSync(oldAvatarPath)) {
+                        fs.unlinkSync(oldAvatarPath);
+                    }
+                }
+
+                if (!avatar_url) {
+                    // if avatar_url is empty string, meaning delete
+                    await user.update({ avatar: null });
+                } else {
+                    await user.update({ avatar: avatar_url });
+                }
+
+                return res.json({
+                    success: true,
+                    message: "Avatar updated successfully",
+                    data: {
+                        avatar: user.avatar,
+                    },
                 });
             }
 
+            return res.status(400).json({
+                success: false,
+                message: "Avatar file or URL is required",
+            });
+        } catch (error) {
+            console.error("Upload avatar error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to upload avatar",
+            });
+        }
+    }
+
+    // Remove avatar explicitly
+    async removeAvatar(req, res) {
+        try {
+            const userId = req.user.id;
             const user = await User.findByPk(userId);
 
             if (!user) {
@@ -236,22 +275,31 @@ class ProfileController {
                 });
             }
 
-            await user.update({
-                avatar: avatar_url,
-            });
+            if (user.avatar && user.avatar.startsWith("/uploads/")) {
+                const oldAvatarPath = path.join(
+                    process.cwd(),
+                    "public",
+                    user.avatar,
+                );
+                if (fs.existsSync(oldAvatarPath)) {
+                    fs.unlinkSync(oldAvatarPath);
+                }
+            }
 
-            res.json({
+            await user.update({ avatar: null });
+
+            return res.json({
                 success: true,
-                message: "Avatar updated successfully",
+                message: "Avatar removed successfully",
                 data: {
-                    avatar: user.avatar,
+                    avatar: null,
                 },
             });
         } catch (error) {
-            console.error("Upload avatar error:", error);
+            console.error("Remove avatar error:", error);
             res.status(500).json({
                 success: false,
-                message: "Failed to upload avatar",
+                message: "Failed to remove avatar",
             });
         }
     }
