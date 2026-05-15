@@ -5,35 +5,61 @@ import { getJakartaDate, getTodayJakarta } from "../utils/dateHelper.js";
 const { Logbook, User, Division } = models;
 
 class LogbookController {
-    // Get user's logbooks
+    // Get user's logbooks - with pagination, search, and stats
     async getUserLogbooks(req, res) {
         try {
             const userId = req.user.id;
-            const { month, year, date_from, date_to, status } = req.query;
+            const { month, year, date_from, date_to, status, search, page = 1, limit = 15 } = req.query;
 
-            const whereClause = { user_id: userId };
-
-            // Priority: date_from/date_to over month/year
+            // Build base date filter (shared between stats and main query)
+            let dateFilter = {};
             if (date_from || date_to) {
-                whereClause.date = {};
-                if (date_from) {
-                    whereClause.date[Op.gte] = new Date(date_from);
-                }
+                dateFilter = {};
+                if (date_from) dateFilter[Op.gte] = new Date(date_from);
                 if (date_to) {
                     const endDate = new Date(date_to);
                     endDate.setHours(23, 59, 59, 999);
-                    whereClause.date[Op.lte] = endDate;
+                    dateFilter[Op.lte] = endDate;
                 }
             } else if (month && year) {
                 const startDate = new Date(year, month - 1, 1);
                 const endDate = new Date(year, month, 0, 23, 59, 59, 999);
-                whereClause.date = { [Op.between]: [startDate, endDate] };
+                dateFilter = { [Op.between]: [startDate, endDate] };
             }
 
-            // Filter by status
+            const statsBase = {
+                user_id: userId,
+                ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {}),
+            };
+
+            // Run stats and paginated query in parallel
+            const [totalAll, totalApproved, totalPending, totalRejected, totalNotFilled] = await Promise.all([
+                Logbook.count({ where: statsBase }),
+                Logbook.count({ where: { ...statsBase, status: "approved" } }),
+                Logbook.count({ where: { ...statsBase, status: "pending" } }),
+                Logbook.count({ where: { ...statsBase, status: "rejected" } }),
+                Logbook.count({ where: { ...statsBase, status: "not_filled" } }),
+            ]);
+
+            // Build main where clause (adds status filter & search on top of dateFilter)
+            const whereClause = { ...statsBase };
             if (status && status !== "all") {
                 whereClause.status = status;
             }
+            if (search && search.trim() !== "") {
+                const term = `%${search.trim()}%`;
+                whereClause[Op.or] = [
+                    { activity: { [Op.like]: term } },
+                    { description: { [Op.like]: term } },
+                ];
+            }
+
+            // Pagination
+            const pageNum = parseInt(page) || 1;
+            const limitNum = parseInt(limit) || 15;
+            const offset = (pageNum - 1) * limitNum;
+
+            const totalRecords = await Logbook.count({ where: whereClause });
 
             const logbooks = await Logbook.findAll({
                 where: whereClause,
@@ -44,13 +70,31 @@ class LogbookController {
                         attributes: ["id", "name"],
                     },
                 ],
-                order: [["date", "DESC"]],
-                limit: 100,
+                order: [["date", "DESC"], ["created_at", "DESC"]],
+                limit: limitNum,
+                offset: offset,
             });
+
+            const totalPages = Math.ceil(totalRecords / limitNum);
 
             res.json({
                 success: true,
                 data: logbooks,
+                stats: {
+                    total: totalAll,
+                    approved: totalApproved,
+                    pending: totalPending,
+                    rejected: totalRejected,
+                    not_filled: totalNotFilled,
+                },
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total_records: totalRecords,
+                    total_pages: totalPages,
+                    has_next: pageNum < totalPages,
+                    has_prev: pageNum > 1,
+                },
             });
         } catch (error) {
             console.error("Get user logbooks error:", error);
@@ -60,6 +104,7 @@ class LogbookController {
             });
         }
     }
+
 
     // Get today's logbook
     async getTodayLogbook(req, res) {
@@ -526,6 +571,54 @@ class LogbookController {
         }
     }
 
+    // Get team logbook stats (Supervisor) - accurate counts per status
+    async getTeamLogbookStats(req, res) {
+        try {
+            const supervisorId = req.user.id;
+            const supervisor = await User.findByPk(supervisorId);
+            if (!supervisor.division_id) {
+                return res.json({ success: true, data: { total: 0, pending: 0, approved: 0, rejected: 0, not_filled: 0 } });
+            }
+
+            const { date_from, date_to, search } = req.query;
+            const userWhereClause = { division_id: supervisor.division_id };
+            if (search && search.trim()) {
+                const term = `%${search.trim()}%`;
+                userWhereClause[Op.or] = [
+                    { name: { [Op.like]: term } },
+                    { email: { [Op.like]: term } },
+                    { nip: { [Op.like]: term } },
+                ];
+            }
+
+            let dateFilter = {};
+            if (date_from || date_to) {
+                if (date_from) dateFilter[Op.gte] = new Date(date_from);
+                if (date_to) {
+                    const end = new Date(date_to);
+                    end.setHours(23, 59, 59, 999);
+                    dateFilter[Op.lte] = end;
+                }
+            }
+
+            const baseWhere = Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {};
+            const userInclude = { model: User, as: "user", where: userWhereClause, attributes: [] };
+
+            const [total, pending, approved, rejected, not_filled] = await Promise.all([
+                Logbook.count({ where: baseWhere, include: [userInclude] }),
+                Logbook.count({ where: { ...baseWhere, status: "pending" }, include: [userInclude] }),
+                Logbook.count({ where: { ...baseWhere, status: "approved" }, include: [userInclude] }),
+                Logbook.count({ where: { ...baseWhere, status: "rejected" }, include: [userInclude] }),
+                Logbook.count({ where: { ...baseWhere, status: "not_filled" }, include: [userInclude] }),
+            ]);
+
+            res.json({ success: true, data: { total, pending, approved, rejected, not_filled } });
+        } catch (error) {
+            console.error("Get team logbook stats error:", error);
+            res.status(500).json({ success: false, message: "Failed to get stats" });
+        }
+    }
+
     // Review logbook (Supervisor)
     async reviewLogbook(req, res) {
         try {
@@ -743,6 +836,57 @@ class LogbookController {
                 success: false,
                 message: "Failed to reject logbook",
             });
+        }
+    }
+
+    // Get admin logbook stats - accurate counts per status
+    async getAdminLogbookStats(req, res) {
+        try {
+            const { start_date, end_date, date_from, date_to, division_id, search } = req.query;
+
+            const userWhereClause = {};
+            if (search && search.trim()) {
+                const term = `%${search.trim()}%`;
+                userWhereClause[Op.or] = [
+                    { name: { [Op.like]: term } },
+                    { email: { [Op.like]: term } },
+                    { nip: { [Op.like]: term } },
+                ];
+            }
+            if (division_id) userWhereClause.division_id = division_id;
+
+            const dateFrom = date_from || start_date;
+            const dateTo = date_to || end_date;
+            let dateFilter = {};
+            if (dateFrom || dateTo) {
+                if (dateFrom) dateFilter[Op.gte] = new Date(dateFrom);
+                if (dateTo) {
+                    const end = new Date(dateTo);
+                    end.setHours(23, 59, 59, 999);
+                    dateFilter[Op.lte] = end;
+                }
+            }
+
+            const baseWhere = Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {};
+            const userInclude = {
+                model: User,
+                as: "user",
+                where: Object.keys(userWhereClause).length > 0 ? userWhereClause : undefined,
+                attributes: [],
+            };
+
+            const [total, pending, approved, rejected, not_filled] = await Promise.all([
+                Logbook.count({ where: baseWhere, include: [userInclude] }),
+                Logbook.count({ where: { ...baseWhere, status: "pending" }, include: [userInclude] }),
+                Logbook.count({ where: { ...baseWhere, status: "approved" }, include: [userInclude] }),
+                Logbook.count({ where: { ...baseWhere, status: "rejected" }, include: [userInclude] }),
+                Logbook.count({ where: { ...baseWhere, status: "not_filled" }, include: [userInclude] }),
+            ]);
+
+            res.json({ success: true, data: { total, pending, approved, rejected, not_filled } });
+        } catch (error) {
+            console.error("Get admin logbook stats error:", error);
+            res.status(500).json({ success: false, message: "Failed to get stats" });
         }
     }
 

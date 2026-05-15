@@ -74,6 +74,7 @@ router.get("/attendance/export", AttendanceController.exportAttendance);
 // Logbook Monitoring
 router.get("/logbook", LogbookController.getAllLogbooks); // singular alias
 router.get("/logbooks", LogbookController.getAllLogbooks);
+router.get("/logbook/stats", LogbookController.getAdminLogbookStats);
 router.put("/logbooks/:id/approve", LogbookController.approveLogbook);
 router.put("/logbooks/:id/reject", LogbookController.rejectLogbook);
 

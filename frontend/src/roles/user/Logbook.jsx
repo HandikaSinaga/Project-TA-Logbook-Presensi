@@ -15,10 +15,11 @@ const Logbook = () => {
     const [historyLoading, setHistoryLoading] = useState(false);
 
     const [stats, setStats] = useState({
+        total: 0,
         approved: 0,
         pending: 0,
         rejected: 0,
-        total: 0,
+        not_filled: 0,
     });
     const [showModal, setShowModal] = useState(false);
     const [showDetailModal, setShowDetailModal] = useState(false);
@@ -42,7 +43,8 @@ const Logbook = () => {
     useEffect(() => {
         fetchUserProfile();
         checkTodayAttendance();
-        fetchLogbookHistory().finally(() => setLoading(false));
+        // Initial load handled by the filter effect
+        setLoading(false);
     }, []);
 
     const fetchUserProfile = async () => {
@@ -54,11 +56,9 @@ const Logbook = () => {
         }
     };
 
-    // Fetch history when page or filters change
+    // Fetch history whenever page or any filter changes
     useEffect(() => {
-        if (page > 1 || filterStatus !== "all" || filterDate || searchQuery) {
-            fetchLogbookHistory();
-        }
+        fetchLogbookHistory();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, filterStatus, filterDate, searchQuery]);
 
@@ -109,35 +109,22 @@ const Logbook = () => {
     const fetchLogbookHistory = async () => {
         try {
             setHistoryLoading(true);
-            const params = { page, limit: 20 };
+            const params = { page, limit: 15 };
 
-            // Apply filters
-            if (filterStatus && filterStatus !== "all") {
-                params.status = filterStatus;
-            }
-            if (filterDate) {
-                params.date_from = filterDate;
-                params.date_to = filterDate;
-            }
-            if (searchQuery) {
-                params.search = searchQuery;
-            }
+            if (filterStatus && filterStatus !== "all") params.status = filterStatus;
+            if (filterDate) { params.date_from = filterDate; params.date_to = filterDate; }
+            if (searchQuery) params.search = searchQuery;
 
-            const response = await axiosInstance.get("/user/logbook", {
-                params,
-            });
-            const data = response.data.data || response.data || [];
+            const response = await axiosInstance.get("/user/logbook", { params });
+            const data = response.data.data || [];
             setLogbooks(Array.isArray(data) ? data : []);
             setFilteredLogbooks(Array.isArray(data) ? data : []);
             setPagination(response.data.pagination || null);
 
-            // Calculate stats from pagination total or data length
-            const totalRecords =
-                response.data.pagination?.total_records || data.length;
-            setStats((prev) => ({
-                ...prev,
-                total: totalRecords,
-            }));
+            // Use stats from backend response
+            if (response.data.stats) {
+                setStats(response.data.stats);
+            }
 
             return data;
         } catch (error) {
@@ -146,6 +133,7 @@ const Logbook = () => {
             return [];
         } finally {
             setHistoryLoading(false);
+            setLoading(false);
         }
     };
 
@@ -482,124 +470,32 @@ const Logbook = () => {
                 </div>
             )}
 
-            {/* Stats dengan gradient cards - Subtle & Elegant */}
+            {/* Stats Cards - 5 kolom */}
             <div className="row g-3 mb-4">
-                <div className="col-6 col-md-3">
-                    <div className="card border-0 shadow-sm h-100">
-                        <div
-                            className="card-body"
-                            style={{
-                                background:
-                                    "linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 100%)",
-                            }}
-                        >
-                            <div className="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <p className="mb-1 text-muted small">
-                                        Total Logbook
-                                    </p>
-                                    <h2 className="mb-0 fw-bold text-primary">
-                                        {stats.total}
-                                    </h2>
+                {[
+                    { label: "Total", value: stats.total, color: "primary", icon: "bi-journal-text", bg: "linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 100%)", sub: "Semua aktivitas" },
+                    { label: "Disetujui", value: stats.approved, color: "success", icon: "bi-check-circle-fill", bg: "linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%)", sub: "Disetujui supervisor" },
+                    { label: "Pending", value: stats.pending, color: "warning", icon: "bi-clock-fill", bg: "linear-gradient(135deg, #fef3c7 0%, #fefce8 100%)", sub: "Menunggu review" },
+                    { label: "Ditolak", value: stats.rejected, color: "danger", icon: "bi-x-circle-fill", bg: "linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)", sub: "Perlu diperbaiki" },
+                    { label: "Tidak Mengisi", value: stats.not_filled, color: "secondary", icon: "bi-dash-circle-fill", bg: "linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%)", sub: "Tidak ada aktivitas" },
+                ].map((card) => (
+                    <div key={card.label} className="col-6 col-md">
+                        <div className="card border-0 shadow-sm h-100">
+                            <div className="card-body" style={{ background: card.bg }}>
+                                <div className="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <p className="mb-1 text-muted small">{card.label}</p>
+                                        <h2 className={`mb-0 fw-bold text-${card.color}`}>{card.value}</h2>
+                                    </div>
+                                    <div className={`bg-${card.color} bg-opacity-10 rounded-circle p-2`}>
+                                        <i className={`bi ${card.icon} text-${card.color} fs-4`}></i>
+                                    </div>
                                 </div>
-                                <div className="bg-primary bg-opacity-10 rounded-circle p-2">
-                                    <i className="bi bi-journal-text text-primary fs-4"></i>
-                                </div>
-                            </div>
-                            <div className="mt-2 small text-muted">
-                                <i className="bi bi-calendar-check me-1"></i>
-                                Semua aktivitas
+                                <div className="mt-2 small text-muted">{card.sub}</div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div className="col-6 col-md-3">
-                    <div className="card border-0 shadow-sm h-100">
-                        <div
-                            className="card-body"
-                            style={{
-                                background:
-                                    "linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%)",
-                            }}
-                        >
-                            <div className="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <p className="mb-1 text-muted small">
-                                        Approved
-                                    </p>
-                                    <h2 className="mb-0 fw-bold text-success">
-                                        {stats.approved}
-                                    </h2>
-                                </div>
-                                <div className="bg-success bg-opacity-10 rounded-circle p-2">
-                                    <i className="bi bi-check-circle-fill text-success fs-4"></i>
-                                </div>
-                            </div>
-                            <div className="mt-2 small text-muted">
-                                <i className="bi bi-hand-thumbs-up me-1"></i>
-                                Disetujui supervisor
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-6 col-md-3">
-                    <div className="card border-0 shadow-sm h-100">
-                        <div
-                            className="card-body"
-                            style={{
-                                background:
-                                    "linear-gradient(135deg, #fef3c7 0%, #fefce8 100%)",
-                            }}
-                        >
-                            <div className="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <p className="mb-1 text-muted small">
-                                        Pending
-                                    </p>
-                                    <h2 className="mb-0 fw-bold text-warning">
-                                        {stats.pending}
-                                    </h2>
-                                </div>
-                                <div className="bg-warning bg-opacity-10 rounded-circle p-2">
-                                    <i className="bi bi-clock-fill text-warning fs-4"></i>
-                                </div>
-                            </div>
-                            <div className="mt-2 small text-muted">
-                                <i className="bi bi-hourglass-split me-1"></i>
-                                Menunggu review
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-6 col-md-3">
-                    <div className="card border-0 shadow-sm h-100">
-                        <div
-                            className="card-body"
-                            style={{
-                                background:
-                                    "linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)",
-                            }}
-                        >
-                            <div className="d-flex justify-content-between align-items-start mb-2">
-                                <div>
-                                    <p className="mb-1 text-muted small">
-                                        Rejected
-                                    </p>
-                                    <h2 className="mb-0 fw-bold text-danger">
-                                        {stats.rejected}
-                                    </h2>
-                                </div>
-                                <div className="bg-danger bg-opacity-10 rounded-circle p-2">
-                                    <i className="bi bi-x-circle-fill text-danger fs-4"></i>
-                                </div>
-                            </div>
-                            <div className="mt-2 small text-muted">
-                                <i className="bi bi-arrow-clockwise me-1"></i>
-                                Perlu diperbaiki
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                ))}
             </div>
 
             {/* Filter Section with better UX */}
@@ -682,16 +578,17 @@ const Logbook = () => {
                         </div>
                     </div>
                     {(filterStatus !== "all" || filterDate || searchQuery) && (
-                        <div className="mt-3 d-flex align-items-center justify-content-between">
+                        <div className="mt-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
                             <span className="badge bg-primary fs-6 px-3 py-2">
                                 <i className="bi bi-funnel-fill me-1"></i>
-                                Menampilkan {filteredLogbooks.length} dari{" "}
-                                {logbooks.length} logbook
+                                {pagination?.total_records ?? logbooks.length} logbook ditemukan
                             </span>
-                            <small className="text-muted">
-                                <i className="bi bi-info-circle me-1"></i>
-                                Filter aktif
-                            </small>
+                            <button
+                                className="btn btn-sm btn-link text-muted p-0"
+                                onClick={() => { setFilterStatus("all"); setFilterDate(""); setSearchQuery(""); setPage(1); }}
+                            >
+                                <i className="bi bi-x-circle me-1"></i>Hapus semua filter
+                            </button>
                         </div>
                     )}
                 </div>
@@ -699,11 +596,16 @@ const Logbook = () => {
 
             {/* Logbook List */}
             <div className="card border-0 shadow-sm">
-                <div className="card-header bg-white border-bottom py-3">
+                <div className="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
                     <h5 className="mb-0">
                         <i className="bi bi-list-ul me-2"></i>
-                        Daftar Logbook
+                        Riwayat Logbook
                     </h5>
+                    {pagination && (
+                        <span className="badge bg-secondary">
+                            Total: {pagination.total_records} entri
+                        </span>
+                    )}
                 </div>
                 <div className="card-body p-0">
                     {historyLoading ? (

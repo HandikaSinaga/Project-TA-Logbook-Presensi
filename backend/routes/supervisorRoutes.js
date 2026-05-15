@@ -27,6 +27,7 @@ router.put("/attendance/:id/reject", AttendanceController.rejectAttendance);
 
 // Team Logbook
 router.get("/logbook", LogbookController.getTeamLogbooks);
+router.get("/logbook/stats", LogbookController.getTeamLogbookStats);
 router.get("/logbook/:id", LogbookController.getById);
 router.put("/logbook/:id/approve", LogbookController.approveLogbook);
 router.put("/logbook/:id/reject", LogbookController.rejectLogbook);

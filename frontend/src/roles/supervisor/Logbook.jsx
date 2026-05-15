@@ -31,6 +31,7 @@ const SupervisorLogbook = () => {
         pending: 0,
         approved: 0,
         rejected: 0,
+        not_filled: 0,
     });
 
     // Debounced search effect
@@ -58,43 +59,38 @@ const SupervisorLogbook = () => {
     const fetchLogbooks = async () => {
         try {
             setLoading(true);
-            const params = {
-                page,
-                limit: 20,
-            };
+            const params = { page, limit: 20 };
 
-            if (filters.status !== "all") {
-                params.status = filters.status;
-            }
-            if (filters.date_from) {
-                params.date_from = filters.date_from;
-            }
-            if (filters.date_to) {
-                params.date_to = filters.date_to;
-            }
+            if (filters.status !== "all") params.status = filters.status;
+            if (filters.date_from) params.date_from = filters.date_from;
+            if (filters.date_to) params.date_to = filters.date_to;
             if (filters.user_name && filters.user_name.trim() !== "") {
                 params.search = filters.user_name.trim();
             }
 
-            const response = await axiosInstance.get("/supervisor/logbook", {
-                params,
-            });
-            const data = response.data.data || response.data || [];
-            const logbooksArray = Array.isArray(data) ? data : [];
-            setLogbooks(logbooksArray);
-            setPagination(response.data.pagination);
+            // Stats params (no status filter — always get full picture)
+            const statsParams = {};
+            if (filters.date_from) statsParams.date_from = filters.date_from;
+            if (filters.date_to) statsParams.date_to = filters.date_to;
+            if (filters.user_name?.trim()) statsParams.search = filters.user_name.trim();
 
-            // Calculate stats
+            const [dataRes, statsRes] = await Promise.all([
+                axiosInstance.get("/supervisor/logbook", { params }),
+                axiosInstance.get("/supervisor/logbook/stats", { params: statsParams }),
+            ]);
+
+            const data = dataRes.data.data || [];
+            setLogbooks(Array.isArray(data) ? data : []);
+            setPagination(dataRes.data.pagination);
+
+            // Use accurate stats from dedicated endpoint
+            const s = statsRes.data.data || {};
             setStats({
-                total:
-                    response.data.pagination?.total_records ||
-                    logbooksArray.length,
-                pending: logbooksArray.filter((l) => l.status === "pending")
-                    .length,
-                approved: logbooksArray.filter((l) => l.status === "approved")
-                    .length,
-                rejected: logbooksArray.filter((l) => l.status === "rejected")
-                    .length,
+                total: s.total ?? 0,
+                pending: s.pending ?? 0,
+                approved: s.approved ?? 0,
+                rejected: s.rejected ?? 0,
+                not_filled: s.not_filled ?? 0,
             });
         } catch (error) {
             console.error("Error fetching logbooks:", error);
@@ -213,82 +209,29 @@ const SupervisorLogbook = () => {
 
             {/* Stats Cards */}
             <div className="row g-3 mb-4">
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm h-100">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div className="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
-                                    <i className="bi bi-journal-text fs-4 text-primary"></i>
-                                </div>
-                                <div>
-                                    <small className="text-muted d-block">
-                                        Total Logbook
-                                    </small>
-                                    <h4 className="mb-0 fw-bold">
-                                        {stats.total}
-                                    </h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm h-100">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div className="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
-                                    <i className="bi bi-clock-history fs-4 text-warning"></i>
-                                </div>
-                                <div>
-                                    <small className="text-muted d-block">
-                                        Pending
-                                    </small>
-                                    <h4 className="mb-0 fw-bold text-warning">
-                                        {stats.pending}
-                                    </h4>
+                {[
+                    { label: "Total", value: stats.total, color: "primary", icon: "bi-journal-text" },
+                    { label: "Pending", value: stats.pending, color: "warning", icon: "bi-clock-history" },
+                    { label: "Disetujui", value: stats.approved, color: "success", icon: "bi-check-circle" },
+                    { label: "Ditolak", value: stats.rejected, color: "danger", icon: "bi-x-circle" },
+                    { label: "Tidak Mengisi", value: stats.not_filled, color: "secondary", icon: "bi-dash-circle" },
+                ].map((card) => (
+                    <div key={card.label} className="col-6 col-md">
+                        <div className="card border-0 shadow-sm h-100">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className={`rounded-circle bg-${card.color} bg-opacity-10 p-3 me-3`}>
+                                        <i className={`bi ${card.icon} fs-4 text-${card.color}`}></i>
+                                    </div>
+                                    <div>
+                                        <small className="text-muted d-block">{card.label}</small>
+                                        <h4 className={`mb-0 fw-bold text-${card.color}`}>{card.value}</h4>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm h-100">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div className="rounded-circle bg-success bg-opacity-10 p-3 me-3">
-                                    <i className="bi bi-check-circle fs-4 text-success"></i>
-                                </div>
-                                <div>
-                                    <small className="text-muted d-block">
-                                        Disetujui
-                                    </small>
-                                    <h4 className="mb-0 fw-bold text-success">
-                                        {stats.approved}
-                                    </h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm h-100">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div className="rounded-circle bg-danger bg-opacity-10 p-3 me-3">
-                                    <i className="bi bi-x-circle fs-4 text-danger"></i>
-                                </div>
-                                <div>
-                                    <small className="text-muted d-block">
-                                        Ditolak
-                                    </small>
-                                    <h4 className="mb-0 fw-bold text-danger">
-                                        {stats.rejected}
-                                    </h4>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                ))}
             </div>
 
             {/* Filters */}

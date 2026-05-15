@@ -42,6 +42,7 @@ const AdminLogbook = () => {
         pending: 0,
         approved: 0,
         rejected: 0,
+        not_filled: 0,
     });
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedLogbook, setSelectedLogbook] = useState(null);
@@ -96,10 +97,7 @@ const AdminLogbook = () => {
         try {
             setLoading(true);
 
-            const params = {
-                page,
-                limit: 20,
-            };
+            const params = { page, limit: 20 };
 
             if (filters.start_date) params.start_date = filters.start_date;
             if (filters.end_date) params.end_date = filters.end_date;
@@ -109,43 +107,39 @@ const AdminLogbook = () => {
                 params.search = filters.search.trim();
             }
 
-            console.log("[Logbook] Fetching with filters:", filters);
-            console.log("[Logbook] Query params:", params);
+            // Stats params (no status filter — always show full picture)
+            const statsParams = {};
+            if (filters.start_date) statsParams.start_date = filters.start_date;
+            if (filters.end_date) statsParams.end_date = filters.end_date;
+            if (filters.division_id) statsParams.division_id = filters.division_id;
+            if (filters.search?.trim()) statsParams.search = filters.search.trim();
 
-            const response = await axiosInstance.get("/admin/logbook", {
-                params,
-            });
-            const data = response.data.data || [];
+            const [dataRes, statsRes] = await Promise.all([
+                axiosInstance.get("/admin/logbook", { params }),
+                axiosInstance.get("/admin/logbook/stats", { params: statsParams }),
+            ]);
 
-            console.log("[Logbook] Received", data.length, "records");
-            console.log("[Logbook] First 3 records:", data.slice(0, 3));
-
+            const data = dataRes.data.data || [];
             setLogbooks(data);
-            setPagination(response.data.pagination);
-            calculateStats(
-                response.data.pagination?.total_records || data.length
-            );
+            setPagination(dataRes.data.pagination);
+
+            // Use accurate stats from dedicated endpoint
+            const s = statsRes.data.data || {};
+            setStats({
+                total: s.total ?? 0,
+                pending: s.pending ?? 0,
+                approved: s.approved ?? 0,
+                rejected: s.rejected ?? 0,
+                not_filled: s.not_filled ?? 0,
+            });
         } catch (error) {
             console.error("Fetch logbook error:", error);
-            toast.error(
-                error.response?.data?.message || "Gagal memuat data logbook"
-            );
+            toast.error(error.response?.data?.message || "Gagal memuat data logbook");
             setLogbooks([]);
-            setStats({ total: 0, pending: 0, approved: 0, rejected: 0 });
+            setStats({ total: 0, pending: 0, approved: 0, rejected: 0, not_filled: 0 });
         } finally {
             setLoading(false);
         }
-    };
-
-    const calculateStats = (totalRecords) => {
-        const data = logbooks;
-        const stats = {
-            total: totalRecords || data.length,
-            pending: data.filter((l) => l.status === "pending").length,
-            approved: data.filter((l) => l.status === "approved").length,
-            rejected: data.filter((l) => l.status === "rejected").length,
-        };
-        setStats(stats);
     };
 
     // Quick date filters
@@ -273,130 +267,29 @@ const AdminLogbook = () => {
 
             {/* Statistics Cards */}
             <div className="row g-3 mb-4">
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div
-                                    className="me-3"
-                                    style={{
-                                        width: "48px",
-                                        height: "48px",
-                                        borderRadius: "12px",
-                                        background:
-                                            "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "white",
-                                        fontSize: "1.5rem",
-                                    }}
-                                >
-                                    <i className="bi bi-journal-text"></i>
-                                </div>
-                                <div>
-                                    <p className="mb-0 text-muted small">
-                                        Total Logbook
-                                    </p>
-                                    <h3 className="mb-0">{stats.total}</h3>
+                {[
+                    { label: "Total", value: stats.total, icon: "bi-journal-text", bg: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" },
+                    { label: "Menunggu", value: stats.pending, icon: "bi-clock-history", bg: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" },
+                    { label: "Disetujui", value: stats.approved, icon: "bi-check-circle", bg: "linear-gradient(135deg, #10b981 0%, #059669 100%)" },
+                    { label: "Ditolak", value: stats.rejected, icon: "bi-x-circle", bg: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" },
+                    { label: "Tidak Mengisi", value: stats.not_filled, icon: "bi-dash-circle", bg: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)" },
+                ].map((card) => (
+                    <div key={card.label} className="col-6 col-md">
+                        <div className="card border-0 shadow-sm">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center">
+                                    <div className="me-3" style={{ width: "48px", height: "48px", borderRadius: "12px", background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "1.5rem" }}>
+                                        <i className={`bi ${card.icon}`}></i>
+                                    </div>
+                                    <div>
+                                        <p className="mb-0 text-muted small">{card.label}</p>
+                                        <h3 className="mb-0">{card.value}</h3>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div
-                                    className="me-3"
-                                    style={{
-                                        width: "48px",
-                                        height: "48px",
-                                        borderRadius: "12px",
-                                        background:
-                                            "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "white",
-                                        fontSize: "1.5rem",
-                                    }}
-                                >
-                                    <i className="bi bi-clock-history"></i>
-                                </div>
-                                <div>
-                                    <p className="mb-0 text-muted small">
-                                        Menunggu
-                                    </p>
-                                    <h3 className="mb-0">{stats.pending}</h3>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div
-                                    className="me-3"
-                                    style={{
-                                        width: "48px",
-                                        height: "48px",
-                                        borderRadius: "12px",
-                                        background:
-                                            "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "white",
-                                        fontSize: "1.5rem",
-                                    }}
-                                >
-                                    <i className="bi bi-check-circle"></i>
-                                </div>
-                                <div>
-                                    <p className="mb-0 text-muted small">
-                                        Disetujui
-                                    </p>
-                                    <h3 className="mb-0">{stats.approved}</h3>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div className="col-md-3">
-                    <div className="card border-0 shadow-sm">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center">
-                                <div
-                                    className="me-3"
-                                    style={{
-                                        width: "48px",
-                                        height: "48px",
-                                        borderRadius: "12px",
-                                        background:
-                                            "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        color: "white",
-                                        fontSize: "1.5rem",
-                                    }}
-                                >
-                                    <i className="bi bi-x-circle"></i>
-                                </div>
-                                <div>
-                                    <p className="mb-0 text-muted small">
-                                        Ditolak
-                                    </p>
-                                    <h3 className="mb-0">{stats.rejected}</h3>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                ))}
             </div>
 
             {/* Filters */}
