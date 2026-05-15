@@ -1,6 +1,7 @@
 import models from "../models/index.js";
 import { Op } from "sequelize";
 import { getJakartaDate, getTodayJakarta } from "../utils/dateHelper.js";
+import LogbookService from "../services/LogbookService.js";
 
 const { Logbook, User, Division } = models;
 
@@ -25,6 +26,21 @@ class LogbookController {
                 const startDate = new Date(year, month - 1, 1);
                 const endDate = new Date(year, month, 0, 23, 59, 59, 999);
                 dateFilter = { [Op.between]: [startDate, endDate] };
+            }
+
+            // Backfill not_filled records untuk hari kerja yang terlewat (sama seperti presensi)
+            if (Object.keys(dateFilter).length > 0) {
+                const startD = dateFilter[Op.gte] || dateFilter[Op.between]?.[0];
+                const endD = dateFilter[Op.lte] || dateFilter[Op.between]?.[1] || new Date();
+                if (startD) {
+                    await LogbookService.ensureLogbookRecords(userId, startD, endD);
+                }
+            } else {
+                // Tanpa filter tanggal: backfill 30 hari terakhir
+                const end = new Date();
+                const start = new Date();
+                start.setDate(start.getDate() - 30);
+                await LogbookService.ensureLogbookRecords(userId, start, end);
             }
 
             const statsBase = {
