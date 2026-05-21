@@ -612,7 +612,7 @@ const AdminReports = () => {
                             </OverlayTrigger>
                             <button
                                 className="btn btn-sm btn-outline-danger"
-                                onClick={handleResetFilters}
+                                onClick={resetFilters}
                             >
                                 <i className="bi bi-arrow-counterclockwise me-1"></i>
                                 Reset Filter
