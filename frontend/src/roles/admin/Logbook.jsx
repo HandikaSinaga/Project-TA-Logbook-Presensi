@@ -487,6 +487,17 @@ const AdminLogbook = () => {
                                 ))}
                             </Form.Select>
                         </Col>
+                        <Col md={6}>
+                            <Form.Label className="small fw-semibold">
+                                Cari Nama/NIP/Email
+                            </Form.Label>
+                            <Form.Control
+                                type="text"
+                                placeholder="Ketik nama, NIP, atau email..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </Col>
                         <Col md={2}>
                             <Form.Label className="small fw-semibold">
                                 Status
