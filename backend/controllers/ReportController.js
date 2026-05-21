@@ -1,4 +1,4 @@
-﻿import models from "../models/index.js";
+import models from "../models/index.js";
 import { Op } from "sequelize";
 import ExportService from "../services/ExportService.js";
 import {
@@ -34,7 +34,15 @@ class ReportController {
                 };
             }
 
-            if (user_id) {
+            // Support single user_id or multi user_ids[]
+            const userIdsRaw = req.query.user_ids;
+            const userIdsList = userIdsRaw
+                ? (Array.isArray(userIdsRaw) ? userIdsRaw : [userIdsRaw]).map(Number).filter(Boolean)
+                : [];
+
+            if (userIdsList.length > 0) {
+                whereClause.user_id = { [Op.in]: userIdsList };
+            } else if (user_id) {
                 whereClause.user_id = user_id;
             }
 
@@ -161,7 +169,15 @@ class ReportController {
                 };
             }
 
-            if (user_id) {
+            // Support single user_id or multi user_ids[]
+            const userIdsRaw = req.query.user_ids;
+            const userIdsList = userIdsRaw
+                ? (Array.isArray(userIdsRaw) ? userIdsRaw : [userIdsRaw]).map(Number).filter(Boolean)
+                : [];
+
+            if (userIdsList.length > 0) {
+                whereClause.user_id = { [Op.in]: userIdsList };
+            } else if (user_id) {
                 whereClause.user_id = user_id;
             }
 
@@ -264,7 +280,15 @@ class ReportController {
                 };
             }
 
-            if (user_id) {
+            // Support single user_id or multi user_ids[]
+            const userIdsRaw = req.query.user_ids;
+            const userIdsList = userIdsRaw
+                ? (Array.isArray(userIdsRaw) ? userIdsRaw : [userIdsRaw]).map(Number).filter(Boolean)
+                : [];
+
+            if (userIdsList.length > 0) {
+                whereClause.user_id = { [Op.in]: userIdsList };
+            } else if (user_id) {
                 whereClause.user_id = user_id;
             }
 

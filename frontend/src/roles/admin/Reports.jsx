@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import toast from "react-hot-toast";
 import { OverlayTrigger, Tooltip, Spinner } from "react-bootstrap";
@@ -20,7 +20,12 @@ const AdminReports = () => {
         leave_type: "",
     });
     const [reportData, setReportData] = useState(null);
-    const [activeTab, setActiveTab] = useState("attendance"); // For summary report tab navigation
+    const [activeTab, setActiveTab] = useState("attendance");
+
+    // Multi-select user filter
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
+    const [userSearch, setUserSearch] = useState("");
+    const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -177,6 +182,8 @@ const AdminReports = () => {
             work_type: "",
             leave_type: "",
         });
+        setSelectedUserIds([]);
+        setUserSearch("");
         setReportData(null);
     };
 
@@ -195,6 +202,10 @@ const AdminReports = () => {
             if (filters.periode) params.append("periode", filters.periode);
             if (filters.sumber_magang)
                 params.append("sumber_magang", filters.sumber_magang);
+            // Append selected user IDs
+            if (selectedUserIds.length > 0) {
+                selectedUserIds.forEach((id) => params.append("user_ids", id));
+            }
 
             // For attendance: use both status and approval_status
             if (reportType === "attendance") {
@@ -265,6 +276,10 @@ const AdminReports = () => {
             if (filters.periode) params.append("periode", filters.periode);
             if (filters.sumber_magang)
                 params.append("sumber_magang", filters.sumber_magang);
+            // Append selected user IDs
+            if (selectedUserIds.length > 0) {
+                selectedUserIds.forEach((id) => params.append("user_ids", id));
+            }
 
             // For attendance: use both status and approval_status
             if (reportType === "attendance") {
@@ -659,6 +674,158 @@ const AdminReports = () => {
                                     })
                                 }
                             />
+                        </div>
+                    </div>
+
+                    {/* User Multi-Select Filter */}
+                    <div className="row g-3 mb-3">
+                        <div className="col-12">
+                            <label className="form-label fw-bold">
+                                <i className="bi bi-people me-2"></i>
+                                Filter User Spesifik
+                                {selectedUserIds.length > 0 && (
+                                    <span className="badge bg-primary ms-2">{selectedUserIds.length} dipilih</span>
+                                )}
+                            </label>
+                            {/* Combobox container */}
+                            <div
+                                className="position-relative"
+                                onBlur={(e) => {
+                                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                                        setUserDropdownOpen(false);
+                                    }
+                                }}
+                                tabIndex={-1}
+                            >
+                                {/* Input box with chips */}
+                                <div
+                                    className="form-control d-flex flex-wrap gap-1 align-items-center"
+                                    style={{ minHeight: "42px", cursor: "text", height: "auto" }}
+                                    onClick={() => {
+                                        setUserDropdownOpen(true);
+                                        document.getElementById("user-search-input").focus();
+                                    }}
+                                >
+                                    {selectedUserIds.map((id) => {
+                                        const u = users.find((x) => x.id === id);
+                                        if (!u) return null;
+                                        return (
+                                            <span
+                                                key={id}
+                                                className="badge bg-primary d-inline-flex align-items-center gap-1 py-1 px-2"
+                                                style={{ fontSize: "0.8rem", fontWeight: 500 }}
+                                            >
+                                                <i className="bi bi-person-fill" style={{ fontSize: "0.7rem" }}></i>
+                                                {u.name}
+                                                <button
+                                                    type="button"
+                                                    className="btn-close btn-close-white"
+                                                    style={{ fontSize: "0.5rem" }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedUserIds((prev) => prev.filter((x) => x !== id));
+                                                    }}
+                                                ></button>
+                                            </span>
+                                        );
+                                    })}
+                                    <input
+                                        id="user-search-input"
+                                        type="text"
+                                        className="border-0 flex-grow-1"
+                                        style={{ outline: "none", minWidth: "140px", background: "transparent" }}
+                                        placeholder={selectedUserIds.length === 0 ? "Ketik nama/NIP untuk mencari user..." : "Tambah user..."}
+                                        value={userSearch}
+                                        onChange={(e) => {
+                                            setUserSearch(e.target.value);
+                                            setUserDropdownOpen(true);
+                                        }}
+                                        onFocus={() => setUserDropdownOpen(true)}
+                                    />
+                                    {(selectedUserIds.length > 0 || userSearch) && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-link p-0 ms-auto text-muted"
+                                            style={{ fontSize: "0.85rem" }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedUserIds([]);
+                                                setUserSearch("");
+                                                setUserDropdownOpen(false);
+                                            }}
+                                        >
+                                            <i className="bi bi-x-circle"></i>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Dropdown list */}
+                                {userDropdownOpen && (
+                                    <div
+                                        className="position-absolute w-100 bg-white border rounded shadow-sm"
+                                        style={{ zIndex: 1050, maxHeight: "220px", overflowY: "auto", top: "100%", left: 0 }}
+                                    >
+                                        {(() => {
+                                            const term = userSearch.toLowerCase().trim();
+                                            const filtered = users.filter((u) => {
+                                                const matchSearch = !term ||
+                                                    u.name?.toLowerCase().includes(term) ||
+                                                    u.nip?.toLowerCase().includes(term) ||
+                                                    u.email?.toLowerCase().includes(term);
+                                                const notSelected = !selectedUserIds.includes(u.id);
+                                                return matchSearch && notSelected;
+                                            });
+
+                                            if (filtered.length === 0) {
+                                                return (
+                                                    <div className="px-3 py-2 text-muted small">
+                                                        <i className="bi bi-search me-2"></i>
+                                                        {userSearch ? `Tidak ada user "${userSearch}"` : "Semua user sudah dipilih"}
+                                                    </div>
+                                                );
+                                            }
+
+                                            return filtered.slice(0, 50).map((u) => (
+                                                <div
+                                                    key={u.id}
+                                                    className="px-3 py-2 d-flex align-items-center gap-2"
+                                                    style={{ cursor: "pointer" }}
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => {
+                                                        setSelectedUserIds((prev) => [...prev, u.id]);
+                                                        setUserSearch("");
+                                                        document.getElementById("user-search-input").focus();
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.background = "#f0f4ff"}
+                                                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                                                >
+                                                    <div
+                                                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                        style={{ width: 32, height: 32 }}
+                                                    >
+                                                        <i className="bi bi-person-fill text-primary" style={{ fontSize: "0.85rem" }}></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-semibold" style={{ fontSize: "0.875rem" }}>{u.name}</div>
+                                                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                                                            {u.nip && <span className="me-2"><i className="bi bi-card-text me-1"></i>{u.nip}</span>}
+                                                            {u.division?.name && <span><i className="bi bi-diagram-3 me-1"></i>{u.division.name}</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
+                            {selectedUserIds.length > 0 && (
+                                <div className="mt-1">
+                                    <small className="text-muted">
+                                        <i className="bi bi-info-circle me-1"></i>
+                                        Laporan akan difilter untuk {selectedUserIds.length} user yang dipilih. Kosongkan untuk semua user.
+                                    </small>
+                                </div>
+                            )}
                         </div>
                     </div>
 
