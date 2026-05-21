@@ -21,7 +21,6 @@ class ReportController {
                 user_id,
                 status,
                 work_type,
-                approval_status,
                 periode,
                 sumber_magang,
             } = req.query;
@@ -48,10 +47,6 @@ class ReportController {
 
             if (status) {
                 whereClause.status = status;
-            }
-
-            if (approval_status) {
-                whereClause.approval_status = approval_status;
             }
 
             if (work_type) {

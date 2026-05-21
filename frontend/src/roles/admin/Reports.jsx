@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import toast from "react-hot-toast";
 import { OverlayTrigger, Tooltip, Spinner } from "react-bootstrap";
@@ -207,11 +207,9 @@ const AdminReports = () => {
                 selectedUserIds.forEach((id) => params.append("user_ids", id));
             }
 
-            // For attendance: use both status and approval_status
+            // Attendance: status & work_type saja (approval tidak berlaku)
             if (reportType === "attendance") {
                 if (filters.status) params.append("status", filters.status);
-                if (filters.approval_status)
-                    params.append("approval_status", filters.approval_status);
                 if (filters.work_type)
                     params.append("work_type", filters.work_type);
             }
@@ -281,11 +279,9 @@ const AdminReports = () => {
                 selectedUserIds.forEach((id) => params.append("user_ids", id));
             }
 
-            // For attendance: use both status and approval_status
+            // Attendance: status & work_type saja (approval tidak berlaku)
             if (reportType === "attendance") {
                 if (filters.status) params.append("status", filters.status);
-                if (filters.approval_status)
-                    params.append("approval_status", filters.approval_status);
                 if (filters.work_type)
                     params.append("work_type", filters.work_type);
             }
@@ -956,7 +952,7 @@ const AdminReports = () => {
                         </div>
                     </div>
 
-                    {/* Conditional Filters */}
+                    {/* Conditional Filter — Tipe Kerja khusus presensi */}
                     {reportType === "attendance" && (
                         <div className="row g-3 mb-3">
                             <div className="col-md-4">
@@ -977,29 +973,6 @@ const AdminReports = () => {
                                     <option value="">Semua Tipe</option>
                                     <option value="onsite">Onsite</option>
                                     <option value="offsite">Offsite</option>
-                                </select>
-                            </div>
-                            <div className="col-md-4">
-                                <label className="form-label fw-bold">
-                                    <i className="bi bi-shield-check me-2"></i>
-                                    Status Approval
-                                </label>
-                                <select
-                                    className="form-select"
-                                    value={filters.approval_status}
-                                    onChange={(e) =>
-                                        setFilters({
-                                            ...filters,
-                                            approval_status: e.target.value,
-                                        })
-                                    }
-                                >
-                                    <option value="">
-                                        Semua Status Approval
-                                    </option>
-                                    <option value="approved">Approved</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="rejected">Rejected</option>
                                 </select>
                             </div>
                         </div>
@@ -1307,66 +1280,6 @@ const AdminReports = () => {
                                                                     >
                                                                         No
                                                                     </th>
-                                                                    <th
-                                                                        style={{
-                                                                            minWidth:
-                                                                                "120px",
-                                                                            cursor: "pointer",
-                                                                        }}
-                                                                        onClick={() =>
-                                                                            handleSort(
-                                                                                "date"
-                                                                            )
-                                                                        }
-                                                                    >
-                                                                        Tanggal{" "}
-                                                                        {getSortIcon(
-                                                                            "date"
-                                                                        )}
-                                                                    </th>
-                                                                    <th
-                                                                        style={{
-                                                                            minWidth:
-                                                                                "180px",
-                                                                            cursor: "pointer",
-                                                                        }}
-                                                                        onClick={() =>
-                                                                            handleSort(
-                                                                                "user.name"
-                                                                            )
-                                                                        }
-                                                                    >
-                                                                        User{" "}
-                                                                        {getSortIcon(
-                                                                            "user.name"
-                                                                        )}
-                                                                    </th>
-                                                                    <th
-                                                                        style={{
-                                                                            minWidth:
-                                                                                "150px",
-                                                                        }}
-                                                                    >
-                                                                        Divisi
-                                                                    </th>
-                                                                    <th
-                                                                        style={{
-                                                                            minWidth:
-                                                                                "120px",
-                                                                        }}
-                                                                    >
-                                                                        Status
-                                                                        Kehadiran
-                                                                    </th>
-                                                                    <th
-                                                                        style={{
-                                                                            minWidth:
-                                                                                "120px",
-                                                                        }}
-                                                                    >
-                                                                        Status
-                                                                        Approval
-                                                                    </th>
                                                                      <th style={{minWidth:"100px"}}>Check In</th>
                                                                      <th style={{minWidth:"100px"}}>Check Out</th>
                                                                      <th style={{minWidth:"130px"}}>Tipe Kerja</th>
@@ -1492,31 +1405,7 @@ const AdminReports = () => {
                                                                                             : item.status}
                                                                                     </span>
                                                                                 </td>
-                                                                                <td>
-                                                                                    <span
-                                                                                        className={`badge bg-${
-                                                                                            item.approval_status ===
-                                                                                            "approved"
-                                                                                                ? "success"
-                                                                                                : item.approval_status ===
-                                                                                                  "pending"
-                                                                                                ? "warning"
-                                                                                                : "danger"
-                                                                                        }`}
-                                                                                    >
-                                                                                        {item.approval_status ===
-                                                                                        "approved"
-                                                                                            ? "Disetujui"
-                                                                                            : item.approval_status ===
-                                                                                              "pending"
-                                                                                            ? "Menunggu"
-                                                                                            : item.approval_status ===
-                                                                                              "rejected"
-                                                                                            ? "Ditolak"
-                                                                                            : item.approval_status}
-                                                                                    </span>
-                                                                                </td>
-                                                                                <td>
+                                                                                                                                                                <td>
                                                                                     <small className="text-nowrap">
                                                                                         {item.check_in_time ? (
                                                                                             <>
@@ -2329,30 +2218,6 @@ const AdminReports = () => {
                                                                                     ? "Tidak Hadir"
                                                                                     : item.status}
                                                                             </span>
-                                                                            {item.approval_status && (
-                                                                                <span
-                                                                                    className={`badge bg-${
-                                                                                        item.approval_status ===
-                                                                                        "approved"
-                                                                                            ? "success"
-                                                                                            : item.approval_status ===
-                                                                                              "pending"
-                                                                                            ? "warning"
-                                                                                            : "danger"
-                                                                                    }`}
-                                                                                >
-                                                                                    {item.approval_status ===
-                                                                                    "approved"
-                                                                                        ? "Disetujui"
-                                                                                        : item.approval_status ===
-                                                                                          "pending"
-                                                                                        ? "Menunggu"
-                                                                                        : item.approval_status ===
-                                                                                          "rejected"
-                                                                                        ? "Ditolak"
-                                                                                        : item.approval_status}
-                                                                                </span>
-                                                                            )}
                                                                         </div>
                                                                     ) : (
                                                                         <span
