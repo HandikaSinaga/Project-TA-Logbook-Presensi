@@ -5,6 +5,7 @@ import "bootstrap-icons/font/bootstrap-icons.css";
 import "./assets/styles/index.css";
 import "./assets/styles/admin.css";
 import "./assets/styles/user.css";
+import "./assets/styles/darkmode.css";
 import "react-loading-skeleton/dist/skeleton.css";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
 import App from "./App.jsx";
