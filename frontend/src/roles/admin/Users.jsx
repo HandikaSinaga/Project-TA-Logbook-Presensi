@@ -47,6 +47,11 @@ const AdminUsers = () => {
     // Export Modal state
     const [showExportModal, setShowExportModal] = useState(false);
 
+    // Delete confirmation modal
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
+    const [deleting, setDeleting] = useState(false);
+
     // Reset Password states
     const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
     const [resetPasswordUserId, setResetPasswordUserId] = useState(null);
@@ -270,16 +275,22 @@ const AdminUsers = () => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (window.confirm("Yakin ingin menghapus user ini?")) {
-            try {
-                await axiosInstance.delete(`/admin/users/${id}`);
-                toast.success("User berhasil dihapus");
-                fetchUsers();
-            } catch (error) {
-                console.error("Error deleting user:", error);
-                toast.error("Gagal menghapus user");
-            }
+    const handleDelete = async () => {
+        if (!userToDelete) return;
+        setDeleting(true);
+        try {
+            await axiosInstance.delete(`/admin/users/${userToDelete.id}`);
+            toast.success(`User "${userToDelete.name}" berhasil dihapus`);
+            setShowDeleteModal(false);
+            setUserToDelete(null);
+            fetchUsers();
+        } catch (error) {
+            console.error("Error deleting user:", error);
+            toast.error(
+                error.response?.data?.message || "Gagal menghapus user"
+            );
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -976,11 +987,10 @@ const AdminUsers = () => {
                                                             </button>
                                                             <button
                                                                 className="btn btn-outline-danger"
-                                                                onClick={() =>
-                                                                    handleDelete(
-                                                                        user.id,
-                                                                    )
-                                                                }
+                                                                onClick={() => {
+                                                                    setUserToDelete(user);
+                                                                    setShowDeleteModal(true);
+                                                                }}
                                                                 title="Hapus User"
                                                             >
                                                                 <i className="bi bi-trash"></i>
@@ -2177,6 +2187,122 @@ const AdminUsers = () => {
                                 >
                                     <i className="bi bi-check-circle me-2"></i>
                                     Lanjutkan Export
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Delete Confirmation Modal ── */}
+            {showDeleteModal && (
+                <div
+                    className="modal fade show d-block"
+                    style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setShowDeleteModal(false);
+                            setUserToDelete(null);
+                        }
+                    }}
+                >
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content shadow-lg border-0">
+                            {/* Header */}
+                            <div className="modal-header bg-danger text-white border-0">
+                                <h5 className="modal-title d-flex align-items-center gap-2">
+                                    <i className="bi bi-exclamation-triangle-fill"></i>
+                                    Konfirmasi Hapus User
+                                </h5>
+                                <button
+                                    type="button"
+                                    className="btn-close btn-close-white"
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setUserToDelete(null);
+                                    }}
+                                    disabled={deleting}
+                                />
+                            </div>
+
+                            {/* Body */}
+                            <div className="modal-body py-4">
+                                {/* User info card */}
+                                {userToDelete && (
+                                    <div className="d-flex align-items-center gap-3 p-3 rounded border mb-4">
+                                        <img
+                                            src={getAvatarUrl(userToDelete)}
+                                            alt={userToDelete.name}
+                                            className="rounded-circle"
+                                            style={{ width: 48, height: 48, objectFit: "cover" }}
+                                        />
+                                        <div>
+                                            <div className="fw-bold">{userToDelete.name}</div>
+                                            <small className="text-muted">{userToDelete.email}</small>
+                                            <div className="mt-1">
+                                                <span className={`badge me-1 ${
+                                                    userToDelete.role === "admin"
+                                                        ? "bg-danger"
+                                                        : userToDelete.role === "supervisor"
+                                                        ? "bg-warning"
+                                                        : "bg-primary"
+                                                }`}>
+                                                    {userToDelete.role}
+                                                </span>
+                                                {userToDelete.division?.name && (
+                                                    <span className="badge bg-secondary bg-opacity-25 text-secondary">
+                                                        {userToDelete.division.name}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Warning */}
+                                <div className="alert alert-danger border-0 d-flex gap-2 mb-0" role="alert">
+                                    <i className="bi bi-exclamation-octagon-fill fs-5 flex-shrink-0"></i>
+                                    <div>
+                                        <div className="fw-semibold">Tindakan ini tidak dapat dibatalkan!</div>
+                                        <small>
+                                            Menghapus user akan menghapus semua data yang terkait.
+                                            Pertimbangkan untuk <strong>menonaktifkan</strong> user jika ingin mempertahankan datanya.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="modal-footer border-top">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary px-4"
+                                    onClick={() => {
+                                        setShowDeleteModal(false);
+                                        setUserToDelete(null);
+                                    }}
+                                    disabled={deleting}
+                                >
+                                    <i className="bi bi-x-circle me-2"></i>
+                                    Batal
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-danger px-4"
+                                    onClick={handleDelete}
+                                    disabled={deleting}
+                                >
+                                    {deleting ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm me-2" />
+                                            Menghapus...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <i className="bi bi-trash me-2"></i>
+                                            Ya, Hapus User
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         </div>
