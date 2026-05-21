@@ -155,6 +155,7 @@ URL-STANDARDIZATION-COMPLETE.md
 !docs/README.md
 !docs/ARCHITECTURE.md
 !docs/DEPLOYMENT_GUIDE.md
+!docs/API_DOCUMENTATION.md
 *.sql
 *.docx
 *.pdf
