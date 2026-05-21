@@ -151,6 +151,10 @@ URL-STANDARDIZATION-COMPLETE.md
 !LICENSE.md
 !CONTRIBUTING.md
 !CODE_OF_CONDUCT.md
+# Core docs yang harus ditrack
+!docs/README.md
+!docs/ARCHITECTURE.md
+!docs/DEPLOYMENT_GUIDE.md
 *.sql
 *.docx
 *.pdf
