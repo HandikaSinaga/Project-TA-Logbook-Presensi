@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import { getAvatarUrl } from "../../utils/Constant";
 import toast from "react-hot-toast";
@@ -222,20 +222,20 @@ const SupervisorDivision = () => {
                                     )}
 
                                     <div className="text-start mt-3">
-                                        <div className="d-flex align-items-center mb-2 p-2 rounded bg-light">
+                                        <div className="d-flex align-items-center mb-2 p-2 rounded border">
                                             <i className="bi bi-envelope-fill text-primary me-2"></i>
                                             <small className="text-truncate">
                                                 {member.email}
                                             </small>
                                         </div>
                                         {member.phone && (
-                                            <div className="d-flex align-items-center mb-2 p-2 rounded bg-light">
+                                            <div className="d-flex align-items-center mb-2 p-2 rounded border">
                                                 <i className="bi bi-telephone-fill text-success me-2"></i>
                                                 <small>{member.phone}</small>
                                             </div>
                                         )}
                                         {member.nip && (
-                                            <div className="d-flex align-items-center p-2 rounded bg-light">
+                                            <div className="d-flex align-items-center p-2 rounded border">
                                                 <i className="bi bi-credit-card-fill text-info me-2"></i>
                                                 <small>{member.nip}</small>
                                             </div>
@@ -360,7 +360,7 @@ const SupervisorDivision = () => {
                                 </div>
 
                                 {selectedMember.bio && (
-                                    <div className="alert alert-light border mb-4">
+                                    <div className="alert border mb-4">
                                         <h6 className="mb-2">
                                             <i className="bi bi-chat-quote-fill text-primary me-2"></i>
                                             Bio
@@ -374,7 +374,7 @@ const SupervisorDivision = () => {
                                 <div className="row g-3">
                                     {/* Personal Info */}
                                     <div className="col-12">
-                                        <div className="card bg-light border-0">
+                                        <div className="card border">
                                             <div className="card-body">
                                                 <h6 className="mb-3">
                                                     <i className="bi bi-person-lines-fill text-primary me-2"></i>
@@ -409,7 +409,7 @@ const SupervisorDivision = () => {
                                     </div>
 
                                     <div className="col-12">
-                                        <div className="card bg-light border-0">
+                                        <div className="card border">
                                             <div className="card-body">
                                                 <h6 className="mb-3">
                                                     <i className="bi bi-info-circle-fill text-primary me-2"></i>
@@ -489,7 +489,7 @@ const SupervisorDivision = () => {
                                         selectedMember.telegram ||
                                         selectedMember.github) && (
                                         <div className="col-12">
-                                            <div className="card bg-light border-0">
+                                            <div className="card border">
                                                 <div className="card-body">
                                                     <h6 className="mb-3">
                                                         <i className="bi bi-share-fill text-primary me-2"></i>
@@ -612,7 +612,7 @@ const SupervisorDivision = () => {
 
                                     {/* Performance Stats */}
                                     <div className="col-12">
-                                        <div className="card bg-light border-0">
+                                        <div className="card border">
                                             <div className="card-body">
                                                 <h6 className="mb-3">
                                                     <i className="bi bi-graph-up text-primary me-2"></i>
@@ -620,7 +620,7 @@ const SupervisorDivision = () => {
                                                 </h6>
                                                 <div className="row text-center">
                                                     <div className="col-6">
-                                                        <div className="p-3 bg-white rounded">
+                                                        <div className="p-3 border rounded">
                                                             <i className="bi bi-calendar-check text-success fs-3 d-block mb-2"></i>
                                                             <h4 className="mb-0 text-success">
                                                                 {selectedMember.attendance_count ||
@@ -632,7 +632,7 @@ const SupervisorDivision = () => {
                                                         </div>
                                                     </div>
                                                     <div className="col-6">
-                                                        <div className="p-3 bg-white rounded">
+                                                        <div className="p-3 border rounded">
                                                             <i className="bi bi-journal-text text-primary fs-3 d-block mb-2"></i>
                                                             <h4 className="mb-0 text-primary">
                                                                 {selectedMember.logbook_count ||
@@ -649,7 +649,7 @@ const SupervisorDivision = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="modal-footer border-0 bg-light">
+                            <div className="modal-footer border-top">
                                 <button
                                     type="button"
                                     className="btn btn-secondary"
