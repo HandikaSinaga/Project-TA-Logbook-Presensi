@@ -144,6 +144,8 @@ URL-STANDARDIZATION-COMPLETE.md
 # ==========================================
 /docs/**
 !docs/README.md
+!docs/ARCHITECTURE.md
+!docs/DEPLOYMENT_GUIDE.md
 *.md
 !README.md
 !LICENSE.md
