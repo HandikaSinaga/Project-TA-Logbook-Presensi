@@ -274,14 +274,23 @@ const AdminLogbook = () => {
             {/* Statistics Cards */}
             <div className="row g-3 mb-4">
                 {[
-                    { label: "Total", value: stats.total, icon: "bi-journal-text", bg: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" },
-                    { label: "Menunggu", value: stats.pending, icon: "bi-clock-history", bg: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" },
-                    { label: "Disetujui", value: stats.approved, icon: "bi-check-circle", bg: "linear-gradient(135deg, #10b981 0%, #059669 100%)" },
-                    { label: "Ditolak", value: stats.rejected, icon: "bi-x-circle", bg: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" },
-                    { label: "Tidak Mengisi", value: stats.not_filled, icon: "bi-dash-circle", bg: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)" },
+                    { id: "", label: "Total", value: stats.total, icon: "bi-journal-text", bg: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)" },
+                    { id: "pending", label: "Menunggu", value: stats.pending, icon: "bi-clock-history", bg: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)" },
+                    { id: "approved", label: "Disetujui", value: stats.approved, icon: "bi-check-circle", bg: "linear-gradient(135deg, #10b981 0%, #059669 100%)" },
+                    { id: "rejected", label: "Ditolak", value: stats.rejected, icon: "bi-x-circle", bg: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)" },
+                    { id: "not_filled", label: "Tidak Mengisi", value: stats.not_filled, icon: "bi-dash-circle", bg: "linear-gradient(135deg, #94a3b8 0%, #64748b 100%)" },
                 ].map((card) => (
                     <div key={card.label} className="col-6 col-md">
-                        <div className="card border-0 shadow-sm">
+                        <div 
+                            className="card border-0 shadow-sm"
+                            style={{ 
+                                cursor: "pointer", 
+                                transform: filters.status === card.id ? "scale(1.02)" : "scale(1)",
+                                border: filters.status === card.id ? "2px solid #0d6efd" : "2px solid transparent",
+                                transition: "all 0.2s ease-in-out"
+                            }}
+                            onClick={() => handleFilterChange("status", card.id)}
+                        >
                             <div className="card-body">
                                 <div className="d-flex align-items-center">
                                     <div className="me-3" style={{ width: "48px", height: "48px", borderRadius: "12px", background: card.bg, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "1.5rem" }}>

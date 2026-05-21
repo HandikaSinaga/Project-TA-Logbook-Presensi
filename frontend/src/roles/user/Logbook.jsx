@@ -473,14 +473,26 @@ const Logbook = () => {
             {/* Stats Cards - 5 kolom */}
             <div className="row g-3 mb-4">
                 {[
-                    { label: "Total", value: stats.total, color: "primary", icon: "bi-journal-text", bg: "linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 100%)", sub: "Semua aktivitas" },
-                    { label: "Disetujui", value: stats.approved, color: "success", icon: "bi-check-circle-fill", bg: "linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%)", sub: "Disetujui supervisor" },
-                    { label: "Pending", value: stats.pending, color: "warning", icon: "bi-clock-fill", bg: "linear-gradient(135deg, #fef3c7 0%, #fefce8 100%)", sub: "Menunggu review" },
-                    { label: "Ditolak", value: stats.rejected, color: "danger", icon: "bi-x-circle-fill", bg: "linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)", sub: "Perlu diperbaiki" },
-                    { label: "Tidak Mengisi", value: stats.not_filled, color: "secondary", icon: "bi-dash-circle-fill", bg: "linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%)", sub: "Tidak ada aktivitas" },
+                    { id: "all", label: "Total", value: stats.total, color: "primary", icon: "bi-journal-text", bg: "linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 100%)", sub: "Semua aktivitas" },
+                    { id: "approved", label: "Disetujui", value: stats.approved, color: "success", icon: "bi-check-circle-fill", bg: "linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%)", sub: "Disetujui supervisor" },
+                    { id: "pending", label: "Pending", value: stats.pending, color: "warning", icon: "bi-clock-fill", bg: "linear-gradient(135deg, #fef3c7 0%, #fefce8 100%)", sub: "Menunggu review" },
+                    { id: "rejected", label: "Ditolak", value: stats.rejected, color: "danger", icon: "bi-x-circle-fill", bg: "linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)", sub: "Perlu diperbaiki" },
+                    { id: "not_filled", label: "Tidak Mengisi", value: stats.not_filled, color: "secondary", icon: "bi-dash-circle-fill", bg: "linear-gradient(135deg, #f1f5f9 0%, #f8fafc 100%)", sub: "Tidak ada aktivitas" },
                 ].map((card) => (
                     <div key={card.label} className="col-6 col-md">
-                        <div className="card border-0 shadow-sm h-100">
+                        <div 
+                            className="card border-0 shadow-sm h-100"
+                            style={{ 
+                                cursor: "pointer", 
+                                transform: filterStatus === card.id ? "scale(1.02)" : "scale(1)",
+                                border: filterStatus === card.id ? `2px solid var(--bs-${card.color})` : "2px solid transparent",
+                                transition: "all 0.2s ease-in-out"
+                            }}
+                            onClick={() => {
+                                setFilterStatus(card.id);
+                                setPage(1);
+                            }}
+                        >
                             <div className="card-body" style={{ background: card.bg }}>
                                 <div className="d-flex justify-content-between align-items-start mb-2">
                                     <div>

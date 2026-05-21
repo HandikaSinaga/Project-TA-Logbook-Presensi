@@ -210,14 +210,23 @@ const SupervisorLogbook = () => {
             {/* Stats Cards */}
             <div className="row g-3 mb-4">
                 {[
-                    { label: "Total", value: stats.total, color: "primary", icon: "bi-journal-text" },
-                    { label: "Pending", value: stats.pending, color: "warning", icon: "bi-clock-history" },
-                    { label: "Disetujui", value: stats.approved, color: "success", icon: "bi-check-circle" },
-                    { label: "Ditolak", value: stats.rejected, color: "danger", icon: "bi-x-circle" },
-                    { label: "Tidak Mengisi", value: stats.not_filled, color: "secondary", icon: "bi-dash-circle" },
+                    { id: "all", label: "Total", value: stats.total, color: "primary", icon: "bi-journal-text" },
+                    { id: "pending", label: "Pending", value: stats.pending, color: "warning", icon: "bi-clock-history" },
+                    { id: "approved", label: "Disetujui", value: stats.approved, color: "success", icon: "bi-check-circle" },
+                    { id: "rejected", label: "Ditolak", value: stats.rejected, color: "danger", icon: "bi-x-circle" },
+                    { id: "not_filled", label: "Tidak Mengisi", value: stats.not_filled, color: "secondary", icon: "bi-dash-circle" },
                 ].map((card) => (
                     <div key={card.label} className="col-6 col-md">
-                        <div className="card border-0 shadow-sm h-100">
+                        <div 
+                            className="card border-0 shadow-sm h-100"
+                            style={{ 
+                                cursor: "pointer", 
+                                transform: filters.status === card.id ? "scale(1.02)" : "scale(1)",
+                                border: filters.status === card.id ? `2px solid var(--bs-${card.color})` : "2px solid transparent",
+                                transition: "all 0.2s ease-in-out"
+                            }}
+                            onClick={() => handleFilterChange("status", card.id)}
+                        >
                             <div className="card-body">
                                 <div className="d-flex align-items-center">
                                     <div className={`rounded-circle bg-${card.color} bg-opacity-10 p-3 me-3`}>
