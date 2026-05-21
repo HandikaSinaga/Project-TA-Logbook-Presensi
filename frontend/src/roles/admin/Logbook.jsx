@@ -72,6 +72,8 @@ const AdminLogbook = () => {
         filters.division_id,
         filters.status,
         filters.search,
+        filters.periode,
+        filters.sumber_magang,
         page,
     ]);
 
@@ -103,15 +105,19 @@ const AdminLogbook = () => {
             if (filters.end_date) params.end_date = filters.end_date;
             if (filters.division_id) params.division_id = filters.division_id;
             if (filters.status) params.status = filters.status;
+            if (filters.periode) params.periode = filters.periode;
+            if (filters.sumber_magang) params.sumber_magang = filters.sumber_magang;
             if (filters.search && filters.search.trim() !== "") {
                 params.search = filters.search.trim();
             }
 
-            // Stats params (no status filter — always show full picture)
+            // Stats params — tanpa filter status agar tampilkan breakdown per status
             const statsParams = {};
             if (filters.start_date) statsParams.start_date = filters.start_date;
             if (filters.end_date) statsParams.end_date = filters.end_date;
             if (filters.division_id) statsParams.division_id = filters.division_id;
+            if (filters.periode) statsParams.periode = filters.periode;
+            if (filters.sumber_magang) statsParams.sumber_magang = filters.sumber_magang;
             if (filters.search?.trim()) statsParams.search = filters.search.trim();
 
             const [dataRes, statsRes] = await Promise.all([
@@ -180,7 +186,7 @@ const AdminLogbook = () => {
             start_date: startDate.toISOString().split("T")[0],
             end_date: endDate.toISOString().split("T")[0],
         });
-        setCurrentPage(1);
+        setPage(1);
     };
 
     const handleFilterChange = (key, value) => {

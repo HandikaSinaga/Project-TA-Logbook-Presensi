@@ -858,7 +858,7 @@ class LogbookController {
     // Get admin logbook stats - accurate counts per status
     async getAdminLogbookStats(req, res) {
         try {
-            const { start_date, end_date, date_from, date_to, division_id, search } = req.query;
+            const { start_date, end_date, date_from, date_to, division_id, search, periode, sumber_magang } = req.query;
 
             const userWhereClause = {};
             if (search && search.trim()) {
@@ -870,6 +870,8 @@ class LogbookController {
                 ];
             }
             if (division_id) userWhereClause.division_id = division_id;
+            if (periode) userWhereClause.periode = periode;
+            if (sumber_magang) userWhereClause.sumber_magang = sumber_magang;
 
             const dateFrom = date_from || start_date;
             const dateTo = date_to || end_date;
@@ -917,6 +919,8 @@ class LogbookController {
                 status,
                 division_id,
                 search,
+                periode,
+                sumber_magang,
                 page = 1,
                 limit = 20,
             } = req.query;
@@ -938,6 +942,12 @@ class LogbookController {
                     { nip: { [Op.like]: searchTerm } },
                 ];
             }
+
+            // Filter by periode/batch
+            if (periode) userWhereClause.periode = periode;
+
+            // Filter by sumber magang
+            if (sumber_magang) userWhereClause.sumber_magang = sumber_magang;
 
             // Standardize to date_from/date_to (support old start_date/end_date for backward compatibility)
             const dateFrom = date_from || start_date;
