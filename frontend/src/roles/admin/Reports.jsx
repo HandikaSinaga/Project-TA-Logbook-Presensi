@@ -16,6 +16,7 @@ const AdminReports = () => {
         sumber_magang: "",
         status: "",
         approval_status: "",
+        attendance_approval_status: "",
         work_type: "",
         leave_type: "",
     });
@@ -182,6 +183,7 @@ const AdminReports = () => {
             sumber_magang: "",
             status: "",
             approval_status: "",
+            attendance_approval_status: "",
             work_type: "",
             leave_type: "",
         });
@@ -213,11 +215,13 @@ const AdminReports = () => {
                 selectedUserIds.forEach((id) => params.append("user_ids", id));
             }
 
-            // Attendance: status & work_type saja (approval tidak berlaku)
+            // Attendance: status & work_type & approval_status
             if (reportType === "attendance") {
                 if (filters.status) params.append("status", filters.status);
                 if (filters.work_type)
                     params.append("work_type", filters.work_type);
+                if (filters.attendance_approval_status)
+                    params.append("approval_status", filters.attendance_approval_status);
             }
 
             // For logbook/leave: use approval_status as status
@@ -285,11 +289,13 @@ const AdminReports = () => {
                 selectedUserIds.forEach((id) => params.append("user_ids", id));
             }
 
-            // Attendance: status & work_type saja (approval tidak berlaku)
+            // Attendance: status & work_type & approval_status
             if (reportType === "attendance") {
                 if (filters.status) params.append("status", filters.status);
                 if (filters.work_type)
                     params.append("work_type", filters.work_type);
+                if (filters.attendance_approval_status)
+                    params.append("approval_status", filters.attendance_approval_status);
             }
 
             // For logbook/leave: use approval_status as status
@@ -769,13 +775,21 @@ const AdminReports = () => {
                                     >
                                         {(() => {
                                             const term = userSearch.toLowerCase().trim();
+                                            // Filter berdasarkan search term DAN filter aktif lainnya
                                             const filtered = users.filter((u) => {
                                                 const matchSearch = !term ||
                                                     u.name?.toLowerCase().includes(term) ||
                                                     u.nip?.toLowerCase().includes(term) ||
                                                     u.email?.toLowerCase().includes(term);
                                                 const notSelected = !selectedUserIds.includes(u.id);
-                                                return matchSearch && notSelected;
+                                                // Sinkronkan dengan filter divisi / periode / sumber_magang
+                                                const matchDivision = !filters.division_id ||
+                                                    u.division_id === parseInt(filters.division_id);
+                                                const matchPeriode = !filters.periode ||
+                                                    u.periode === filters.periode;
+                                                const matchSumber = !filters.sumber_magang ||
+                                                    u.sumber_magang === filters.sumber_magang;
+                                                return matchSearch && notSelected && matchDivision && matchPeriode && matchSumber;
                                             });
 
                                             if (filtered.length === 0) {
@@ -1081,6 +1095,14 @@ const AdminReports = () => {
                                         <option value="absent">
                                             Tidak Hadir
                                         </option>
+                                        <option value="leave">Izin/Cuti</option>
+                                    </>
+                                ) : reportType === "logbook" ? (
+                                    <>
+                                        <option value="pending">Menunggu</option>
+                                        <option value="approved">Disetujui</option>
+                                        <option value="rejected">Ditolak</option>
+                                        <option value="not_filled">Tidak Mengisi</option>
                                     </>
                                 ) : (
                                     <>
@@ -1120,6 +1142,27 @@ const AdminReports = () => {
                                     <option value="offsite">Offsite</option>
                                 </select>
                             </div>
+                            <div className="col-md-4">
+                                <label className="form-label fw-bold">
+                                    <i className="bi bi-patch-check me-2"></i>
+                                    Status Approval Presensi
+                                </label>
+                                <select
+                                    className="form-select"
+                                    value={filters.attendance_approval_status}
+                                    onChange={(e) =>
+                                        setFilters({
+                                            ...filters,
+                                            attendance_approval_status: e.target.value,
+                                        })
+                                    }
+                                >
+                                    <option value="">Semua Approval</option>
+                                    <option value="pending">Menunggu Approval</option>
+                                    <option value="approved">Disetujui</option>
+                                    <option value="rejected">Ditolak</option>
+                                </select>
+                            </div>
                         </div>
                     )}
 
@@ -1128,7 +1171,7 @@ const AdminReports = () => {
                             <div className="col-md-4">
                                 <label className="form-label fw-bold">
                                     <i className="bi bi-clipboard-check me-2"></i>
-                                    Tipe Izin/Cuti
+                                    Tipe Izin
                                 </label>
                                 <select
                                     className="form-select"
@@ -1140,15 +1183,22 @@ const AdminReports = () => {
                                         })
                                     }
                                 >
-                                    <option value="">Semua Tipe</option>
-                                    <option value="izin_sakit">
-                                        Izin Sakit
-                                    </option>
-                                    <option value="izin_keperluan">
-                                        Izin Keperluan
-                                    </option>
+                                    <option value="">Semua Tipe Izin</option>
+                                    <option value="izin_sakit">Izin Sakit</option>
+                                    <option value="izin_keperluan">Izin Keperluan</option>
                                 </select>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Info: Summary report tidak support filter user spesifik */}
+                    {reportType === "summary" && selectedUserIds.length > 0 && (
+                        <div className="alert alert-info border-0 py-2 mb-3 d-flex gap-2">
+                            <i className="bi bi-info-circle-fill flex-shrink-0"></i>
+                            <small>
+                                <strong>Laporan Summary</strong> menggabungkan data Presensi, Logbook, dan Izin.
+                                Filter user spesifik ({selectedUserIds.length} user dipilih) tidak berlaku untuk jenis laporan ini.
+                            </small>
                         </div>
                     )}
 
