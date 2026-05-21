@@ -87,7 +87,7 @@ export const startAutoCheckoutScheduler = async () => {
 
         // ALWAYS setup end-of-day force checkout (regardless of auto_checkout_enabled)
         startMidnightForceCheckout();
-        
+
         // Setup end-of-day absence marking
         startAbsenceScheduler();
 
@@ -143,8 +143,7 @@ const performAutoCheckout = async (isForceCheckout = false) => {
     try {
         const checkoutType = isForceCheckout ? "ForceCheckout" : "AutoCheckout";
         console.log(
-            `[${checkoutType}] Running ${
-                isForceCheckout ? "force" : "auto"
+            `[${checkoutType}] Running ${isForceCheckout ? "force" : "auto"
             } checkout process...`
         );
 
@@ -183,8 +182,7 @@ const performAutoCheckout = async (isForceCheckout = false) => {
         }
 
         console.log(
-            `[${checkoutType}] Found ${pendingAttendances.length} users to ${
-                isForceCheckout ? "force" : "auto"
+            `[${checkoutType}] Found ${pendingAttendances.length} users to ${isForceCheckout ? "force" : "auto"
             } checkout`
         );
 
@@ -193,9 +191,9 @@ const performAutoCheckout = async (isForceCheckout = false) => {
             .getHours()
             .toString()
             .padStart(2, "0")}:${now
-            .getMinutes()
-            .toString()
-            .padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
+                .getMinutes()
+                .toString()
+                .padStart(2, "0")}:${now.getSeconds().toString().padStart(2, "0")}`;
 
         let successCount = 0;
         let failCount = 0;
@@ -231,10 +229,8 @@ const performAutoCheckout = async (isForceCheckout = false) => {
                 });
 
                 console.log(
-                    `[${checkoutType}] Γ£ô ${
-                        isForceCheckout ? "Force" : "Auto"
-                    } checked out user: ${
-                        attendance.user?.name || attendance.user_id
+                    `[${checkoutType}] Γ£ô ${isForceCheckout ? "Force" : "Auto"
+                    } checked out user: ${attendance.user?.name || attendance.user_id
                     } with status "${checkoutAddress}"`
                 );
                 successCount++;
@@ -252,8 +248,7 @@ const performAutoCheckout = async (isForceCheckout = false) => {
         );
     } catch (error) {
         console.error(
-            `[${
-                isForceCheckout ? "ForceCheckout" : "AutoCheckout"
+            `[${isForceCheckout ? "ForceCheckout" : "AutoCheckout"
             }] Error during checkout:`,
             error
         );
@@ -262,7 +257,7 @@ const performAutoCheckout = async (isForceCheckout = false) => {
 
 /**
  * Start absence marking scheduler
- * Runs at 23:55 every day to mark users who didn't check in as absent
+ * Runs at 23:59 every day to mark users who didn't check in as absent
  */
 const startAbsenceScheduler = () => {
     try {

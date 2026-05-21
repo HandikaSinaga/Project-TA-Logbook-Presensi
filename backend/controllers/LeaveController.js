@@ -667,7 +667,7 @@ class LeaveController {
     // Get leave report
     async getLeaveReport(req, res) {
         try {
-            const { start_date, end_date, division_id, status } = req.query;
+            const { start_date, end_date, division_id, status, periode, sumber_magang } = req.query;
 
             const whereClause = {};
             if (start_date && end_date) {
@@ -695,8 +695,13 @@ class LeaveController {
                 },
             ];
 
-            if (division_id) {
-                include[0].where = { division_id };
+            const userWhereClause = {};
+            if (division_id) userWhereClause.division_id = division_id;
+            if (periode) userWhereClause.periode = periode;
+            if (sumber_magang) userWhereClause.sumber_magang = sumber_magang;
+            
+            if (Object.keys(userWhereClause).length > 0) {
+                include[0].where = userWhereClause;
             }
 
             const leaves = await Leave.findAll({

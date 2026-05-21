@@ -379,9 +379,8 @@ const AdminAttendance = () => {
                 <nav>
                     <ul className="pagination mb-0">
                         <li
-                            className={`page-item ${
-                                !pagination.has_prev ? "disabled" : ""
-                            }`}
+                            className={`page-item ${!pagination.has_prev ? "disabled" : ""
+                                }`}
                         >
                             <button
                                 className="page-link"
@@ -409,9 +408,8 @@ const AdminAttendance = () => {
                                 return (
                                     <li
                                         key={pageNum}
-                                        className={`page-item ${
-                                            page === pageNum ? "active" : ""
-                                        }`}
+                                        className={`page-item ${page === pageNum ? "active" : ""
+                                            }`}
                                     >
                                         <button
                                             className="page-link"
@@ -425,9 +423,8 @@ const AdminAttendance = () => {
                         )}
 
                         <li
-                            className={`page-item ${
-                                !pagination.has_next ? "disabled" : ""
-                            }`}
+                            className={`page-item ${!pagination.has_next ? "disabled" : ""
+                                }`}
                         >
                             <button
                                 className="page-link"
@@ -478,19 +475,17 @@ const AdminAttendance = () => {
                         }
                     >
                         <button
-                            className={`btn ${
-                                autoRefresh
+                            className={`btn ${autoRefresh
                                     ? "btn-success"
                                     : "btn-outline-secondary"
-                            }`}
+                                }`}
                             onClick={() => setAutoRefresh(!autoRefresh)}
                         >
                             <i
-                                className={`bi ${
-                                    autoRefresh
+                                className={`bi ${autoRefresh
                                         ? "bi-toggle-on"
                                         : "bi-toggle-off"
-                                } me-2`}
+                                    } me-2`}
                             ></i>
                             Auto-Refresh{" "}
                             {autoRefresh && refreshing && (
@@ -858,24 +853,24 @@ const AdminAttendance = () => {
                                 <i className="bi bi-calendar-range me-1"></i>
                                 {filters.start_date === filters.end_date
                                     ? `Tanggal: ${new Date(
-                                          filters.start_date,
-                                      ).toLocaleDateString("id-ID", {
-                                          day: "numeric",
-                                          month: "short",
-                                          year: "numeric",
-                                      })}`
+                                        filters.start_date,
+                                    ).toLocaleDateString("id-ID", {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                    })}`
                                     : `${new Date(
-                                          filters.start_date,
-                                      ).toLocaleDateString("id-ID", {
-                                          day: "numeric",
-                                          month: "short",
-                                      })} - ${new Date(
-                                          filters.end_date,
-                                      ).toLocaleDateString("id-ID", {
-                                          day: "numeric",
-                                          month: "short",
-                                          year: "numeric",
-                                      })}`}
+                                        filters.start_date,
+                                    ).toLocaleDateString("id-ID", {
+                                        day: "numeric",
+                                        month: "short",
+                                    })} - ${new Date(
+                                        filters.end_date,
+                                    ).toLocaleDateString("id-ID", {
+                                        day: "numeric",
+                                        month: "short",
+                                        year: "numeric",
+                                    })}`}
                             </span>
                             <span className="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
                                 <i className="bi bi-database-fill me-1"></i>
@@ -949,15 +944,15 @@ const AdminAttendance = () => {
                                                             </div>
                                                             {attendance.user
                                                                 ?.nip && (
-                                                                <small className="text-muted">
-                                                                    NIP:{" "}
-                                                                    {
-                                                                        attendance
-                                                                            .user
-                                                                            .nip
-                                                                    }
-                                                                </small>
-                                                            )}
+                                                                    <small className="text-muted">
+                                                                        NIP:{" "}
+                                                                        {
+                                                                            attendance
+                                                                                .user
+                                                                                .nip
+                                                                        }
+                                                                    </small>
+                                                                )}
                                                         </div>
                                                     </td>
                                                     <td>
@@ -1251,13 +1246,13 @@ const AdminAttendance = () => {
                                         )}
                                         {selectedAttendance.user
                                             ?.sumber_magang && (
-                                            <Badge bg="warning">
-                                                {
-                                                    selectedAttendance.user
-                                                        .sumber_magang
-                                                }
-                                            </Badge>
-                                        )}
+                                                <Badge bg="warning">
+                                                    {
+                                                        selectedAttendance.user
+                                                            .sumber_magang
+                                                    }
+                                                </Badge>
+                                            )}
                                     </div>
                                 </div>
                             </div>
@@ -1293,11 +1288,10 @@ const AdminAttendance = () => {
                                                 className="fs-6"
                                             >
                                                 <i
-                                                    className={`bi bi-${
-                                                        getStatusBadge(
-                                                            selectedAttendance.status,
-                                                        ).icon
-                                                    } me-1`}
+                                                    className={`bi bi-${getStatusBadge(
+                                                        selectedAttendance.status,
+                                                    ).icon
+                                                        } me-1`}
                                                 ></i>
                                                 {
                                                     getStatusBadge(
@@ -1363,11 +1357,10 @@ const AdminAttendance = () => {
                                                 className="fs-6"
                                             >
                                                 <i
-                                                    className={`bi bi-${
-                                                        getWorkTypeBadge(
-                                                            selectedAttendance.work_type,
-                                                        ).icon
-                                                    } me-1`}
+                                                    className={`bi bi-${getWorkTypeBadge(
+                                                        selectedAttendance.work_type,
+                                                    ).icon
+                                                        } me-1`}
                                                 ></i>
                                                 {
                                                     getWorkTypeBadge(

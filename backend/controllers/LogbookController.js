@@ -227,9 +227,9 @@ class LogbookController {
                     .getMinutes()
                     .toString()
                     .padStart(2, "0")}:${now
-                    .getSeconds()
-                    .toString()
-                    .padStart(2, "0")}`;
+                        .getSeconds()
+                        .toString()
+                        .padStart(2, "0")}`;
 
             // If there's a system-generated 'not_filled' record for this date, delete it first
             const existingNotFilled = await Logbook.findOne({
@@ -691,7 +691,7 @@ class LogbookController {
     // Get logbook report
     async getLogbookReport(req, res) {
         try {
-            const { start_date, end_date, division_id, user_id } = req.query;
+            const { start_date, end_date, division_id, user_id, periode, sumber_magang } = req.query;
 
             const whereClause = {};
             if (start_date && end_date) {
@@ -719,8 +719,13 @@ class LogbookController {
                 },
             ];
 
-            if (division_id) {
-                include[0].where = { division_id };
+            const userWhereClause = {};
+            if (division_id) userWhereClause.division_id = division_id;
+            if (periode) userWhereClause.periode = periode;
+            if (sumber_magang) userWhereClause.sumber_magang = sumber_magang;
+            
+            if (Object.keys(userWhereClause).length > 0) {
+                include[0].where = userWhereClause;
             }
 
             const logbooks = await Logbook.findAll({

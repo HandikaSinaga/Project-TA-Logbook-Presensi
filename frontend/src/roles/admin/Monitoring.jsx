@@ -337,10 +337,10 @@ const Monitoring = () => {
                                     <small className="text-muted">
                                         {stats.total > 0
                                             ? (
-                                                  (stats.present /
-                                                      stats.total) *
-                                                  100
-                                              ).toFixed(1)
+                                                (stats.present /
+                                                    stats.total) *
+                                                100
+                                            ).toFixed(1)
                                             : 0}
                                         %
                                     </small>
@@ -366,9 +366,9 @@ const Monitoring = () => {
                                     <small className="text-muted">
                                         {stats.total > 0
                                             ? (
-                                                  (stats.late / stats.total) *
-                                                  100
-                                              ).toFixed(1)
+                                                (stats.late / stats.total) *
+                                                100
+                                            ).toFixed(1)
                                             : 0}
                                         %
                                     </small>
@@ -394,10 +394,10 @@ const Monitoring = () => {
                                     <small className="text-muted">
                                         {stats.total > 0
                                             ? (
-                                                  (stats.onLeave /
-                                                      stats.total) *
-                                                  100
-                                              ).toFixed(1)
+                                                (stats.onLeave /
+                                                    stats.total) *
+                                                100
+                                            ).toFixed(1)
                                             : 0}
                                         %
                                     </small>
@@ -613,7 +613,7 @@ const Monitoring = () => {
                                                         e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
                                                             attendance.user
                                                                 ?.name ||
-                                                                "User",
+                                                            "User",
                                                         )}&background=0D8ABC&color=fff&size=128`;
                                                     }}
                                                 />
@@ -645,15 +645,15 @@ const Monitoring = () => {
                                                 <strong>
                                                     {attendance.check_in_time
                                                         ? new Date(
-                                                              attendance.check_in_time,
-                                                          ).toLocaleTimeString(
-                                                              "id-ID",
-                                                              {
-                                                                  hour: "2-digit",
-                                                                  minute: "2-digit",
-                                                                  hour12: false,
-                                                              },
-                                                          )
+                                                            attendance.check_in_time,
+                                                        ).toLocaleTimeString(
+                                                            "id-ID",
+                                                            {
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                                hour12: false,
+                                                            },
+                                                        )
                                                         : "-"}
                                                 </strong>
                                             </div>
@@ -786,7 +786,7 @@ const Monitoring = () => {
                                                                             attendance
                                                                                 .user
                                                                                 ?.name ||
-                                                                                "User",
+                                                                            "User",
                                                                         )}&background=0D8ABC&color=fff&size=128`;
                                                                     }}
                                                                 />
@@ -1076,10 +1076,10 @@ const Monitoring = () => {
                                                 <strong className="fs-5">
                                                     {selectedAttendance.check_in_time
                                                         ? new Date(
-                                                              selectedAttendance.check_in_time,
-                                                          ).toLocaleString(
-                                                              "id-ID",
-                                                          )
+                                                            selectedAttendance.check_in_time,
+                                                        ).toLocaleString(
+                                                            "id-ID",
+                                                        )
                                                         : "-"}
                                                 </strong>
                                             </div>

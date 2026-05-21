@@ -125,8 +125,7 @@ class AttendanceController {
             // Get client IP
             const clientIp = LocationHelper.getClientIp(req);
             console.log(
-                `[Pre-check] IP: ${clientIp} | GPS: ${latitude || "none"},${
-                    longitude || "none"
+                `[Pre-check] IP: ${clientIp} | GPS: ${latitude || "none"},${longitude || "none"
                 }`,
             );
 
@@ -147,9 +146,9 @@ class AttendanceController {
                 reason: locationValidation.reason,
                 office: locationValidation.office
                     ? {
-                          id: locationValidation.office.id,
-                          name: locationValidation.office.name,
-                      }
+                        id: locationValidation.office.id,
+                        name: locationValidation.office.name,
+                    }
                     : null,
                 distance: locationValidation.distance,
                 detectionMethod: locationValidation.detectionMethod,
@@ -265,8 +264,7 @@ class AttendanceController {
             // Get client IP (WiFi detection adalah prioritas utama)
             const clientIp = LocationHelper.getClientIp(req);
             console.log(
-                `[Check-in] User ${userId} | IP: ${clientIp} | GPS: ${
-                    latitude || "none"
+                `[Check-in] User ${userId} | IP: ${clientIp} | GPS: ${latitude || "none"
                 },${longitude || "none"}`,
             );
 
@@ -310,18 +308,18 @@ class AttendanceController {
                 .getHours()
                 .toString()
                 .padStart(2, "0")}:${now
-                .getMinutes()
-                .toString()
-                .padStart(2, "0")}:${now
-                .getSeconds()
-                .toString()
-                .padStart(2, "0")}`;
+                    .getMinutes()
+                    .toString()
+                    .padStart(2, "0")}:${now
+                        .getSeconds()
+                        .toString()
+                        .padStart(2, "0")}`;
 
             // Determine status from time validation
             const isLate = timeValidation.is_late || false;
 
-            const finalAddress = workType === "onsite" && locationValidation.office 
-                ? locationValidation.office.name 
+            const finalAddress = workType === "onsite" && locationValidation.office
+                ? locationValidation.office.name
                 : (address || null);
 
             const attendanceData = {
@@ -348,8 +346,7 @@ class AttendanceController {
             }
 
             console.log(
-                `[Check-in Success] User ${userId} | Type: ${workType.toUpperCase()} | Status: ${
-                    attendance.status
+                `[Check-in Success] User ${userId} | Type: ${workType.toUpperCase()} | Status: ${attendance.status
                 }`,
             );
 
@@ -474,8 +471,7 @@ class AttendanceController {
             // Get client IP (WiFi detection adalah prioritas utama)
             const clientIp = LocationHelper.getClientIp(req);
             console.log(
-                `[Check-out] User ${userId} | IP: ${clientIp} | GPS: ${
-                    latitude || "none"
+                `[Check-out] User ${userId} | IP: ${clientIp} | GPS: ${latitude || "none"
                 },${longitude || "none"}`,
             );
 
@@ -516,12 +512,12 @@ class AttendanceController {
                 .getHours()
                 .toString()
                 .padStart(2, "0")}:${now
-                .getMinutes()
-                .toString()
-                .padStart(2, "0")}:${now
-                .getSeconds()
-                .toString()
-                .padStart(2, "0")}`;
+                    .getMinutes()
+                    .toString()
+                    .padStart(2, "0")}:${now
+                        .getSeconds()
+                        .toString()
+                        .padStart(2, "0")}`;
 
             // Calculate work hours
             const checkIn = new Date(`2000-01-01 ${attendance.check_in_time}`);
@@ -529,8 +525,8 @@ class AttendanceController {
             const diffMs = checkOut - checkIn;
             const workHours = (diffMs / (1000 * 60 * 60)).toFixed(2);
 
-            const finalCheckOutAddress = workType === "onsite" && locationValidation.office 
-                ? locationValidation.office.name 
+            const finalCheckOutAddress = workType === "onsite" && locationValidation.office
+                ? locationValidation.office.name
                 : (address || null);
 
             await attendance.update({
@@ -546,8 +542,7 @@ class AttendanceController {
             });
 
             console.log(
-                `[Check-out Success] User ${userId} | Type: ${workType.toUpperCase()} | Hours: ${workHours} | Checkout Reason: ${
-                    workType === "offsite" ? offsite_reason : "N/A"
+                `[Check-out Success] User ${userId} | Type: ${workType.toUpperCase()} | Hours: ${workHours} | Checkout Reason: ${workType === "offsite" ? offsite_reason : "N/A"
                 }`,
             );
 
@@ -769,7 +764,7 @@ class AttendanceController {
 
             // 1. Get all active members in division
             const members = await User.findAll({
-                where: { 
+                where: {
                     division_id: supervisor.division_id,
                     is_active: true,
                     role: 'user'
@@ -1008,7 +1003,7 @@ class AttendanceController {
     // Get attendance report
     async getAttendanceReport(req, res) {
         try {
-            const { start_date, end_date, division_id } = req.query;
+            const { start_date, end_date, division_id, periode, sumber_magang } = req.query;
 
             const whereClause = {};
             if (start_date && end_date) {
@@ -1032,8 +1027,13 @@ class AttendanceController {
                 },
             ];
 
-            if (division_id) {
-                include[0].where = { division_id };
+            const userWhereClause = {};
+            if (division_id) userWhereClause.division_id = division_id;
+            if (periode) userWhereClause.periode = periode;
+            if (sumber_magang) userWhereClause.sumber_magang = sumber_magang;
+            
+            if (Object.keys(userWhereClause).length > 0) {
+                include[0].where = userWhereClause;
             }
 
             const attendances = await Attendance.findAll({

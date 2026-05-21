@@ -217,10 +217,10 @@ const SupervisorLogbook = () => {
                     { id: "not_filled", label: "Tidak Mengisi", value: stats.not_filled, color: "secondary", icon: "bi-dash-circle" },
                 ].map((card) => (
                     <div key={card.label} className="col-6 col-md">
-                        <div 
+                        <div
                             className="card border-0 shadow-sm h-100"
-                            style={{ 
-                                cursor: "pointer", 
+                            style={{
+                                cursor: "pointer",
                                 transform: filters.status === card.id ? "scale(1.02)" : "scale(1)",
                                 border: filters.status === card.id ? `2px solid var(--bs-${card.color})` : "2px solid transparent",
                                 transition: "all 0.2s ease-in-out"
@@ -352,14 +352,14 @@ const SupervisorLogbook = () => {
                             {(filters.user_name ||
                                 filters.date_from ||
                                 filters.date_to) && (
-                                <Button
-                                    variant="outline-primary"
-                                    size="sm"
-                                    onClick={handleResetFilters}
-                                >
-                                    Reset Filter
-                                </Button>
-                            )}
+                                    <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        onClick={handleResetFilters}
+                                    >
+                                        Reset Filter
+                                    </Button>
+                                )}
                         </div>
                     ) : (
                         <>
@@ -417,7 +417,7 @@ const SupervisorLogbook = () => {
                                                                         logbook
                                                                             .user
                                                                             ?.name ||
-                                                                            "User"
+                                                                        "User"
                                                                     )}&background=random&color=fff&size=128`;
                                                                 }}
                                                             />
@@ -525,33 +525,33 @@ const SupervisorLogbook = () => {
                                                             </Button>
                                                             {logbook.status ===
                                                                 "pending" && (
-                                                                <>
-                                                                    <Button
-                                                                        variant="outline-success"
-                                                                        size="sm"
-                                                                        onClick={() =>
-                                                                            handleApprove(
-                                                                                logbook.id
-                                                                            )
-                                                                        }
-                                                                    >
-                                                                        <i className="bi bi-check-circle me-1"></i>
-                                                                        Setujui
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="outline-danger"
-                                                                        size="sm"
-                                                                        onClick={() =>
-                                                                            openRejectModal(
-                                                                                logbook
-                                                                            )
-                                                                        }
-                                                                    >
-                                                                        <i className="bi bi-x-circle me-1"></i>
-                                                                        Tolak
-                                                                    </Button>
-                                                                </>
-                                                            )}
+                                                                    <>
+                                                                        <Button
+                                                                            variant="outline-success"
+                                                                            size="sm"
+                                                                            onClick={() =>
+                                                                                handleApprove(
+                                                                                    logbook.id
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <i className="bi bi-check-circle me-1"></i>
+                                                                            Setujui
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            onClick={() =>
+                                                                                openRejectModal(
+                                                                                    logbook
+                                                                                )
+                                                                            }
+                                                                        >
+                                                                            <i className="bi bi-x-circle me-1"></i>
+                                                                            Tolak
+                                                                        </Button>
+                                                                    </>
+                                                                )}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -576,11 +576,10 @@ const SupervisorLogbook = () => {
                                     <nav>
                                         <ul className="pagination mb-0">
                                             <li
-                                                className={`page-item ${
-                                                    !pagination.has_prev
+                                                className={`page-item ${!pagination.has_prev
                                                         ? "disabled"
                                                         : ""
-                                                }`}
+                                                    }`}
                                             >
                                                 <button
                                                     className="page-link"
@@ -614,7 +613,7 @@ const SupervisorLogbook = () => {
                                                     } else if (
                                                         page >=
                                                         pagination.total_pages -
-                                                            2
+                                                        2
                                                     ) {
                                                         pageNum =
                                                             pagination.total_pages -
@@ -627,11 +626,10 @@ const SupervisorLogbook = () => {
                                                     return (
                                                         <li
                                                             key={pageNum}
-                                                            className={`page-item ${
-                                                                page === pageNum
+                                                            className={`page-item ${page === pageNum
                                                                     ? "active"
                                                                     : ""
-                                                            }`}
+                                                                }`}
                                                         >
                                                             <button
                                                                 className="page-link"
@@ -649,11 +647,10 @@ const SupervisorLogbook = () => {
                                             )}
 
                                             <li
-                                                className={`page-item ${
-                                                    !pagination.has_next
+                                                className={`page-item ${!pagination.has_next
                                                         ? "disabled"
                                                         : ""
-                                                }`}
+                                                    }`}
                                             >
                                                 <button
                                                     className="page-link"
@@ -718,7 +715,7 @@ const SupervisorLogbook = () => {
                                         onError={(e) => {
                                             e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
                                                 selectedLogbook.user?.name ||
-                                                    "User"
+                                                "User"
                                             )}&background=random&color=fff&size=128`;
                                         }}
                                     />
@@ -808,11 +805,10 @@ const SupervisorLogbook = () => {
                                             className="px-3 py-2"
                                         >
                                             <i
-                                                className={`bi bi-${
-                                                    getStatusBadge(
-                                                        selectedLogbook.status
-                                                    ).icon
-                                                } me-2`}
+                                                className={`bi bi-${getStatusBadge(
+                                                    selectedLogbook.status
+                                                ).icon
+                                                    } me-2`}
                                             ></i>
                                             {
                                                 getStatusBadge(
@@ -850,10 +846,9 @@ const SupervisorLogbook = () => {
                                                                 <div className="card border-0 shadow-sm">
                                                                     <img
                                                                         src={`http://localhost:3000${attachment}`}
-                                                                        alt={`Attachment ${
-                                                                            index +
+                                                                        alt={`Attachment ${index +
                                                                             1
-                                                                        }`}
+                                                                            }`}
                                                                         className="card-img-top"
                                                                         style={{
                                                                             height: "200px",

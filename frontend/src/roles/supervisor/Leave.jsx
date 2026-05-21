@@ -11,6 +11,7 @@ const SupervisorLeave = () => {
     const [showRejectModal, setShowRejectModal] = useState(false);
     const [selectedLeave, setSelectedLeave] = useState(null);
     const [rejectionReason, setRejectionReason] = useState("");
+    const [users, setUsers] = useState([]);
 
     // Enhanced Filters
     const [filters, setFilters] = useState({
@@ -19,6 +20,8 @@ const SupervisorLeave = () => {
         date_from: "",
         date_to: "",
         user_name: "",
+        periode: "",
+        sumber_magang: "",
     });
 
     // Pagination state
@@ -49,6 +52,7 @@ const SupervisorLeave = () => {
     }, [searchTerm]);
 
     useEffect(() => {
+        fetchUsers();
         fetchLeaves();
     }, [
         filters.status,
@@ -56,8 +60,20 @@ const SupervisorLeave = () => {
         filters.date_from,
         filters.date_to,
         filters.user_name,
+        filters.periode,
+        filters.sumber_magang,
         page,
     ]);
+
+    const fetchUsers = async () => {
+        try {
+            const response = await axiosInstance.get("/supervisor/division/members");
+            const data = response.data.data || [];
+            setUsers(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Error fetching division members:", error);
+        }
+    };
 
     const fetchLeaves = async () => {
         try {
@@ -78,6 +94,12 @@ const SupervisorLeave = () => {
             }
             if (filters.date_to) {
                 params.date_to = filters.date_to;
+            }
+            if (filters.periode) {
+                params.periode = filters.periode;
+            }
+            if (filters.sumber_magang) {
+                params.sumber_magang = filters.sumber_magang;
             }
             if (filters.user_name && filters.user_name.trim() !== "") {
                 params.search = filters.user_name.trim();
@@ -177,6 +199,8 @@ const SupervisorLeave = () => {
             date_from: "",
             date_to: "",
             user_name: "",
+            periode: "",
+            sumber_magang: "",
         });
         setSearchTerm("");
         setPage(1);
@@ -250,6 +274,8 @@ const SupervisorLeave = () => {
         if (["doc", "docx"].includes(ext)) return "file-earmark-word";
         return "file-earmark-text";
     };
+
+    const uniquePeriodes = [...new Set(users.map((u) => u.periode).filter(Boolean))].sort();
 
     return (
         <div className="container-fluid py-4">
@@ -451,12 +477,44 @@ const SupervisorLeave = () => {
                                 <option value="rejected">Ditolak</option>
                             </Form.Select>
                         </div>
-                        <div className="col-md-5">
+                        <div className="col-md-2">
+                            <label className="form-label small fw-semibold">
+                                Periode/Batch
+                            </label>
+                            <Form.Select
+                                value={filters.periode}
+                                onChange={(e) => handleFilterChange("periode", e.target.value)}
+                            >
+                                <option value="">Semua Periode</option>
+                                {uniquePeriodes.map((periode) => (
+                                    <option key={periode} value={periode}>
+                                        {periode}
+                                    </option>
+                                ))}
+                            </Form.Select>
+                        </div>
+                        <div className="col-md-2">
+                            <label className="form-label small fw-semibold">
+                                Sumber Magang
+                            </label>
+                            <Form.Select
+                                value={filters.sumber_magang}
+                                onChange={(e) => handleFilterChange("sumber_magang", e.target.value)}
+                            >
+                                <option value="">Semua Sumber</option>
+                                <option value="kampus">Kampus</option>
+                                <option value="pemerintah">Pemerintah</option>
+                                <option value="swasta">Swasta</option>
+                                <option value="internal">Internal</option>
+                                <option value="umum">Umum</option>
+                            </Form.Select>
+                        </div>
+                        <div className="col-md-12 mt-3">
                             <label className="form-label small fw-semibold">
                                 <i className="bi bi-calendar-range me-1"></i>
                                 Periode Izin
                             </label>
-                            <div className="d-flex gap-2">
+                            <div className="d-flex gap-2" style={{ maxWidth: '400px' }}>
                                 <Form.Control
                                     type="date"
                                     value={filters.date_from}

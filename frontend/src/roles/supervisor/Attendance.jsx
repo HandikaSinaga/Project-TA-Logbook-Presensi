@@ -421,14 +421,14 @@ const Attendance = () => {
                             {(filters.user_name ||
                                 filters.date_from ||
                                 filters.date_to) && (
-                                <Button
-                                    variant="outline-primary"
-                                    size="sm"
-                                    onClick={handleResetFilters}
-                                >
-                                    Reset Filter
-                                </Button>
-                            )}
+                                    <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        onClick={handleResetFilters}
+                                    >
+                                        Reset Filter
+                                    </Button>
+                                )}
                         </div>
                     ) : (
                         <>
@@ -478,7 +478,7 @@ const Attendance = () => {
                                                                         attendance
                                                                             .user
                                                                             ?.name ||
-                                                                            "User"
+                                                                        "User"
                                                                     )}&background=random&color=fff&size=128`;
                                                                 }}
                                                             />
@@ -536,7 +536,7 @@ const Attendance = () => {
                                                     </td>
                                                     <td>
                                                         {attendance.work_type ===
-                                                        "offsite" ? (
+                                                            "offsite" ? (
                                                             <div>
                                                                 <Badge
                                                                     bg="info"
@@ -621,11 +621,10 @@ const Attendance = () => {
                                     <nav>
                                         <ul className="pagination mb-0">
                                             <li
-                                                className={`page-item ${
-                                                    !pagination.has_prev
+                                                className={`page-item ${!pagination.has_prev
                                                         ? "disabled"
                                                         : ""
-                                                }`}
+                                                    }`}
                                             >
                                                 <button
                                                     className="page-link"
@@ -660,7 +659,7 @@ const Attendance = () => {
                                                     } else if (
                                                         page >=
                                                         pagination.total_pages -
-                                                            2
+                                                        2
                                                     ) {
                                                         pageNum =
                                                             pagination.total_pages -
@@ -673,11 +672,10 @@ const Attendance = () => {
                                                     return (
                                                         <li
                                                             key={pageNum}
-                                                            className={`page-item ${
-                                                                page === pageNum
+                                                            className={`page-item ${page === pageNum
                                                                     ? "active"
                                                                     : ""
-                                                            }`}
+                                                                }`}
                                                         >
                                                             <button
                                                                 className="page-link"
@@ -695,11 +693,10 @@ const Attendance = () => {
                                             )}
 
                                             <li
-                                                className={`page-item ${
-                                                    !pagination.has_next
+                                                className={`page-item ${!pagination.has_next
                                                         ? "disabled"
                                                         : ""
-                                                }`}
+                                                    }`}
                                             >
                                                 <button
                                                     className="page-link"
@@ -768,7 +765,7 @@ const Attendance = () => {
                                         onError={(e) => {
                                             e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
                                                 selectedAttendance.user?.name ||
-                                                    "User"
+                                                "User"
                                             )}&background=random&color=fff&size=128`;
                                         }}
                                     />
@@ -829,11 +826,10 @@ const Attendance = () => {
                                                 }
                                             >
                                                 <i
-                                                    className={`bi bi-${
-                                                        getStatusBadge(
-                                                            selectedAttendance.status
-                                                        ).icon
-                                                    } me-1`}
+                                                    className={`bi bi-${getStatusBadge(
+                                                        selectedAttendance.status
+                                                    ).icon
+                                                        } me-1`}
                                                 ></i>
                                                 {
                                                     getStatusBadge(
@@ -880,7 +876,7 @@ const Attendance = () => {
                                     </label>
                                     <div>
                                         {selectedAttendance.work_type ===
-                                        "offsite" ? (
+                                            "offsite" ? (
                                             <Badge bg="info">
                                                 <i className="bi bi-house-door me-1"></i>
                                                 Offsite
@@ -950,176 +946,176 @@ const Attendance = () => {
                                 {(selectedAttendance.check_out_time ||
                                     selectedAttendance.check_out_address ||
                                     selectedAttendance.checkout_offsite_reason) && (
-                                    <div className="card bg-light border-0">
-                                        <div className="card-body">
-                                            <h6 className="mb-3">
-                                                <i className="bi bi-box-arrow-right text-danger me-2"></i>
-                                                Informasi Check-out
-                                            </h6>
+                                        <div className="card bg-light border-0">
+                                            <div className="card-body">
+                                                <h6 className="mb-3">
+                                                    <i className="bi bi-box-arrow-right text-danger me-2"></i>
+                                                    Informasi Check-out
+                                                </h6>
 
-                                            {selectedAttendance.checkout_offsite_reason && (
-                                                <div className="mb-3">
-                                                    <label className="small text-muted mb-1">
-                                                        Alasan Offsite
-                                                        (Check-out)
-                                                    </label>
-                                                    <div className="alert alert-info mb-0">
-                                                        <i className="bi bi-info-circle me-2"></i>
-                                                        {
-                                                            selectedAttendance.checkout_offsite_reason
-                                                        }
+                                                {selectedAttendance.checkout_offsite_reason && (
+                                                    <div className="mb-3">
+                                                        <label className="small text-muted mb-1">
+                                                            Alasan Offsite
+                                                            (Check-out)
+                                                        </label>
+                                                        <div className="alert alert-info mb-0">
+                                                            <i className="bi bi-info-circle me-2"></i>
+                                                            {
+                                                                selectedAttendance.checkout_offsite_reason
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {selectedAttendance.check_out_address && (
+                                                    <div className="mb-3">
+                                                        <label className="small text-muted mb-1">
+                                                            Alamat
+                                                        </label>
+                                                        <div>
+                                                            <i className="bi bi-geo-alt-fill me-2 text-danger"></i>
+                                                            {
+                                                                selectedAttendance.check_out_address
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {selectedAttendance.check_out_ip && (
+                                                    <div>
+                                                        <label className="small text-muted mb-1">
+                                                            IP Address
+                                                        </label>
+                                                        <div>
+                                                            <i className="bi bi-hdd-network me-2"></i>
+                                                            {
+                                                                selectedAttendance.check_out_ip
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                            </div>
+
+                            {/* Photos */}
+                            {(selectedAttendance.check_in_photo ||
+                                selectedAttendance.check_out_photo) && (
+                                    <div className="mb-4 pb-3 border-bottom">
+                                        <h6 className="text-muted mb-3">
+                                            <i className="bi bi-camera me-2"></i>
+                                            Foto Presensi
+                                        </h6>
+                                        <div className="row g-3">
+                                            {selectedAttendance.check_in_photo && (
+                                                <div className="col-md-6">
+                                                    <div className="card border-0 shadow-sm">
+                                                        <div className="card-header bg-success bg-opacity-10 border-0">
+                                                            <small className="fw-semibold text-success">
+                                                                <i className="bi bi-box-arrow-in-right me-2"></i>
+                                                                Foto Check-in
+                                                            </small>
+                                                        </div>
+                                                        <div className="card-body p-2">
+                                                            <img
+                                                                src={getImageUrl(
+                                                                    selectedAttendance.check_in_photo
+                                                                )}
+                                                                alt="Check-in"
+                                                                className="img-fluid rounded"
+                                                                style={{
+                                                                    maxHeight:
+                                                                        "300px",
+                                                                    width: "100%",
+                                                                    objectFit:
+                                                                        "contain",
+                                                                    cursor: "pointer",
+                                                                    backgroundColor:
+                                                                        "#f8f9fa",
+                                                                }}
+                                                                onClick={() =>
+                                                                    window.open(
+                                                                        getImageUrl(
+                                                                            selectedAttendance.check_in_photo
+                                                                        ),
+                                                                        "_blank"
+                                                                    )
+                                                                }
+                                                                onError={(e) => {
+                                                                    e.target.onerror =
+                                                                        null;
+                                                                    e.target.src =
+                                                                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23f0f0f0' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' dy='150' dx='50'%3EFoto tidak tersedia%3C/text%3E%3C/svg%3E";
+                                                                }}
+                                                            />
+                                                            <div className="text-center mt-2">
+                                                                <small className="text-muted">
+                                                                    <i className="bi bi-zoom-in me-1"></i>
+                                                                    Klik untuk
+                                                                    memperbesar
+                                                                </small>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
-
-                                            {selectedAttendance.check_out_address && (
-                                                <div className="mb-3">
-                                                    <label className="small text-muted mb-1">
-                                                        Alamat
-                                                    </label>
-                                                    <div>
-                                                        <i className="bi bi-geo-alt-fill me-2 text-danger"></i>
-                                                        {
-                                                            selectedAttendance.check_out_address
-                                                        }
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {selectedAttendance.check_out_ip && (
-                                                <div>
-                                                    <label className="small text-muted mb-1">
-                                                        IP Address
-                                                    </label>
-                                                    <div>
-                                                        <i className="bi bi-hdd-network me-2"></i>
-                                                        {
-                                                            selectedAttendance.check_out_ip
-                                                        }
+                                            {selectedAttendance.check_out_photo && (
+                                                <div className="col-md-6">
+                                                    <div className="card border-0 shadow-sm">
+                                                        <div className="card-header bg-danger bg-opacity-10 border-0">
+                                                            <small className="fw-semibold text-danger">
+                                                                <i className="bi bi-box-arrow-right me-2"></i>
+                                                                Foto Check-out
+                                                            </small>
+                                                        </div>
+                                                        <div className="card-body p-2">
+                                                            <img
+                                                                src={getImageUrl(
+                                                                    selectedAttendance.check_out_photo
+                                                                )}
+                                                                alt="Check-out"
+                                                                className="img-fluid rounded"
+                                                                style={{
+                                                                    maxHeight:
+                                                                        "300px",
+                                                                    width: "100%",
+                                                                    objectFit:
+                                                                        "contain",
+                                                                    cursor: "pointer",
+                                                                    backgroundColor:
+                                                                        "#f8f9fa",
+                                                                }}
+                                                                onClick={() =>
+                                                                    window.open(
+                                                                        getImageUrl(
+                                                                            selectedAttendance.check_out_photo
+                                                                        ),
+                                                                        "_blank"
+                                                                    )
+                                                                }
+                                                                onError={(e) => {
+                                                                    e.target.onerror =
+                                                                        null;
+                                                                    e.target.src =
+                                                                        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23f0f0f0' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' dy='150' dx='50'%3EFoto tidak tersedia%3C/text%3E%3C/svg%3E";
+                                                                }}
+                                                            />
+                                                            <div className="text-center mt-2">
+                                                                <small className="text-muted">
+                                                                    <i className="bi bi-zoom-in me-1"></i>
+                                                                    Klik untuk
+                                                                    memperbesar
+                                                                </small>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 )}
-                            </div>
-
-                            {/* Photos */}
-                            {(selectedAttendance.check_in_photo ||
-                                selectedAttendance.check_out_photo) && (
-                                <div className="mb-4 pb-3 border-bottom">
-                                    <h6 className="text-muted mb-3">
-                                        <i className="bi bi-camera me-2"></i>
-                                        Foto Presensi
-                                    </h6>
-                                    <div className="row g-3">
-                                        {selectedAttendance.check_in_photo && (
-                                            <div className="col-md-6">
-                                                <div className="card border-0 shadow-sm">
-                                                    <div className="card-header bg-success bg-opacity-10 border-0">
-                                                        <small className="fw-semibold text-success">
-                                                            <i className="bi bi-box-arrow-in-right me-2"></i>
-                                                            Foto Check-in
-                                                        </small>
-                                                    </div>
-                                                    <div className="card-body p-2">
-                                                        <img
-                                                            src={getImageUrl(
-                                                                selectedAttendance.check_in_photo
-                                                            )}
-                                                            alt="Check-in"
-                                                            className="img-fluid rounded"
-                                                            style={{
-                                                                maxHeight:
-                                                                    "300px",
-                                                                width: "100%",
-                                                                objectFit:
-                                                                    "contain",
-                                                                cursor: "pointer",
-                                                                backgroundColor:
-                                                                    "#f8f9fa",
-                                                            }}
-                                                            onClick={() =>
-                                                                window.open(
-                                                                    getImageUrl(
-                                                                        selectedAttendance.check_in_photo
-                                                                    ),
-                                                                    "_blank"
-                                                                )
-                                                            }
-                                                            onError={(e) => {
-                                                                e.target.onerror =
-                                                                    null;
-                                                                e.target.src =
-                                                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23f0f0f0' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' dy='150' dx='50'%3EFoto tidak tersedia%3C/text%3E%3C/svg%3E";
-                                                            }}
-                                                        />
-                                                        <div className="text-center mt-2">
-                                                            <small className="text-muted">
-                                                                <i className="bi bi-zoom-in me-1"></i>
-                                                                Klik untuk
-                                                                memperbesar
-                                                            </small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {selectedAttendance.check_out_photo && (
-                                            <div className="col-md-6">
-                                                <div className="card border-0 shadow-sm">
-                                                    <div className="card-header bg-danger bg-opacity-10 border-0">
-                                                        <small className="fw-semibold text-danger">
-                                                            <i className="bi bi-box-arrow-right me-2"></i>
-                                                            Foto Check-out
-                                                        </small>
-                                                    </div>
-                                                    <div className="card-body p-2">
-                                                        <img
-                                                            src={getImageUrl(
-                                                                selectedAttendance.check_out_photo
-                                                            )}
-                                                            alt="Check-out"
-                                                            className="img-fluid rounded"
-                                                            style={{
-                                                                maxHeight:
-                                                                    "300px",
-                                                                width: "100%",
-                                                                objectFit:
-                                                                    "contain",
-                                                                cursor: "pointer",
-                                                                backgroundColor:
-                                                                    "#f8f9fa",
-                                                            }}
-                                                            onClick={() =>
-                                                                window.open(
-                                                                    getImageUrl(
-                                                                        selectedAttendance.check_out_photo
-                                                                    ),
-                                                                    "_blank"
-                                                                )
-                                                            }
-                                                            onError={(e) => {
-                                                                e.target.onerror =
-                                                                    null;
-                                                                e.target.src =
-                                                                    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23f0f0f0' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' dy='150' dx='50'%3EFoto tidak tersedia%3C/text%3E%3C/svg%3E";
-                                                            }}
-                                                        />
-                                                        <div className="text-center mt-2">
-                                                            <small className="text-muted">
-                                                                <i className="bi bi-zoom-in me-1"></i>
-                                                                Klik untuk
-                                                                memperbesar
-                                                            </small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     )}
                 </Modal.Body>
