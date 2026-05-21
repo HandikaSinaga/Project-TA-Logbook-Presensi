@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import toast from "react-hot-toast";
 import { OverlayTrigger, Tooltip, Spinner } from "react-bootstrap";
@@ -26,6 +26,11 @@ const AdminReports = () => {
     const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [userSearch, setUserSearch] = useState("");
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+    // Single-select division searchable combobox
+    const [divisionSearch, setDivisionSearch] = useState("");
+    const [divisionDropdownOpen, setDivisionDropdownOpen] = useState(false);
+    const [selectedDivision, setSelectedDivision] = useState(null); // { id, name }
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -168,12 +173,10 @@ const AdminReports = () => {
         });
     };
 
-    const handleResetFilters = () => {
-        const today = new Date();
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    const resetFilters = () => {
         setFilters({
-            start_date: firstDay.toISOString().split("T")[0],
-            end_date: today.toISOString().split("T")[0],
+            start_date: new Date(new Date().setDate(1)).toISOString().split("T")[0],
+            end_date: new Date().toISOString().split("T")[0],
             division_id: "",
             periode: "",
             sumber_magang: "",
@@ -184,7 +187,10 @@ const AdminReports = () => {
         });
         setSelectedUserIds([]);
         setUserSearch("");
+        setSelectedDivision(null);
+        setDivisionSearch("");
         setReportData(null);
+        setCurrentPage(1);
     };
 
     const generateReport = async () => {
@@ -882,24 +888,163 @@ const AdminReports = () => {
                             <label className="form-label fw-bold">
                                 <i className="bi bi-diagram-3 me-2"></i>
                                 Divisi
+                                {selectedDivision && (
+                                    <span className="badge bg-primary ms-2">1 dipilih</span>
+                                )}
                             </label>
-                            <select
-                                className="form-select"
-                                value={filters.division_id}
-                                onChange={(e) =>
-                                    setFilters({
-                                        ...filters,
-                                        division_id: e.target.value,
-                                    })
-                                }
+                            {/* Searchable single-select combobox divisi */}
+                            <div
+                                className="position-relative"
+                                onBlur={(e) => {
+                                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                                        setDivisionDropdownOpen(false);
+                                        if (!selectedDivision) setDivisionSearch("");
+                                    }
+                                }}
+                                tabIndex={-1}
                             >
-                                <option value="">Semua Divisi</option>
-                                {divisions.map((div) => (
-                                    <option key={div.id} value={div.id}>
-                                        {div.name}
-                                    </option>
-                                ))}
-                            </select>
+                                <div
+                                    className="form-control d-flex align-items-center gap-1"
+                                    style={{ minHeight: "42px", cursor: "text", height: "auto" }}
+                                    onClick={() => {
+                                        setDivisionDropdownOpen(true);
+                                        document.getElementById("division-search-input").focus();
+                                    }}
+                                >
+                                    {selectedDivision ? (
+                                        <span
+                                            className="badge bg-primary d-inline-flex align-items-center gap-1 py-1 px-2"
+                                            style={{ fontSize: "0.8rem", fontWeight: 500 }}
+                                        >
+                                            <i className="bi bi-diagram-3-fill" style={{ fontSize: "0.7rem" }}></i>
+                                            {selectedDivision.name}
+                                            <button
+                                                type="button"
+                                                className="btn-close btn-close-white"
+                                                style={{ fontSize: "0.5rem" }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedDivision(null);
+                                                    setDivisionSearch("");
+                                                    setFilters((f) => ({ ...f, division_id: "" }));
+                                                }}
+                                            ></button>
+                                        </span>
+                                    ) : null}
+                                    <input
+                                        id="division-search-input"
+                                        type="text"
+                                        className="border-0 flex-grow-1"
+                                        style={{ outline: "none", minWidth: "120px", background: "transparent" }}
+                                        placeholder={selectedDivision ? "" : "Ketik nama divisi..."}
+                                        value={divisionSearch}
+                                        onChange={(e) => {
+                                            setDivisionSearch(e.target.value);
+                                            setDivisionDropdownOpen(true);
+                                            if (selectedDivision) {
+                                                setSelectedDivision(null);
+                                                setFilters((f) => ({ ...f, division_id: "" }));
+                                            }
+                                        }}
+                                        onFocus={() => setDivisionDropdownOpen(true)}
+                                    />
+                                    {(selectedDivision || divisionSearch) && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-link p-0 ms-auto text-muted"
+                                            style={{ fontSize: "0.85rem" }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedDivision(null);
+                                                setDivisionSearch("");
+                                                setDivisionDropdownOpen(false);
+                                                setFilters((f) => ({ ...f, division_id: "" }));
+                                            }}
+                                        >
+                                            <i className="bi bi-x-circle"></i>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Dropdown list divisi */}
+                                {divisionDropdownOpen && (
+                                    <div
+                                        className="position-absolute w-100 bg-white border rounded shadow-sm"
+                                        style={{ zIndex: 1050, maxHeight: "220px", overflowY: "auto", top: "100%", left: 0 }}
+                                    >
+                                        {/* Opsi Semua Divisi */}
+                                        <div
+                                            className="px-3 py-2 d-flex align-items-center gap-2"
+                                            style={{ cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => {
+                                                setSelectedDivision(null);
+                                                setDivisionSearch("");
+                                                setDivisionDropdownOpen(false);
+                                                setFilters((f) => ({ ...f, division_id: "" }));
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = "#f0f4ff"}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                                        >
+                                            <i className="bi bi-grid-3x3-gap-fill text-muted"></i>
+                                            <span className="text-muted" style={{ fontSize: "0.875rem" }}>Semua Divisi</span>
+                                        </div>
+
+                                        {(() => {
+                                            const term = divisionSearch.toLowerCase().trim();
+                                            const filtered = divisions.filter((d) =>
+                                                !term || d.name?.toLowerCase().includes(term)
+                                            );
+                                            if (filtered.length === 0) {
+                                                return (
+                                                    <div className="px-3 py-2 text-muted small">
+                                                        <i className="bi bi-search me-2"></i>
+                                                        Tidak ada divisi &quot;{divisionSearch}&quot;
+                                                    </div>
+                                                );
+                                            }
+                                            return filtered.map((d) => (
+                                                <div
+                                                    key={d.id}
+                                                    className="px-3 py-2 d-flex align-items-center gap-2"
+                                                    style={{
+                                                        cursor: "pointer",
+                                                        background: selectedDivision?.id === d.id ? "#e8f0fe" : "transparent"
+                                                    }}
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => {
+                                                        setSelectedDivision(d);
+                                                        setDivisionSearch("");
+                                                        setDivisionDropdownOpen(false);
+                                                        setFilters((f) => ({ ...f, division_id: d.id }));
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        if (selectedDivision?.id !== d.id)
+                                                            e.currentTarget.style.background = "#f0f4ff";
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        if (selectedDivision?.id !== d.id)
+                                                            e.currentTarget.style.background = "transparent";
+                                                    }}
+                                                >
+                                                    <div
+                                                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                        style={{ width: 30, height: 30 }}
+                                                    >
+                                                        <i className="bi bi-diagram-3-fill text-primary" style={{ fontSize: "0.8rem" }}></i>
+                                                    </div>
+                                                    <div className="fw-semibold" style={{ fontSize: "0.875rem" }}>
+                                                        {d.name}
+                                                        {selectedDivision?.id === d.id && (
+                                                            <i className="bi bi-check-circle-fill text-primary ms-2" style={{ fontSize: "0.75rem" }}></i>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="col-md-3">
                             <label className="form-label fw-bold">
