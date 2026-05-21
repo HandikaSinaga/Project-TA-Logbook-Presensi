@@ -2,6 +2,7 @@ import express from "express";
 import authMiddleware from "../middlewares/auth.js";
 import roleCheck from "../middlewares/roleCheck.js";
 import { validateWorkday } from "../middlewares/validateWorkday.js";
+import checkDivisionActive from "../middlewares/checkDivisionActive.js";
 import DashboardController from "../controllers/DashboardController.js";
 import AttendanceController, {
     uploadAttendancePhoto,
@@ -32,12 +33,14 @@ router.get("/attendance/workday-status", AttendanceController.getWorkdayStatus);
 router.post("/attendance/pre-check", AttendanceController.preCheckWorkType);
 router.post(
     "/attendance/check-in",
-    validateWorkday, // Validate workday before allowing check-in
+    validateWorkday,       // Validate workday before allowing check-in
+    checkDivisionActive,   // Guard: divisi harus aktif
     uploadAttendancePhoto,
     AttendanceController.checkIn,
 );
 router.post(
     "/attendance/check-out",
+    checkDivisionActive,   // Guard: divisi harus aktif
     uploadAttendancePhoto,
     AttendanceController.checkOut,
 );
@@ -46,7 +49,7 @@ router.post(
 router.get("/logbook", LogbookController.getUserLogbooks);
 router.get("/logbook/today", LogbookController.getTodayLogbook);
 router.get("/logbook/recent", LogbookController.getRecentLogbooks);
-router.post("/logbook", LogbookController.create);
+router.post("/logbook", checkDivisionActive, LogbookController.create);
 router.get("/logbook/:id", LogbookController.getById);
 router.put("/logbook/:id", LogbookController.update);
 router.delete("/logbook/:id", LogbookController.delete);
@@ -55,7 +58,7 @@ router.delete("/logbook/:id", LogbookController.delete);
 router.get("/izin", LeaveController.getUserLeaves);
 router.get("/izin/quota", LeaveController.getQuota);
 router.get("/izin/pending", LeaveController.getUserPendingLeaves);
-router.post("/izin", uploadLeaveAttachment, LeaveController.create);
+router.post("/izin", checkDivisionActive, uploadLeaveAttachment, LeaveController.create);
 router.get("/izin/:id", LeaveController.getById);
 router.put("/izin/:id", LeaveController.update);
 router.delete("/izin/:id", LeaveController.delete);

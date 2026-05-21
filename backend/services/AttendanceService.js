@@ -3,22 +3,38 @@ import { Op } from "sequelize";
 import moment from "moment-timezone";
 import WorkCalendarService from "./WorkCalendarService.js";
 
-const { Attendance, User, Leave } = models;
+const { Attendance, User, Leave, Division } = models;
 const TIMEZONE = "Asia/Jakarta";
 
 class AttendanceService {
     /**
      * Ensure attendance records exist for all workdays in a range
      * If a record is missing for a past workday, create an 'absent' record.
-     * 
+     *
      * @param {number} userId - ID of the user
      * @param {Date|string} startDate - Start of range
      * @param {Date|string} endDate - End of range
      */
     async ensureAttendanceRecords(userId, startDate, endDate) {
         try {
-            const user = await User.findByPk(userId);
+            const user = await User.findByPk(userId, {
+                include: [{ model: Division, as: 'division', attributes: ['id', 'is_active', 'is_active_periode'] }],
+            });
+
+            // Skip jika user tidak ditemukan atau tidak punya divisi
             if (!user || !user.division_id) return;
+
+            // Skip jika user dinonaktifkan
+            if (!user.is_active) {
+                console.log(`[AttendanceService] Skip backfill: user ${userId} is inactive`);
+                return;
+            }
+
+            // Skip jika divisi dinonaktifkan atau periode berakhir
+            if (user.division && (!user.division.is_active || !user.division.is_active_periode)) {
+                console.log(`[AttendanceService] Skip backfill: division ${user.division_id} is inactive or periode ended`);
+                return;
+            }
 
             const start = moment(startDate).tz(TIMEZONE).startOf("day");
             const end = moment(endDate).tz(TIMEZONE).startOf("day");

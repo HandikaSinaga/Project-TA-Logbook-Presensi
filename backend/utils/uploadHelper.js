@@ -33,31 +33,56 @@ const ensureDirectoryExists = (dirPath) => {
 };
 
 /**
+ * Sanitize string to be safe for filesystem folder names
+ */
+const slugify = (str) => {
+    if (!str) return 'unknown';
+    return String(str)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .substring(0, 50); // Limit folder name length
+};
+
+/**
  * Get organized upload path based on current date and user info
+ *
+ * Struktur Folder:
+ *   - Attendance/Logbook/Leave:
+ *       public/uploads/{type}/periode-{batch}/{year}/{month}/div-{id}-{name}/
+ *   - Avatars:
+ *       public/uploads/avatars/div-{id}-{name}/
+ *
+ * Best Practice: Max ~500 files per folder (year/month/div combination)
  */
 export const getUploadPath = (type, user = null) => {
     const now = new Date();
     const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, '0');
 
     let uploadPath;
 
-    if (type === "avatar") {
-        // Avatars: group by division to avoid one massive folder
+    if (type === 'avatar') {
+        // Avatars: group by division for manageable folder sizes
         const divisionFolder = user?.division_id
-            ? `division-${user.division_id}`
-            : "no-division";
-        uploadPath = path.join("public", "uploads", "avatars", divisionFolder);
+            ? `div-${user.division_id}`
+            : 'no-division';
+        uploadPath = path.join('public', 'uploads', 'avatars', divisionFolder);
     } else {
-        // Attendance, Logbook, Leave: organized by year/month/division
-        // This keeps folder sizes manageable even with millions of records
+        // Attendance, Logbook, Leave: organized by periode → year → month → division
+        // This enables easy browsing/archiving per batch, per period, per division
+        const periodeFolder = user?.periode
+            ? `periode-${slugify(user.periode)}`
+            : 'periode-unknown';
         const divisionFolder = user?.division_id
-            ? `division-${user.division_id}`
-            : "no-division";
+            ? `div-${user.division_id}`
+            : 'no-division';
+
         uploadPath = path.join(
-            "public",
-            "uploads",
+            'public',
+            'uploads',
             type,
+            periodeFolder,
             year.toString(),
             month,
             divisionFolder,
