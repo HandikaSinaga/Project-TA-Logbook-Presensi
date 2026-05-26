@@ -19,6 +19,7 @@ class ImportExportUserService {
             { header: "Email*", key: "email", width: 30 },
             { header: "Password*", key: "password", width: 15 },
             { header: "NIP", key: "nip", width: 18 },
+            { header: "Jabatan", key: "position", width: 20 },
             { header: "Telepon", key: "phone", width: 15 },
             { header: "Alamat", key: "address", width: 35 },
             { header: "Role*", key: "role", width: 12 },
@@ -26,6 +27,13 @@ class ImportExportUserService {
             { header: "Periode*", key: "periode", width: 15 },
             { header: "Sumber Magang*", key: "sumber_magang", width: 15 },
             { header: "Status", key: "is_active", width: 12 },
+            { header: "Bio", key: "bio", width: 30 },
+            { header: "LinkedIn", key: "linkedin", width: 20 },
+            { header: "Instagram", key: "instagram", width: 20 },
+            { header: "Telegram", key: "telegram", width: 20 },
+            { header: "GitHub", key: "github", width: 20 },
+            { header: "Twitter", key: "twitter", width: 20 },
+            { header: "Facebook", key: "facebook", width: 20 },
         ];
 
         // Style header row
@@ -45,6 +53,7 @@ class ImportExportUserService {
             email: "budi.santoso@example.com",
             password: "password123",
             nip: "202401001",
+            position: "Frontend Developer",
             phone: "081234567890",
             address: "Jl. Merdeka No. 123, Jakarta Pusat",
             role: "user",
@@ -59,6 +68,7 @@ class ImportExportUserService {
             email: "siti.rahayu@example.com",
             password: "secure456",
             nip: "202401002",
+            position: "Manager",
             phone: "081234567891",
             address: "Jl. Sudirman No. 456, Bandung",
             role: "Supervisor",
@@ -73,6 +83,7 @@ class ImportExportUserService {
             email: "ahmad.wijaya@example.com",
             password: "admin789",
             nip: "",
+            position: "System Admin",
             phone: "081234567892",
             address: "Jl. Gatot Subroto No. 789, Surabaya",
             role: "Admin",
@@ -322,6 +333,7 @@ class ImportExportUserService {
                 { header: "Nama Lengkap", key: "name", width: 25 },
                 { header: "Email", key: "email", width: 30 },
                 { header: "NIP", key: "nip", width: 18 },
+                { header: "Jabatan", key: "position", width: 20 },
                 { header: "Telepon", key: "phone", width: 15 },
                 { header: "Alamat", key: "address", width: 35 },
                 { header: "Role", key: "role", width: 12 },
@@ -337,6 +349,13 @@ class ImportExportUserService {
                 { header: "Status Aktif", key: "is_active", width: 12 },
                 { header: "Tanggal Dibuat", key: "created_at", width: 18 },
                 { header: "Terakhir Update", key: "updated_at", width: 18 },
+                { header: "Bio", key: "bio", width: 30 },
+                { header: "LinkedIn", key: "linkedin", width: 20 },
+                { header: "Instagram", key: "instagram", width: 20 },
+                { header: "Telegram", key: "telegram", width: 20 },
+                { header: "GitHub", key: "github", width: 20 },
+                { header: "Twitter", key: "twitter", width: 20 },
+                { header: "Facebook", key: "facebook", width: 20 },
             ];
 
             // Style header
@@ -377,6 +396,7 @@ class ImportExportUserService {
                     name: user.name || "-",
                     email: user.email || "-",
                     nip: user.nip || "-",
+                    position: user.position || "-",
                     phone: user.phone || "-",
                     address: user.address || "-",
                     role: user.role ? user.role.toUpperCase() : "-",
@@ -394,6 +414,13 @@ class ImportExportUserService {
                     is_active: user.is_active ? "Aktif" : "Nonaktif",
                     created_at: formatDate(user.created_at),
                     updated_at: formatDate(user.updated_at),
+                    bio: user.bio || "-",
+                    linkedin: user.linkedin || "-",
+                    instagram: user.instagram || "-",
+                    telegram: user.telegram || "-",
+                    github: user.github || "-",
+                    twitter: user.twitter || "-",
+                    facebook: user.facebook || "-",
                 });
 
                 // Alternating row colors for better readability
@@ -611,16 +638,16 @@ class ImportExportUserService {
                 rowNumber = rowIndex;
 
                 const rawSumberMagang = row
-                    .getCell(10)
+                    .getCell(11)
                     .value?.toString()
                     .trim();
                 const normalizedSumberMagang =
                     normalizeSumberMagang(rawSumberMagang);
 
-                const rawRole = row.getCell(7).value?.toString().trim();
+                const rawRole = row.getCell(8).value?.toString().trim();
                 const normalizedRole = normalizeRole(rawRole);
 
-                const rawStatus = row.getCell(11).value?.toString().trim();
+                const rawStatus = row.getCell(12).value?.toString().trim();
                 const normalizedStatus = normalizeStatus(rawStatus);
 
                 const rowData = {
@@ -628,15 +655,23 @@ class ImportExportUserService {
                     email: row.getCell(2).value?.toString().trim(),
                     password: row.getCell(3).value?.toString().trim(),
                     nip: row.getCell(4).value?.toString().trim(),
-                    phone: row.getCell(5).value?.toString().trim(),
-                    address: row.getCell(6).value?.toString().trim(),
+                    position: row.getCell(5).value?.toString().trim() || null,
+                    phone: row.getCell(6).value?.toString().trim(),
+                    address: row.getCell(7).value?.toString().trim(),
                     role: normalizedRole,
                     raw_role: rawRole, // Keep original for error messages
-                    division: row.getCell(8).value?.toString().trim(),
-                    periode: row.getCell(9).value?.toString().trim(),
+                    division: row.getCell(9).value?.toString().trim(),
+                    periode: row.getCell(10).value?.toString().trim(),
                     sumber_magang: normalizedSumberMagang,
                     raw_sumber_magang: rawSumberMagang, // Keep original for error messages
                     is_active: normalizedStatus,
+                    bio: row.getCell(13).value?.toString().trim() || null,
+                    linkedin: row.getCell(14).value?.toString().trim() || null,
+                    instagram: row.getCell(15).value?.toString().trim() || null,
+                    telegram: row.getCell(16).value?.toString().trim() || null,
+                    github: row.getCell(17).value?.toString().trim() || null,
+                    twitter: row.getCell(18).value?.toString().trim() || null,
+                    facebook: row.getCell(19).value?.toString().trim() || null,
                 };
 
                 // Skip empty rows
@@ -732,6 +767,14 @@ class ImportExportUserService {
                         supervisor_id: null,
                         is_active_periode: true,
                         is_active: rowData.is_active,
+                        position: rowData.position,
+                        bio: rowData.bio,
+                        linkedin: rowData.linkedin,
+                        instagram: rowData.instagram,
+                        telegram: rowData.telegram,
+                        github: rowData.github,
+                        twitter: rowData.twitter,
+                        facebook: rowData.facebook,
                     });
                 }
             });

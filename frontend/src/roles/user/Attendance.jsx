@@ -702,12 +702,19 @@ const Attendance = () => {
 
     const getStatusBadge = (status) => {
         const badges = {
-            present: "success",
-            late: "warning",
-            early: "info",
-            absent: "danger",
+            present: { bg: "success", icon: "check-circle", text: "Hadir" },
+            late: { bg: "warning", icon: "clock", text: "Terlambat" },
+            absent: { bg: "danger", icon: "x-circle", text: "Tidak Hadir" },
+            excused: { bg: "info", icon: "info-circle", text: "Izin" },
+            early: { bg: "info", icon: "box-arrow-left", text: "Pulang Cepat" },
         };
-        return badges[status] || "secondary";
+        return (
+            badges[status] || {
+                bg: "secondary",
+                icon: "question",
+                text: status,
+            }
+        );
     };
 
     const getWorkTypeBadge = (workType) => {
@@ -1554,6 +1561,10 @@ const Attendance = () => {
                                                                 todayAttendance.check_in_time,
                                                             )}
                                                         </h3>
+                                                        <span className={`badge bg-${todayAttendance.work_type === 'onsite' ? 'primary' : 'warning'} mt-2`}>
+                                                            <i className={`bi bi-${todayAttendance.work_type === 'onsite' ? 'building' : 'house-door'} me-1`}></i>
+                                                            {todayAttendance.work_type === 'onsite' ? 'ONSITE' : 'OFFSITE'}
+                                                        </span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1599,6 +1610,12 @@ const Attendance = () => {
                                                                 todayAttendance.check_out_time,
                                                             ) || "Belum"}
                                                         </h3>
+                                                        {todayAttendance.check_out_time && (
+                                                            <span className={`badge bg-${!todayAttendance.checkout_offsite_reason && !todayAttendance.check_out_photo ? 'primary' : 'warning'} mt-2`}>
+                                                                <i className={`bi bi-${!todayAttendance.checkout_offsite_reason && !todayAttendance.check_out_photo ? 'building' : 'house-door'} me-1`}></i>
+                                                                {!todayAttendance.checkout_offsite_reason && !todayAttendance.check_out_photo ? 'ONSITE' : 'OFFSITE'}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -2191,9 +2208,9 @@ const Attendance = () => {
                                         <th>Tanggal</th>
                                         <th>Check-in</th>
                                         <th>Check-out</th>
-                                        <th>Tipe</th>
                                         <th>Status</th>
-                                        <th>Keterangan</th>
+                                        <th>Keterangan Check-in</th>
+                                        <th>Keterangan Check-out</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -2203,23 +2220,26 @@ const Attendance = () => {
                                             <tr key={index}>
                                                 <td>{formatDate(item.date)}</td>
                                                 <td>
-                                                    {formatTime(
-                                                        item.check_in_time,
+                                                    <div className="fw-semibold mb-1">
+                                                        {formatTime(
+                                                            item.check_in_time,
+                                                        )}
+                                                    </div>
+                                                    {item.check_in_time && (
+                                                        <span className={`badge bg-${item.work_type === 'onsite' ? 'primary' : 'warning'}`}>
+                                                            {item.work_type === 'onsite' ? 'ONSITE' : 'OFFSITE'}
+                                                        </span>
                                                     )}
                                                 </td>
                                                 <td>
-                                                    {formatTime(
-                                                        item.check_out_time,
-                                                    )}
-                                                </td>
-                                                <td>
-                                                    {item.work_type && (
-                                                        <span
-                                                            className={`badge bg-${getWorkTypeBadge(
-                                                                item.work_type,
-                                                            )}`}
-                                                        >
-                                                            {item.work_type.toUpperCase()}
+                                                    <div className="fw-semibold mb-1">
+                                                        {formatTime(
+                                                            item.check_out_time,
+                                                        )}
+                                                    </div>
+                                                    {item.check_out_time && (
+                                                        <span className={`badge bg-${!item.checkout_offsite_reason && !item.check_out_photo ? 'primary' : 'warning'}`}>
+                                                            {!item.checkout_offsite_reason && !item.check_out_photo ? 'ONSITE' : 'OFFSITE'}
                                                         </span>
                                                     )}
                                                 </td>
@@ -2227,22 +2247,50 @@ const Attendance = () => {
                                                     <span
                                                         className={`badge bg-${getStatusBadge(
                                                             item.status,
-                                                        )}`}
+                                                        ).bg}`}
                                                     >
-                                                        {item.status}
+                                                        <i className={`bi bi-${getStatusBadge(item.status).icon} me-1`}></i>
+                                                        {getStatusBadge(item.status).text}
                                                     </span>
                                                 </td>
+                                                {/* Keterangan Check-in */}
                                                 <td>
-                                                    <small
-                                                        className="text-muted text-truncate d-inline-block"
-                                                        style={{
-                                                            maxWidth: "200px",
-                                                        }}
-                                                    >
-                                                        {item.offsite_reason ||
-                                                            item.notes ||
-                                                            "-"}
-                                                    </small>
+                                                    {item.check_in_time ? (
+                                                        <div style={{ minWidth: "150px" }}>
+                                                            {item.work_type === "onsite" ? (
+                                                                <span className="text-muted small">User melakukan presensi onsite</span>
+                                                            ) : (
+                                                                <span className="small" title={item.offsite_reason || ""}>
+                                                                    {item.offsite_reason ? (item.offsite_reason.length > 30 ? item.offsite_reason.substring(0, 30) + "..." : item.offsite_reason) : "Tidak ada keterangan"}
+                                                                    {item.check_in_photo && (
+                                                                        <i className="bi bi-image ms-1 text-primary" title="Bukti Foto"></i>
+                                                                    )}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-muted">-</span>
+                                                    )}
+                                                </td>
+
+                                                {/* Keterangan Check-out */}
+                                                <td>
+                                                    {item.check_out_time ? (
+                                                        <div style={{ minWidth: "150px" }}>
+                                                            {!item.checkout_offsite_reason && !item.check_out_photo ? (
+                                                                <span className="text-muted small">User melakukan presensi onsite</span>
+                                                            ) : (
+                                                                <span className="small" title={item.checkout_offsite_reason || ""}>
+                                                                    {item.checkout_offsite_reason ? (item.checkout_offsite_reason.length > 30 ? item.checkout_offsite_reason.substring(0, 30) + "..." : item.checkout_offsite_reason) : "Tidak ada keterangan"}
+                                                                    {item.check_out_photo && (
+                                                                        <i className="bi bi-image ms-1 text-primary" title="Bukti Foto"></i>
+                                                                    )}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-muted">-</span>
+                                                    )}
                                                 </td>
                                                 <td>
                                                     <button
@@ -2433,24 +2481,7 @@ const Attendance = () => {
                                             </strong>
                                         </div>
                                     </div>
-                                    <div className="col-md-3">
-                                        <div className="border rounded p-3 bg-light">
-                                            <small className="text-muted d-block mb-1">
-                                                <i className="bi bi-building me-2"></i>
-                                                Tipe
-                                            </small>
-                                            {selectedAttendance.work_type && (
-                                                <span
-                                                    className={`badge bg-${getWorkTypeBadge(
-                                                        selectedAttendance.work_type,
-                                                    )} fs-6`}
-                                                >
-                                                    {selectedAttendance.work_type.toUpperCase()}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="col-md-3">
+                                    <div className="col-md-6">
                                         <div className="border rounded p-3 bg-light">
                                             <small className="text-muted d-block mb-1">
                                                 <i className="bi bi-flag me-2"></i>
@@ -2459,9 +2490,10 @@ const Attendance = () => {
                                             <span
                                                 className={`badge bg-${getStatusBadge(
                                                     selectedAttendance.status,
-                                                )} fs-6`}
+                                                ).bg} fs-6`}
                                             >
-                                                {selectedAttendance.status.toUpperCase()}
+                                                <i className={`bi bi-${getStatusBadge(selectedAttendance.status).icon} me-1`}></i>
+                                                {getStatusBadge(selectedAttendance.status).text}
                                             </span>
                                         </div>
                                     </div>
@@ -2477,11 +2509,17 @@ const Attendance = () => {
                                                 <i className="bi bi-box-arrow-in-right me-2 text-success"></i>
                                                 Check-in Time
                                             </small>
-                                            <strong className="fs-4 text-success">
+                                            <strong className="fs-4 text-success d-block mb-2">
                                                 {formatTime(
                                                     selectedAttendance.check_in_time,
                                                 )}
                                             </strong>
+                                            {selectedAttendance.check_in_time && (
+                                                <span className={`badge bg-${selectedAttendance.work_type === 'onsite' ? 'primary' : 'warning'}`}>
+                                                    <i className={`bi bi-${selectedAttendance.work_type === 'onsite' ? 'building' : 'house-door'} me-1`}></i>
+                                                    {selectedAttendance.work_type === 'onsite' ? 'ONSITE' : 'OFFSITE'}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="col-md-6">
@@ -2492,11 +2530,17 @@ const Attendance = () => {
                                                 <i className="bi bi-box-arrow-right me-2 text-danger"></i>
                                                 Check-out Time
                                             </small>
-                                            <strong className="fs-4 text-danger">
+                                            <strong className="fs-4 text-danger d-block mb-2">
                                                 {formatTime(
                                                     selectedAttendance.check_out_time,
                                                 ) || "Belum Checkout"}
                                             </strong>
+                                            {selectedAttendance.check_out_time && (
+                                                <span className={`badge bg-${!selectedAttendance.checkout_offsite_reason && !selectedAttendance.check_out_photo ? 'primary' : 'warning'}`}>
+                                                    <i className={`bi bi-${!selectedAttendance.checkout_offsite_reason && !selectedAttendance.check_out_photo ? 'building' : 'house-door'} me-1`}></i>
+                                                    {!selectedAttendance.checkout_offsite_reason && !selectedAttendance.check_out_photo ? 'ONSITE' : 'OFFSITE'}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>

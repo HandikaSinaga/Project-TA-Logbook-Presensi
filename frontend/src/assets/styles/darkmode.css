@@ -11,8 +11,8 @@
     --dm-bg-hover:   #2f3441;
     --dm-border:     #3a3f4d;
     --dm-text:       #e2e6f0;
-    --dm-text-muted: #8b95a8;
-    --dm-text-label: #c5ccd9;
+    --dm-text-muted: #adb8cc;  /* Ditingkatkan dari #8b95a8 agar lebih kontras */
+    --dm-text-label: #d0d8e8;  /* Ditingkatkan dari #c5ccd9 agar lebih kontras */
     color-scheme: dark;
 }
 
@@ -153,8 +153,19 @@
     color: var(--dm-text) !important;
 }
 
-[data-theme="dark"] small,
-[data-theme="dark"] .small {
+/* small & .small: muted tapi tidak override badge/alert/pill yang punya warna */
+[data-theme="dark"] small:not(.badge):not([class*="text-"]),
+[data-theme="dark"] .small:not(.badge):not([class*="text-"]) {
+    color: var(--dm-text-muted) !important;
+}
+/* small dengan class text-muted tetap ikut dm-text-muted */
+[data-theme="dark"] small.text-muted,
+[data-theme="dark"] .small.text-muted {
+    color: var(--dm-text-muted) !important;
+}
+
+/* text-secondary di dark mode = sama seperti text-muted agar lebih terbaca */
+[data-theme="dark"] .text-secondary {
     color: var(--dm-text-muted) !important;
 }
 
@@ -272,7 +283,7 @@
     border-color: var(--dm-border) !important;
     color: var(--dm-text) !important;
 }
-[data-theme="dark"] .modal-header .btn-close {
+[data-theme="dark"] .modal-header .btn-close:not(.btn-close-white) {
     filter: invert(1) grayscale(100%) brightness(200%) !important;
 }
 [data-theme="dark"] .modal-footer {
@@ -314,13 +325,63 @@
 }
 
 /* ---- Badges ---- */
-[data-theme="dark"] .badge.bg-light {
+/* bg-light badge: latar gelap, teks terang */
+[data-theme="dark"] .badge.bg-light,
+[data-theme="dark"] .badge.text-bg-light {
     background-color: var(--dm-bg-hover) !important;
     color: var(--dm-text) !important;
 }
-[data-theme="dark"] .badge.bg-secondary {
-    background-color: #4a5568 !important;
-    color: #e2e6f0 !important;
+
+/* bg-secondary badge: abu-abu lebih terang + teks putih */
+[data-theme="dark"] .badge.bg-secondary,
+[data-theme="dark"] .badge.text-bg-secondary {
+    background-color: #5a6478 !important;
+    color: #ffffff !important;
+}
+
+/* Bootstrap 5 bg-*-subtle badges: override agar teks cukup terang */
+[data-theme="dark"] .badge.bg-primary-subtle,
+[data-theme="dark"] .badge.text-bg-primary {
+    background-color: #1e3a5f !important;
+    color: #90c4ff !important;
+}
+[data-theme="dark"] .badge.bg-success-subtle,
+[data-theme="dark"] .badge.text-bg-success {
+    background-color: #1a3d2e !important;
+    color: #86efac !important;
+}
+[data-theme="dark"] .badge.bg-danger-subtle,
+[data-theme="dark"] .badge.text-bg-danger {
+    background-color: #3d1a1a !important;
+    color: #fca5a5 !important;
+}
+[data-theme="dark"] .badge.bg-warning-subtle,
+[data-theme="dark"] .badge.text-bg-warning {
+    background-color: #3d2e00 !important;
+    color: #fde68a !important;
+}
+[data-theme="dark"] .badge.bg-info-subtle,
+[data-theme="dark"] .badge.text-bg-info {
+    background-color: #1a2f3d !important;
+    color: #7dd3fc !important;
+}
+
+/* Span/div badge yang memakai kelas bg-* langsung (non-.badge Bootstrap class) */
+[data-theme="dark"] span.badge.bg-danger-subtle.text-danger {
+    background-color: #3d1a1a !important;
+    color: #fca5a5 !important;
+}
+[data-theme="dark"] span.badge.bg-secondary.bg-opacity-10 {
+    background-color: rgba(90, 100, 120, 0.35) !important;
+    color: var(--dm-text) !important;
+}
+
+/* Teks di dalam badge dengan text-dark (supaya tidak hitam di dark mode) */
+[data-theme="dark"] .badge.text-dark {
+    color: var(--dm-text) !important;
+}
+[data-theme="dark"] .badge[class*="text-muted"] {
+    color: var(--dm-text-muted) !important;
 }
 
 /* ---- Accordion ---- */

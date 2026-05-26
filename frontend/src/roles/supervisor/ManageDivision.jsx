@@ -16,6 +16,7 @@ import {
 const ManageDivision = () => {
     const [loading, setLoading] = useState(true);
     const [division, setDivision] = useState(null);
+    const [currentUser, setCurrentUser] = useState(null);
     const [supervisedUsers, setSupervisedUsers] = useState([]);
     const [availableUsers, setAvailableUsers] = useState([]);
     const [selectedSupervisedUser, setSelectedSupervisedUser] = useState(null);
@@ -35,8 +36,18 @@ const ManageDivision = () => {
     });
 
     useEffect(() => {
+        fetchCurrentUser();
         fetchDivisionData();
     }, []);
+
+    const fetchCurrentUser = async () => {
+        try {
+            const res = await axiosInstance.get("/supervisor/profile");
+            setCurrentUser(res.data.data || res.data);
+        } catch (error) {
+            console.error("Error fetching current user:", error);
+        }
+    };
 
     const fetchDivisionData = async () => {
         try {
@@ -130,6 +141,11 @@ const ManageDivision = () => {
     const openRemoveModal = () => {
         if (!selectedSupervisedUser) {
             toast.error("Pilih user yang akan dihapus");
+            return;
+        }
+        // Cegah supervisor menghapus dirinya sendiri
+        if (currentUser && selectedSupervisedUser.id === currentUser.id) {
+            toast.error("Anda tidak dapat menghapus diri sendiri dari divisi");
             return;
         }
         setUserToRemove(selectedSupervisedUser);

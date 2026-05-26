@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import toast from "react-hot-toast";
+import { getAvatarUrl } from "../../utils/Constant";
 
 const AdminDivisions = () => {
     const [loading, setLoading] = useState(true);
@@ -13,6 +14,7 @@ const AdminDivisions = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [memberToRemove, setMemberToRemove] = useState(null);
     const [formData, setFormData] = useState({
         name: "",
         description: "",
@@ -35,6 +37,7 @@ const AdminDivisions = () => {
     });
 
     const [showFilters, setShowFilters] = useState(false);
+    const [activeTab, setActiveTab] = useState("info");
     const modalBodyRef = useRef(null);
 
     useEffect(() => {
@@ -264,6 +267,21 @@ const AdminDivisions = () => {
         });
     };
 
+    const handleRemoveMember = async (memberId) => {
+        if (!editingId) return;
+        
+        try {
+            await axiosInstance.delete(`/admin/divisions/${editingId}/members/${memberId}`);
+            toast.success("Anggota berhasil dikeluarkan dari divisi");
+            
+            // Refresh data
+            fetchDivisions();
+            fetchUnassignedUsers();
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Gagal mengeluarkan anggota");
+        }
+    };
+
     // Get unique periodes from divisions
     const uniquePeriodes = [
         ...new Set(
@@ -277,12 +295,27 @@ const AdminDivisions = () => {
         (v) => v !== ""
     ).length;
 
-    // Filtered supervisors based on search
-    const filteredSupervisors = supervisors.filter(
-        (sup) =>
-            sup.name.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
-            sup.email.toLowerCase().includes(supervisorSearch.toLowerCase())
-    );
+    // Filtered supervisors based on search and availability
+    const filteredSupervisors = supervisors.filter((sup) => {
+        // Find if this supervisor is already leading ANY division
+        const isLeadingAnotherDivision = divisions.some(d => 
+            d.supervisor_id === sup.id || d.supervisor_id === String(sup.id)
+        );
+        
+        let isAvailable = !isLeadingAnotherDivision;
+        
+        // Show if they are the ORIGINAL supervisor of this division being edited
+        const currentDivision = divisions.find(d => d.id === editingId);
+        const originalSupId = currentDivision ? currentDivision.supervisor_id : null;
+        if (editingId && originalSupId && (originalSupId === sup.id || originalSupId === String(sup.id))) {
+            isAvailable = true;
+        }
+
+        if (!isAvailable) return false;
+
+        return sup.name.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
+               sup.email.toLowerCase().includes(supervisorSearch.toLowerCase());
+    });
 
     // Filtered unassigned users based on search
     const filteredUnassignedUsers = unassignedUsers.filter(
@@ -325,6 +358,7 @@ const AdminDivisions = () => {
                                 onClick={() => {
                                     setShowModal(true);
                                     setEditingId(null);
+                                    setActiveTab("info");
                                     setSupervisorSearch("");
                                     setUserSearch("");
                                     setFormData({
@@ -663,19 +697,21 @@ const AdminDivisions = () => {
                                                             setEditingId(
                                                                 division.id
                                                             );
+                                                            setActiveTab("info");
                                                             setFormData({
-                                                                name: division.name,
+                                                                name: division.name || "",
                                                                 description:
                                                                     division.description ||
                                                                     "",
                                                                 supervisor_id:
                                                                     division.supervisor_id ||
+                                                                    division.supervisor?.id ||
                                                                     "",
                                                                 periode:
                                                                     division.periode ||
                                                                     "",
                                                                 is_active:
-                                                                    division.is_active,
+                                                                    division.is_active !== undefined ? division.is_active : true,
                                                                 assigned_user_ids:
                                                                     [], // Reset saat edit
                                                             });
@@ -731,7 +767,7 @@ const AdminDivisions = () => {
             {showModal && (
                 <div
                     className="modal fade show d-block"
-                    style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+                    style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1050 }}
                     onClick={(e) => {
                         if (e.target === e.currentTarget) {
                             setShowModal(false);
@@ -741,21 +777,17 @@ const AdminDivisions = () => {
                         }
                     }}
                 >
-                    <div className="modal-dialog modal-lg modal-dialog-centered">
-                        <div className="modal-content shadow-lg border-0">
-                            <div className="modal-header bg-primary text-white border-0">
-                                <h5 className="modal-title d-flex align-items-center">
-                                    <i
-                                        className={`bi ${
-                                            editingId
-                                                ? "bi-pencil-square"
-                                                : "bi-plus-circle"
-                                        } me-2`}
-                                    ></i>
-                                    {editingId
-                                        ? "Edit Divisi"
-                                        : "Tambah Divisi"}
-                                </h5>
+                    <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                        <form onSubmit={handleSubmit} className="modal-content shadow-lg border-0 overflow-hidden" style={{ borderRadius: '12px' }}>
+                            <div className="modal-header border-0 bg-primary text-white p-4">
+                                <div>
+                                    <h5 className="modal-title fw-bold mb-1">
+                                        {editingId ? "Edit Divisi" : "Tambah Divisi Baru"}
+                                    </h5>
+                                    <p className="mb-0 small text-white-50">
+                                        {editingId ? "Perbarui informasi divisi dan struktur keanggotaan." : "Buat divisi baru dan tetapkan supervisor beserta anggotanya."}
+                                    </p>
+                                </div>
                                 <button
                                     type="button"
                                     className="btn-close btn-close-white"
@@ -767,314 +799,350 @@ const AdminDivisions = () => {
                                     }}
                                 ></button>
                             </div>
-                            <form onSubmit={handleSubmit}>
-                                <div
-                                    className="modal-body"
-                                    ref={modalBodyRef}
-                                    style={{
-                                        maxHeight: "60vh",
-                                        overflowY: "auto",
-                                    }}
-                                >
-                                    <div className="row g-3">
-                                        {/* Nama Divisi */}
-                                        <div className="col-md-6">
-                                            <label className="form-label fw-semibold">
-                                                Nama Divisi
-                                                <span className="text-danger">
-                                                    *
-                                                </span>
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                placeholder="Contoh: IT Department, HR, Finance"
-                                                value={formData.name}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        name: e.target.value,
-                                                    })
-                                                }
-                                                required
-                                            />
-                                            <small className="text-muted">
-                                                <i className="bi bi-info-circle me-1"></i>
-                                                Nama divisi harus unik
-                                            </small>
-                                        </div>
 
-                                        {/* Periode */}
-                                        <div className="col-md-6">
-                                            <label className="form-label fw-semibold">
-                                                Periode/Batch
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                placeholder="Contoh: 2024-01, Q1-2024, Angkatan 15"
-                                                value={formData.periode}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        periode: e.target.value,
-                                                    })
-                                                }
-                                            />
-                                            <small className="text-muted">
-                                                <i className="bi bi-info-circle me-1"></i>
-                                                Opsional - untuk periode
-                                                tertentu
-                                            </small>
-                                        </div>
-
-                                        {/* Deskripsi */}
-                                        <div className="col-12">
-                                            <label className="form-label fw-semibold">
-                                                Deskripsi
-                                            </label>
-                                            <textarea
-                                                className="form-control"
-                                                rows="3"
-                                                placeholder="Deskripsi singkat tentang divisi ini..."
-                                                value={formData.description}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        description:
-                                                            e.target.value,
-                                                    })
-                                                }
-                                            ></textarea>
-                                            <small className="text-muted">
-                                                <i className="bi bi-info-circle me-1"></i>
-                                                Opsional - jelaskan tugas dan
-                                                tanggung jawab divisi
-                                            </small>
-                                        </div>
-
-                                        {/* Supervisor */}
-                                        <div className="col-md-6">
-                                            <label className="form-label fw-semibold">
-                                                Supervisor
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="form-control mb-2"
-                                                placeholder="Cari supervisor..."
-                                                value={supervisorSearch}
-                                                onChange={(e) =>
-                                                    setSupervisorSearch(
-                                                        e.target.value
-                                                    )
-                                                }
-                                            />
-                                            <select
-                                                className="form-select"
-                                                value={formData.supervisor_id}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        supervisor_id:
-                                                            e.target.value,
-                                                    })
-                                                }
-                                                size="5"
-                                                style={{ minHeight: "120px" }}
-                                            >
-                                                <option value="">
-                                                    Belum ada supervisor
-                                                </option>
-                                                {filteredSupervisors.map(
-                                                    (sup) => (
-                                                        <option
-                                                            key={sup.id}
-                                                            value={sup.id}
-                                                        >
-                                                            {sup.name} -{" "}
-                                                            {sup.email}
-                                                        </option>
-                                                    )
-                                                )}
-                                            </select>
-                                            <small className="text-muted">
-                                                <i className="bi bi-info-circle me-1"></i>
-                                                Opsional - supervisor bisa di
-                                                beberapa divisi
-                                            </small>
-                                        </div>
-
-                                        {/* Status */}
-                                        <div className="col-md-6">
-                                            <label className="form-label fw-semibold">
-                                                Status
-                                            </label>
-                                            <select
-                                                className="form-select"
-                                                value={formData.is_active}
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        is_active:
-                                                            e.target.value ===
-                                                            "true",
-                                                    })
-                                                }
-                                            >
-                                                <option value="true">
-                                                    Aktif
-                                                </option>
-                                                <option value="false">
-                                                    Nonaktif
-                                                </option>
-                                            </select>
-                                            <small className="text-muted">
-                                                <i className="bi bi-info-circle me-1"></i>
-                                                Status aktif/nonaktif divisi
-                                            </small>
-                                        </div>
-                                    </div>
-
-                                    {/* Assign Users Section */}
-                                    <div className="mt-4 pt-3 border-top">
-                                        <h6 className="mb-3">
-                                            <i className="bi bi-people-fill me-2"></i>
-                                            Assign Users ke Divisi Ini
-                                            <small
-                                                className="text-muted ms-2"
-                                                style={{ fontWeight: "normal" }}
-                                            >
-                                                (Opsional)
-                                            </small>
-                                        </h6>
-
-                                        <div className="mb-3">
-                                            <label className="form-label">
-                                                Cari User Belum Memiliki Divisi
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                placeholder="Ketik nama atau email untuk mencari..."
-                                                value={userSearch}
-                                                onChange={(e) =>
-                                                    setUserSearch(
-                                                        e.target.value
-                                                    )
-                                                }
-                                            />
-                                        </div>
-
-                                        <div
-                                            className="border rounded p-3 bg-light"
-                                            style={{
-                                                maxHeight: "200px",
-                                                overflowY: "auto",
-                                            }}
+                            {/* Tabs Navigation */}
+                            <div className="bg-light border-bottom px-4 pt-3">
+                                <ul className="nav nav-tabs border-0" style={{ gap: '5px' }}>
+                                    <li className="nav-item">
+                                        <button
+                                            type="button"
+                                            className={`nav-link border-0 rounded-top ${activeTab === 'info' ? 'active bg-white fw-bold text-primary shadow-sm' : 'text-muted'}`}
+                                            onClick={(e) => { e.preventDefault(); setActiveTab('info'); }}
+                                            style={{ padding: '10px 20px', transition: 'all 0.2s' }}
                                         >
-                                            {unassignedUsers.length === 0 ? (
-                                                <div className="text-center text-muted py-3">
-                                                    <i
-                                                        className="bi bi-inbox"
-                                                        style={{
-                                                            fontSize: "2rem",
-                                                        }}
-                                                    ></i>
-                                                    <p className="mt-2 mb-0">
-                                                        Tidak ada user yang
-                                                        belum memiliki divisi
-                                                    </p>
-                                                </div>
-                                            ) : filteredUnassignedUsers.length ===
-                                              0 ? (
-                                                <div className="text-center text-muted py-3">
-                                                    <i
-                                                        className="bi bi-search"
-                                                        style={{
-                                                            fontSize: "2rem",
-                                                        }}
-                                                    ></i>
-                                                    <p className="mt-2 mb-0">
-                                                        Tidak ada user yang
-                                                        cocok dengan pencarian
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                filteredUnassignedUsers.map(
-                                                    (user) => (
-                                                        <div
-                                                            key={user.id}
-                                                            className="form-check mb-2 p-2 bg-white rounded border"
-                                                        >
+                                            <i className="bi bi-info-circle me-2"></i>
+                                            Informasi Dasar
+                                        </button>
+                                    </li>
+                                    <li className="nav-item">
+                                        <button
+                                            type="button"
+                                            className={`nav-link border-0 rounded-top ${activeTab === 'supervisor' ? 'active bg-white fw-bold text-primary shadow-sm' : 'text-muted'}`}
+                                            onClick={(e) => { e.preventDefault(); setActiveTab('supervisor'); }}
+                                            style={{ padding: '10px 20px', transition: 'all 0.2s' }}
+                                        >
+                                            <i className="bi bi-person-badge me-2"></i>
+                                            Supervisor
+                                        </button>
+                                    </li>
+                                    <li className="nav-item">
+                                        <button
+                                            type="button"
+                                            className={`nav-link border-0 rounded-top ${activeTab === 'members' ? 'active bg-white fw-bold text-primary shadow-sm' : 'text-muted'}`}
+                                            onClick={(e) => { e.preventDefault(); setActiveTab('members'); }}
+                                            style={{ padding: '10px 20px', transition: 'all 0.2s' }}
+                                        >
+                                            <i className="bi bi-people me-2"></i>
+                                            Anggota Divisi
+                                            {formData.assigned_user_ids.length > 0 && (
+                                                <span className="badge bg-primary ms-2 rounded-pill">
+                                                    {formData.assigned_user_ids.length}
+                                                </span>
+                                            )}
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <div
+                                className="modal-body p-4 bg-white"
+                                    ref={modalBodyRef}
+                                >
+                                    {/* Tab Content: Info */}
+                                    {activeTab === 'info' && (
+                                        <div className="row g-4 animation-fade-in">
+                                            <div className="col-md-6">
+                                                <label className="form-label fw-semibold text-dark">
+                                                    Nama Divisi <span className="text-danger">*</span>
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control form-control-lg bg-light border-0 focus-ring focus-ring-primary"
+                                                    placeholder="Contoh: IT Department, HR"
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div className="col-md-6">
+                                                <label className="form-label fw-semibold text-dark">
+                                                    Periode/Batch
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control form-control-lg bg-light border-0 focus-ring focus-ring-primary"
+                                                    placeholder="Contoh: 2024-01"
+                                                    value={formData.periode}
+                                                    onChange={(e) => setFormData({ ...formData, periode: e.target.value })}
+                                                />
+                                            </div>
+
+                                            <div className="col-12">
+                                                <label className="form-label fw-semibold text-dark">
+                                                    Deskripsi
+                                                </label>
+                                                <textarea
+                                                    className="form-control bg-light border-0 focus-ring focus-ring-primary"
+                                                    rows="4"
+                                                    placeholder="Jelaskan peran dan tanggung jawab divisi ini..."
+                                                    value={formData.description}
+                                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                ></textarea>
+                                            </div>
+
+                                            <div className="col-12">
+                                                <div className="card border-0 bg-light rounded-3">
+                                                    <div className="card-body d-flex align-items-center justify-content-between p-3">
+                                                        <div>
+                                                            <h6 className="mb-1 fw-semibold text-dark">Status Divisi</h6>
+                                                            <p className="mb-0 small text-muted">Aktifkan atau nonaktifkan divisi ini</p>
+                                                        </div>
+                                                        <div className="form-check form-switch fs-4 mb-0">
                                                             <input
+                                                                className="form-check-input cursor-pointer"
                                                                 type="checkbox"
-                                                                className="form-check-input"
-                                                                id={`assign-user-${user.id}`}
-                                                                checked={formData.assigned_user_ids.includes(
-                                                                    user.id
-                                                                )}
-                                                                onChange={() =>
-                                                                    handleToggleUserSelection(
-                                                                        user.id
-                                                                    )
-                                                                }
+                                                                role="switch"
+                                                                checked={formData.is_active}
+                                                                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                                                             />
-                                                            <label
-                                                                className="form-check-label w-100"
-                                                                htmlFor={`assign-user-${user.id}`}
-                                                                style={{
-                                                                    cursor: "pointer",
-                                                                }}
-                                                            >
-                                                                <div className="d-flex justify-content-between align-items-center">
-                                                                    <div>
-                                                                        <strong>
-                                                                            {
-                                                                                user.name
-                                                                            }
-                                                                        </strong>
-                                                                        <div className="text-muted small">
-                                                                            {
-                                                                                user.email
-                                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Tab Content: Supervisor */}
+                                    {activeTab === 'supervisor' && (
+                                        <div className="animation-fade-in">
+                                            <div className="alert border-0 bg-primary bg-opacity-10 text-primary d-flex align-items-center p-3 mb-4 rounded-3">
+                                                <i className="bi bi-info-circle-fill fs-4 me-3"></i>
+                                                <div>
+                                                    <strong className="d-block">Pilih Supervisor (Opsional)</strong>
+                                                    <span className="small opacity-75">Supervisor akan memiliki akses untuk mengelola kehadiran dan logbook anggota divisi.</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="mb-3 position-relative">
+                                                <i className="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                                                <input
+                                                    type="text"
+                                                    className="form-control form-control-lg bg-light border-0 ps-5 focus-ring focus-ring-primary"
+                                                    placeholder="Cari nama atau email supervisor..."
+                                                    value={supervisorSearch}
+                                                    onChange={(e) => setSupervisorSearch(e.target.value)}
+                                                />
+                                            </div>
+                                            
+                                            <div className="border border-light-subtle rounded-3 overflow-hidden bg-white shadow-sm" style={{ height: "300px" }}>
+                                                <div className="list-group list-group-flush h-100 overflow-auto custom-scrollbar">
+                                                    <button
+                                                        type="button"
+                                                        className={`list-group-item list-group-item-action p-3 border-bottom ${formData.supervisor_id === "" ? "bg-light-primary border-primary border-start border-4" : ""}`}
+                                                        onClick={() => setFormData({ ...formData, supervisor_id: "" })}
+                                                        style={{ backgroundColor: formData.supervisor_id === "" ? "rgba(13, 110, 253, 0.05)" : "" }}
+                                                    >
+                                                        <div className="d-flex align-items-center">
+                                                            <div className="avatar-circle bg-secondary text-white me-3 d-flex align-items-center justify-content-center rounded-circle" style={{ width: '40px', height: '40px' }}>
+                                                                <i className="bi bi-person-dash"></i>
+                                                            </div>
+                                                            <div>
+                                                                <h6 className="mb-0 fw-semibold text-dark">Tanpa Supervisor</h6>
+                                                                <small className="text-muted">Kosongkan supervisor untuk divisi ini</small>
+                                                            </div>
+                                                            {formData.supervisor_id === "" && (
+                                                                <i className="bi bi-check-circle-fill text-primary ms-auto fs-5"></i>
+                                                            )}
+                                                        </div>
+                                                    </button>
+                                                    {filteredSupervisors.length === 0 ? (
+                                                        <div className="text-center text-muted py-5">
+                                                            <i className="bi bi-search fs-1 mb-2"></i>
+                                                            <p>Tidak ada supervisor yang cocok dengan pencarian.</p>
+                                                        </div>
+                                                    ) : (
+                                                        filteredSupervisors
+                                                            .sort((a, b) => {
+                                                                const currentDivision = divisions.find(d => d.id === editingId);
+                                                                const originalSupId = currentDivision ? currentDivision.supervisor_id : null;
+                                                                const aIsOriginal = originalSupId && (originalSupId === a.id || originalSupId === String(a.id));
+                                                                const bIsOriginal = originalSupId && (originalSupId === b.id || originalSupId === String(b.id));
+                                                                if (aIsOriginal && !bIsOriginal) return -1;
+                                                                if (!aIsOriginal && bIsOriginal) return 1;
+                                                                return 0;
+                                                            })
+                                                            .map((sup) => {
+                                                                const isSelected = formData.supervisor_id === sup.id || formData.supervisor_id === String(sup.id);
+                                                                const currentDivision = divisions.find(d => d.id === editingId);
+                                                                const originalSupId = currentDivision ? currentDivision.supervisor_id : null;
+                                                                const isOriginalSupervisor = originalSupId && (originalSupId === sup.id || originalSupId === String(sup.id));
+                                                                
+                                                                return (
+                                                                <button
+                                                                    type="button"
+                                                                    key={sup.id}
+                                                                    className={`list-group-item list-group-item-action p-3 border-bottom ${isSelected ? "border-primary border-start border-4" : ""}`}
+                                                                    onClick={() => setFormData({ ...formData, supervisor_id: sup.id })}
+                                                                    style={{ backgroundColor: isSelected ? "rgba(13, 110, 253, 0.05)" : "" }}
+                                                                >
+                                                                    <div className="d-flex align-items-center">
+                                                                        <img src={getAvatarUrl(sup)} alt="Avatar" className="rounded-circle me-3 shadow-sm border" style={{ width: '40px', height: '40px', objectFit: 'cover' }} />
+                                                                        <div className="text-start">
+                                                                            <h6 className="mb-0 fw-semibold text-dark">
+                                                                                {sup.name}
+                                                                                {isOriginalSupervisor && editingId && (
+                                                                                    <span className="badge bg-primary ms-2 rounded-pill" style={{ fontSize: '10px' }}>Supervisor Saat Ini</span>
+                                                                                )}
+                                                                            </h6>
+                                                                            <small className="text-muted"><i className="bi bi-envelope me-1"></i>{sup.email}</small>
                                                                         </div>
+                                                                        {isSelected && (
+                                                                            <i className="bi bi-check-circle-fill text-primary ms-auto fs-5"></i>
+                                                                        )}
                                                                     </div>
-                                                                    <span className="badge bg-secondary">
-                                                                        {
-                                                                            user.role
-                                                                        }
+                                                                </button>
+                                                            );
+                                                        })
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Tab Content: Members */}
+                                    {activeTab === 'members' && (
+                                        <div className="animation-fade-in">
+                                            {editingId && (
+                                                <div className="mb-4">
+                                                    <h6 className="mb-3 text-dark fw-bold border-bottom pb-2">
+                                                        <i className="bi bi-people-fill me-2 text-primary"></i>
+                                                        Anggota Saat Ini
+                                                    </h6>
+                                                    <div className="bg-light rounded p-3" style={{ maxHeight: "200px", overflowY: "auto" }}>
+                                                        {(() => {
+                                                            const currentDivision = divisions.find(d => d.id === editingId);
+                                                            let currentMembers = currentDivision?.members || [];
+                                                            
+                                                            const currentSupId = parseInt(formData.supervisor_id || currentDivision?.supervisor_id);
+                                                            
+                                                            currentMembers = [...currentMembers].sort((a, b) => {
+                                                                if (a.id === currentSupId) return -1;
+                                                                if (b.id === currentSupId) return 1;
+                                                                return 0;
+                                                            });
+
+                                                            if (currentMembers.length === 0) {
+                                                                return (
+                                                                    <div className="text-center text-muted py-2">
+                                                                        <i className="bi bi-inbox fs-4 d-block mb-1"></i>
+                                                                        <small>Belum ada anggota di divisi ini</small>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            return (
+                                                                <ul className="list-group list-group-flush">
+                                                                    {currentMembers.map(member => (
+                                                                        <li key={member.id} className="list-group-item bg-transparent px-0 py-2 d-flex align-items-center border-bottom-0">
+                                                                            <img src={getAvatarUrl(member)} alt="Avatar" className="rounded-circle me-3 border" style={{ width: '32px', height: '32px', objectFit: 'cover' }} />
+                                                                            <div>
+                                                                                <div className="fw-semibold text-dark d-flex align-items-center gap-2" style={{ fontSize: '14px' }}>
+                                                                                    {member.name}
+                                                                                    {member.id === currentSupId && (
+                                                                                        <span className="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill" style={{ fontSize: '10px' }}>
+                                                                                            <i className="bi bi-star-fill me-1"></i>
+                                                                                            Supervisor
+                                                                                        </span>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="text-muted" style={{ fontSize: '12px' }}>{member.email}</div>
+                                                                            </div>
+                                                                            <span className="badge bg-success ms-auto rounded-pill me-2" style={{ fontSize: '11px' }}>Aktif</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                className="btn btn-sm btn-outline-danger border-0 rounded-circle"
+                                                                                onClick={() => setMemberToRemove(member)}
+                                                                                title="Keluarkan dari divisi"
+                                                                            >
+                                                                                <i className="bi bi-person-x-fill"></i>
+                                                                            </button>
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="mb-3">
+                                                <h6 className="mb-3 text-dark fw-bold border-bottom pb-2">
+                                                    <i className="bi bi-person-plus-fill me-2 text-primary"></i>
+                                                    Tambahkan Anggota Baru <small className="text-muted fw-normal">(Opsional)</small>
+                                                </h6>
+                                                <div className="position-relative">
+                                                    <i className="bi bi-search position-absolute text-muted" style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }}></i>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control form-control-lg bg-light border-0 focus-ring focus-ring-primary ps-5"
+                                                        placeholder="Cari user yang belum memiliki divisi..."
+                                                        value={userSearch}
+                                                        onChange={(e) => setUserSearch(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="border border-light-subtle rounded-3 overflow-hidden bg-white shadow-sm" style={{ maxHeight: "300px", overflowY: "auto" }}>
+                                                {unassignedUsers.length === 0 ? (
+                                                    <div className="text-center text-muted py-5 bg-light">
+                                                        <i className="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                                                        <p className="mb-0 fw-medium">Tidak ada user yang tersedia</p>
+                                                        <small>Semua user saat ini sudah masuk ke divisi</small>
+                                                    </div>
+                                                ) : filteredUnassignedUsers.length === 0 ? (
+                                                    <div className="text-center text-muted py-5 bg-light">
+                                                        <i className="bi bi-search fs-1 d-block mb-2 text-secondary"></i>
+                                                        <p className="mb-0 fw-medium">User tidak ditemukan</p>
+                                                        <small>Coba gunakan kata kunci pencarian yang lain</small>
+                                                    </div>
+                                                ) : (
+                                                    <div className="list-group list-group-flush h-100 overflow-auto custom-scrollbar">
+                                                        {filteredUnassignedUsers.map((user) => (
+                                                            <label
+                                                                key={user.id}
+                                                                className={`list-group-item list-group-item-action p-3 cursor-pointer border-bottom ${formData.assigned_user_ids.includes(user.id) ? "border-info border-start border-4" : ""}`}
+                                                                style={{ backgroundColor: formData.assigned_user_ids.includes(user.id) ? "rgba(13, 202, 240, 0.05)" : "" }}
+                                                            >
+                                                                <div className="d-flex align-items-center">
+                                                                    <div className="form-check mb-0 me-3">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            className="form-check-input fs-5 shadow-sm"
+                                                                            checked={formData.assigned_user_ids.includes(user.id)}
+                                                                            onChange={() => handleToggleUserSelection(user.id)}
+                                                                        />
+                                                                    </div>
+                                                                    <img src={getAvatarUrl(user)} alt="Avatar" className="rounded-circle me-3 shadow-sm border" style={{ width: '36px', height: '36px', objectFit: 'cover' }} />
+                                                                    <div>
+                                                                        <h6 className="mb-0 fw-semibold text-dark">{user.name}</h6>
+                                                                        <small className="text-muted"><i className="bi bi-envelope me-1"></i>{user.email}</small>
+                                                                    </div>
+                                                                    <span className="badge bg-light text-secondary border ms-auto rounded-pill px-3 py-2">
+                                                                        {user.role}
                                                                     </span>
                                                                 </div>
                                                             </label>
-                                                        </div>
-                                                    )
-                                                )
-                                            )}
-                                        </div>
-
-                                        {formData.assigned_user_ids.length >
-                                            0 && (
-                                            <div className="alert alert-info mt-3 mb-0 d-flex align-items-center">
-                                                <i className="bi bi-check-circle-fill me-2"></i>
-                                                <strong>
-                                                    {
-                                                        formData
-                                                            .assigned_user_ids
-                                                            .length
-                                                    }
-                                                </strong>
-                                                <span className="ms-1">
-                                                    user akan ditambahkan ke
-                                                    divisi ini
-                                                </span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="modal-footer bg-light border-top">
+                                <div className="modal-footer bg-light border-top p-3 px-4 d-flex justify-content-end align-items-center">
                                     <button
                                         type="button"
-                                        className="btn btn-secondary px-4"
+                                        className="btn btn-light rounded-pill px-4 border me-2"
                                         onClick={() => {
                                             setShowModal(false);
                                             setEditingId(null);
@@ -1082,19 +1150,17 @@ const AdminDivisions = () => {
                                             setUserSearch("");
                                         }}
                                     >
-                                        <i className="bi bi-x-circle me-2"></i>
                                         Batal
                                     </button>
                                     <button
                                         type="submit"
-                                        className="btn btn-primary px-4"
+                                        className="btn btn-primary rounded-pill px-4 shadow-sm"
                                     >
                                         <i className="bi bi-save me-2"></i>
-                                        Simpan
+                                        Simpan Divisi
                                     </button>
                                 </div>
-                            </form>
-                        </div>
+                        </form>
                     </div>
                 </div>
             )}
@@ -1191,9 +1257,53 @@ const AdminDivisions = () => {
                                         handleDelete(deleteTarget.id)
                                     }
                                 >
-                                    <i className="bi bi-trash me-2"></i>
-                                    Ya, Hapus
+                                    <i className="bi bi-trash-fill me-2"></i>
+                                    Hapus
                                 </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Remove Member Confirmation Modal */}
+            {memberToRemove && (
+                <div
+                    className="modal fade show d-block"
+                    style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1060 }}
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setMemberToRemove(null);
+                    }}
+                >
+                    <div className="modal-dialog modal-dialog-centered modal-sm">
+                        <div className="modal-content shadow border-0 rounded-4">
+                            <div className="modal-body text-center p-4">
+                                <div className="mb-3">
+                                    <i className="bi bi-exclamation-circle text-warning" style={{ fontSize: "3rem" }}></i>
+                                </div>
+                                <h5 className="mb-2 fw-bold">Keluarkan Anggota?</h5>
+                                <p className="text-muted mb-4" style={{ fontSize: "0.9rem" }}>
+                                    Apakah Anda yakin ingin mengeluarkan <strong>{memberToRemove.name}</strong> dari divisi ini?
+                                </p>
+                                <div className="d-flex gap-2 justify-content-center">
+                                    <button
+                                        type="button"
+                                        className="btn btn-light rounded-pill px-4"
+                                        onClick={() => setMemberToRemove(null)}
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-danger rounded-pill px-4"
+                                        onClick={() => {
+                                            handleRemoveMember(memberToRemove.id);
+                                            setMemberToRemove(null);
+                                        }}
+                                    >
+                                        Keluarkan
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>

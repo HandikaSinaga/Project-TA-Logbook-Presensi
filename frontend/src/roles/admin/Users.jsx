@@ -25,6 +25,14 @@ const AdminUsers = () => {
         supervisor_id: "",
         password: "",
         is_active: true,
+        position: "",
+        bio: "",
+        linkedin: "",
+        instagram: "",
+        telegram: "",
+        github: "",
+        twitter: "",
+        facebook: "",
     });
 
     // Filter states
@@ -66,6 +74,10 @@ const AdminUsers = () => {
 
     // Show/Hide password toggle
     const [showPassword, setShowPassword] = useState(false);
+
+    // Combobox states
+    const [divisionSearch, setDivisionSearch] = useState("");
+    const [divisionDropdownOpen, setDivisionDropdownOpen] = useState(false);
 
     // Refs for modals
     const modalBodyRef = useRef(null);
@@ -199,6 +211,20 @@ const AdminUsers = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        if (formData.role === "supervisor" && formData.division_id) {
+            const selectedDiv = divisions.find(d => d.id === parseInt(formData.division_id));
+            if (selectedDiv && selectedDiv.supervisor_id && selectedDiv.supervisor_id !== editingId) {
+                toast.error("Gagal menyimpan: Divisi ini sudah memiliki supervisor. Silakan pilih divisi lain.");
+                return;
+            }
+        }
+
+        // Validasi field yang wajib
+        if (!formData.name || !formData.email || !formData.role || !formData.periode || !formData.sumber_magang) {
+            toast.error("Nama, Email, Role, Periode, dan Sumber Magang wajib diisi.");
+            return;
+        }
+
         // Validasi password untuk user baru
         if (
             !editingId &&
@@ -226,12 +252,32 @@ const AdminUsers = () => {
         try {
             const submitData = { ...formData };
 
+            // Ensure admin role has no division or supervisor
+            if (submitData.role === "admin") {
+                submitData.division_id = null;
+                submitData.supervisor_id = null;
+            }
+
             // Clean empty values, EXCEPT password untuk new user
             Object.keys(submitData).forEach((key) => {
                 // Jangan hapus password jika sedang tambah user baru (required)
                 if (key === "password" && !editingId) {
                     return; // Keep password for new user
                 }
+                
+                // Allow explicit nulling for relations so backend actually unsets them
+                if ((key === "division_id" || key === "supervisor_id") && (submitData[key] === "" || submitData[key] === null)) {
+                    submitData[key] = null;
+                    return;
+                }
+
+                // Untuk field profil opsional, set null jika kosong agar backend bisa mengosongkannya
+                const optionalFields = ["nip", "phone", "address", "position", "bio", "linkedin", "instagram", "telegram", "github", "twitter", "facebook"];
+                if (optionalFields.includes(key) && submitData[key] === "") {
+                    submitData[key] = null;
+                    return;
+                }
+
                 // Hapus field kosong lainnya
                 if (submitData[key] === "" || submitData[key] === null) {
                     delete submitData[key];
@@ -251,6 +297,7 @@ const AdminUsers = () => {
 
             setShowModal(false);
             setEditingId(null);
+            setDivisionSearch("");
             setShowPassword(false);
             setFormData({
                 name: "",
@@ -599,6 +646,7 @@ const AdminUsers = () => {
                                 className="btn btn-primary w-100"
                                 onClick={() => {
                                     setEditingId(null);
+                                    setDivisionSearch("");
                                     setFormData({
                                         name: "",
                                         email: "",
@@ -612,6 +660,14 @@ const AdminUsers = () => {
                                         supervisor_id: "",
                                         password: "",
                                         is_active: true,
+                                        position: "",
+                                        bio: "",
+                                        linkedin: "",
+                                        instagram: "",
+                                        telegram: "",
+                                        github: "",
+                                        twitter: "",
+                                        facebook: "",
                                     });
                                     setShowPassword(false);
                                     setShowModal(true);
@@ -961,6 +1017,14 @@ const AdminUsers = () => {
                                                                                 undefined
                                                                                     ? user.is_active
                                                                                     : true,
+                                                                            position: user.position || "",
+                                                                            bio: user.bio || "",
+                                                                            linkedin: user.linkedin || "",
+                                                                            instagram: user.instagram || "",
+                                                                            telegram: user.telegram || "",
+                                                                            github: user.github || "",
+                                                                            twitter: user.twitter || "",
+                                                                            facebook: user.facebook || "",
                                                                         },
                                                                     );
                                                                     setShowModal(
@@ -1092,6 +1156,7 @@ const AdminUsers = () => {
                         if (e.target === e.currentTarget) {
                             setShowModal(false);
                             setEditingId(null);
+                            setDivisionSearch("");
                             setShowPassword(false);
                             setFormData({
                                 name: "",
@@ -1106,6 +1171,14 @@ const AdminUsers = () => {
                                 supervisor_id: "",
                                 password: "",
                                 is_active: true,
+                                position: "",
+                                bio: "",
+                                linkedin: "",
+                                instagram: "",
+                                telegram: "",
+                                github: "",
+                                twitter: "",
+                                facebook: "",
                             });
                         }
                     }}
@@ -1129,6 +1202,7 @@ const AdminUsers = () => {
                                     onClick={() => {
                                         setShowModal(false);
                                         setEditingId(null);
+                                        setDivisionSearch("");
                                         setShowPassword(false);
                                         setFormData({
                                             name: "",
@@ -1143,6 +1217,14 @@ const AdminUsers = () => {
                                             supervisor_id: "",
                                             password: "",
                                             is_active: true,
+                                            position: "",
+                                            bio: "",
+                                            linkedin: "",
+                                            instagram: "",
+                                            telegram: "",
+                                            github: "",
+                                            twitter: "",
+                                            facebook: "",
                                         });
                                     }}
                                 ></button>
@@ -1238,6 +1320,20 @@ const AdminUsers = () => {
                                                 />
                                             </div>
 
+                                            {/* Jabatan */}
+                                            <div className="col-md-6">
+                                                <label className="form-label fw-semibold">Jabatan</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="Contoh: Web Developer"
+                                                    value={formData.position}
+                                                    onChange={(e) =>
+                                                        setFormData({ ...formData, position: e.target.value })
+                                                    }
+                                                />
+                                            </div>
+
                                             {/* Phone */}
                                             <div className="col-md-6">
                                                 <label className="form-label fw-semibold">
@@ -1309,13 +1405,25 @@ const AdminUsers = () => {
                                                 <select
                                                     className="form-select"
                                                     value={formData.role}
-                                                    onChange={(e) =>
-                                                        setFormData({
-                                                            ...formData,
-                                                            role: e.target
-                                                                .value,
-                                                        })
-                                                    }
+                                                    onChange={(e) => {
+                                                        const newRole = e.target.value;
+                                                        const updates = { role: newRole };
+                                                        
+                                                        if (newRole === "admin") {
+                                                            updates.division_id = "";
+                                                            updates.supervisor_id = "";
+                                                            setDivisionSearch("");
+                                                        } else if (newRole === "supervisor" && formData.division_id) {
+                                                            const div = divisions.find(d => d.id === parseInt(formData.division_id));
+                                                            if (div && div.supervisor_id && div.supervisor_id !== editingId) {
+                                                                updates.division_id = "";
+                                                                updates.supervisor_id = "";
+                                                                setDivisionSearch("");
+                                                                toast.error("Divisi sebelumnya sudah memiliki supervisor, pilihan divisi direset.");
+                                                            }
+                                                        }
+                                                        setFormData({ ...formData, ...updates });
+                                                    }}
                                                     required
                                                 >
                                                     <option value="user">
@@ -1330,88 +1438,143 @@ const AdminUsers = () => {
                                                 </select>
                                             </div>
 
-                                            {/* Division */}
-                                            <div className="col-md-6">
-                                                <label className="form-label fw-semibold">
-                                                    Divisi{" "}
-                                                    <span className="badge bg-secondary bg-opacity-10 text-secondary ms-1">
-                                                        Optional
-                                                    </span>
-                                                </label>
-                                                <select
-                                                    className="form-select"
-                                                    value={formData.division_id}
-                                                    onChange={(e) => {
-                                                        const divId = e.target.value;
-                                                        const selectedDiv = divisions.find(d => d.id === parseInt(divId));
-                                                        setFormData({
-                                                            ...formData,
-                                                            division_id: divId,
-                                                            supervisor_id: selectedDiv?.supervisor_id || ""
-                                                        });
-                                                    }}
-                                                >
-                                                    <option value="">
-                                                        Tidak ada divisi
-                                                    </option>
-                                                    {divisions.map((div) => (
-                                                        <option
-                                                            key={div.id}
-                                                            value={div.id}
-                                                        >
-                                                            {div.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <small className="text-muted">
-                                                    <i className="bi bi-info-circle me-1"></i>
-                                                    Untuk User dan Supervisor
-                                                </small>
-                                            </div>
-
-                                            {/* Supervisor (only for role: user) */}
-                                            {formData.role === "user" && (
-                                                <div className="col-12">
+                                            {/* Division Combobox */}
+                                            {formData.role !== "admin" && (
+                                                <div className="col-md-12">
                                                     <label className="form-label fw-semibold">
-                                                        Supervisor{" "}
+                                                        Divisi{" "}
                                                         <span className="badge bg-secondary bg-opacity-10 text-secondary ms-1">
                                                             Optional
                                                         </span>
                                                     </label>
-                                                    <select
-                                                        className="form-select"
-                                                        value={
-                                                            formData.supervisor_id
-                                                        }
-                                                        onChange={(e) =>
-                                                            setFormData({
-                                                                ...formData,
-                                                                supervisor_id:
-                                                                    e.target
-                                                                        .value,
-                                                            })
-                                                        }
+                                                    <div
+                                                        className="position-relative"
+                                                        onBlur={(e) => {
+                                                            if (!e.currentTarget.contains(e.relatedTarget)) {
+                                                                setDivisionDropdownOpen(false);
+                                                                if (!formData.division_id) setDivisionSearch("");
+                                                            }
+                                                        }}
+                                                        tabIndex={-1}
                                                     >
-                                                        <option value="">
-                                                            Belum ada supervisor
-                                                        </option>
-                                                        {supervisors.map(
-                                                            (sup) => (
-                                                                <option
-                                                                    key={sup.id}
-                                                                    value={
-                                                                        sup.id
-                                                                    }
+                                                        <div
+                                                            className="form-control d-flex align-items-center gap-1"
+                                                            style={{ minHeight: "38px", cursor: "text", height: "auto" }}
+                                                            onClick={() => {
+                                                                setDivisionDropdownOpen(true);
+                                                                document.getElementById("division-search-input-user").focus();
+                                                            }}
+                                                        >
+                                                            {formData.division_id ? (
+                                                                <span
+                                                                    className="badge bg-primary d-flex align-items-center gap-1 py-1 px-2"
+                                                                    style={{ fontSize: "0.85rem", fontWeight: 500 }}
                                                                 >
-                                                                    {sup.name} -{" "}
-                                                                    {sup.email}
-                                                                </option>
-                                                            ),
+                                                                    <i className="bi bi-diagram-3-fill" style={{ fontSize: "0.75rem" }}></i>
+                                                                    {divisions.find((d) => d.id === parseInt(formData.division_id))?.name}
+                                                                    <button
+                                                                        type="button"
+                                                                        className="btn-close btn-close-white"
+                                                                        style={{ fontSize: "0.5rem", marginLeft: "4px" }}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setFormData({ ...formData, division_id: "", supervisor_id: "" });
+                                                                            setDivisionSearch("");
+                                                                        }}
+                                                                    ></button>
+                                                                </span>
+                                                            ) : null}
+                                                            <input
+                                                                id="division-search-input-user"
+                                                                type="text"
+                                                                className="border-0 flex-grow-1"
+                                                                style={{ outline: "none", minWidth: "120px", background: "transparent" }}
+                                                                placeholder={formData.division_id ? "" : "Ketik nama divisi..."}
+                                                                value={divisionSearch}
+                                                                onChange={(e) => {
+                                                                    setDivisionSearch(e.target.value);
+                                                                    setDivisionDropdownOpen(true);
+                                                                    if (formData.division_id) {
+                                                                        setFormData({ ...formData, division_id: "", supervisor_id: "" });
+                                                                    }
+                                                                }}
+                                                                onFocus={() => setDivisionDropdownOpen(true)}
+                                                            />
+                                                            {(formData.division_id || divisionSearch) && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn btn-link p-0 ms-auto text-muted"
+                                                                    style={{ fontSize: "0.85rem" }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setFormData({ ...formData, division_id: "", supervisor_id: "" });
+                                                                        setDivisionSearch("");
+                                                                        setDivisionDropdownOpen(false);
+                                                                    }}
+                                                                >
+                                                                    <i className="bi bi-x-circle"></i>
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        {divisionDropdownOpen && (
+                                                            <div
+                                                                className="position-absolute w-100 bg-white border rounded shadow-sm"
+                                                                style={{ zIndex: 1050, maxHeight: "220px", overflowY: "auto", top: "100%", left: 0 }}
+                                                            >
+                                                                <button
+                                                                    type="button"
+                                                                    className="dropdown-item py-2 border-bottom text-muted"
+                                                                    onClick={() => {
+                                                                        setFormData({ ...formData, division_id: "", supervisor_id: "" });
+                                                                        setDivisionSearch("");
+                                                                        setDivisionDropdownOpen(false);
+                                                                    }}
+                                                                >
+                                                                    <i className="bi bi-x-circle me-2"></i>
+                                                                    Tidak ada divisi
+                                                                </button>
+                                                                {divisions
+                                                                    .filter((div) => div.name.toLowerCase().includes(divisionSearch.toLowerCase()))
+                                                                    .filter((div) => formData.role !== "supervisor" || !div.supervisor_id || div.supervisor_id === editingId)
+                                                                    .map((div) => (
+                                                                        <button
+                                                                            key={div.id}
+                                                                            type="button"
+                                                                            className={`dropdown-item py-2 d-flex align-items-center ${parseInt(formData.division_id) === div.id ? "bg-primary text-white" : ""}`}
+                                                                            onClick={() => {
+                                                                                setFormData({ ...formData, division_id: div.id, supervisor_id: div.supervisor_id || "" });
+                                                                                setDivisionSearch("");
+                                                                                setDivisionDropdownOpen(false);
+                                                                            }}
+                                                                        >
+                                                                            <i className={`bi bi-diagram-3 me-2 ${parseInt(formData.division_id) === div.id ? "text-white" : "text-primary"}`}></i>
+                                                                            <div className="flex-grow-1">
+                                                                                <div>{div.name}</div>
+                                                                                {div.supervisor?.name && (
+                                                                                    <small className={parseInt(formData.division_id) === div.id ? "text-white-50" : "text-muted"}>
+                                                                                        Supervisor: {div.supervisor.name}
+                                                                                    </small>
+                                                                                )}
+                                                                            </div>
+                                                                            {parseInt(formData.division_id) === div.id && <i className="bi bi-check2 ms-2"></i>}
+                                                                        </button>
+                                                                    ))}
+                                                                {divisions
+                                                                    .filter((div) => div.name.toLowerCase().includes(divisionSearch.toLowerCase()))
+                                                                    .filter((div) => formData.role !== "supervisor" || !div.supervisor_id || div.supervisor_id === editingId)
+                                                                    .length === 0 && (
+                                                                    <div className="p-3 text-center text-muted small">
+                                                                        <i className="bi bi-search d-block mb-1 fs-5"></i>
+                                                                        Divisi "{divisionSearch}" tidak ditemukan atau sudah memiliki supervisor
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         )}
-                                                    </select>
-                                                    <small className="text-muted">
+                                                    </div>
+                                                    <small className="text-muted mt-1 d-block">
                                                         <i className="bi bi-info-circle me-1"></i>
-                                                        Khusus untuk role User
+                                                        Ketik untuk mencari dan memilih divisi
                                                     </small>
                                                 </div>
                                             )}
@@ -1428,10 +1591,7 @@ const AdminUsers = () => {
                                             {/* Periode */}
                                             <div className="col-md-6">
                                                 <label className="form-label fw-semibold">
-                                                    Periode/Batch{" "}
-                                                    <span className="badge bg-secondary bg-opacity-10 text-secondary ms-1">
-                                                        Optional
-                                                    </span>
+                                                    Periode/Batch <span className="text-danger">*</span>
                                                 </label>
                                                 <input
                                                     type="text"
@@ -1445,6 +1605,7 @@ const AdminUsers = () => {
                                                                 e.target.value,
                                                         })
                                                     }
+                                                    required
                                                 />
                                                 <small className="text-muted">
                                                     <i className="bi bi-info-circle me-1"></i>
@@ -1455,10 +1616,7 @@ const AdminUsers = () => {
                                             {/* Sumber Magang */}
                                             <div className="col-md-6">
                                                 <label className="form-label fw-semibold">
-                                                    Sumber Magang{" "}
-                                                    <span className="badge bg-secondary bg-opacity-10 text-secondary ms-1">
-                                                        Optional
-                                                    </span>
+                                                    Sumber Magang <span className="text-danger">*</span>
                                                 </label>
                                                 <select
                                                     className="form-select"
@@ -1472,7 +1630,9 @@ const AdminUsers = () => {
                                                                 e.target.value,
                                                         })
                                                     }
+                                                    required
                                                 >
+                                                    <option value="">-- Pilih Sumber --</option>
                                                     <option value="kampus">
                                                         Kampus
                                                     </option>
@@ -1527,6 +1687,106 @@ const AdminUsers = () => {
                                         </div>
                                     </div>
 
+                                    {/* Section: Profil & Sosial Media */}
+                                    <div className="mb-4">
+                                        <h6 className="text-info mb-3 pb-2 border-bottom">
+                                            <i className="bi bi-person-lines-fill me-2"></i>
+                                            Informasi Profil & Sosial Media
+                                        </h6>
+                                        <div className="row g-3">
+                                            {/* Bio */}
+                                            <div className="col-12">
+                                                <label className="form-label fw-semibold">Bio / Tentang</label>
+                                                <textarea
+                                                    className="form-control"
+                                                    rows="2"
+                                                    placeholder="Ceritakan sedikit tentang user ini..."
+                                                    value={formData.bio}
+                                                    onChange={(e) =>
+                                                        setFormData({ ...formData, bio: e.target.value })
+                                                    }
+                                                />
+                                            </div>
+                                            {/* LinkedIn */}
+                                            <div className="col-md-6">
+                                                <label className="form-label fw-semibold">LinkedIn</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="linkedin.com/in/username"
+                                                    value={formData.linkedin}
+                                                    onChange={(e) =>
+                                                        setFormData({ ...formData, linkedin: e.target.value })
+                                                    }
+                                                />
+                                            </div>
+                                            {/* Instagram */}
+                                            <div className="col-md-6">
+                                                <label className="form-label fw-semibold">Instagram</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="@username"
+                                                    value={formData.instagram}
+                                                    onChange={(e) =>
+                                                        setFormData({ ...formData, instagram: e.target.value })
+                                                    }
+                                                />
+                                            </div>
+                                            {/* Telegram */}
+                                            <div className="col-md-6">
+                                                <label className="form-label fw-semibold">Telegram</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="@username"
+                                                    value={formData.telegram}
+                                                    onChange={(e) =>
+                                                        setFormData({ ...formData, telegram: e.target.value })
+                                                    }
+                                                />
+                                            </div>
+                                            {/* GitHub */}
+                                            <div className="col-md-6">
+                                                <label className="form-label fw-semibold">GitHub</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="github.com/username"
+                                                    value={formData.github}
+                                                    onChange={(e) =>
+                                                        setFormData({ ...formData, github: e.target.value })
+                                                    }
+                                                />
+                                            </div>
+                                            {/* Twitter */}
+                                            <div className="col-md-6">
+                                                <label className="form-label fw-semibold">Twitter / X</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="@username"
+                                                    value={formData.twitter}
+                                                    onChange={(e) =>
+                                                        setFormData({ ...formData, twitter: e.target.value })
+                                                    }
+                                                />
+                                            </div>
+                                            {/* Facebook */}
+                                            <div className="col-md-6">
+                                                <label className="form-label fw-semibold">Facebook</label>
+                                                <input
+                                                    type="text"
+                                                    className="form-control"
+                                                    placeholder="facebook.com/username"
+                                                    value={formData.facebook}
+                                                    onChange={(e) =>
+                                                        setFormData({ ...formData, facebook: e.target.value })
+                                                    }
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
                                     {/* Password Section - Only for new user */}
                                     {!editingId && (
                                         <div className="mb-2">
@@ -1629,6 +1889,7 @@ const AdminUsers = () => {
                                         onClick={() => {
                                             setShowModal(false);
                                             setEditingId(null);
+                                            setDivisionSearch("");
                                             setShowPassword(false);
                                         }}
                                     >

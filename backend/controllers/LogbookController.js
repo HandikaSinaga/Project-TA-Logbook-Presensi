@@ -356,11 +356,11 @@ class LogbookController {
                 });
             }
 
-            // Cannot update if reviewed
-            if (logbook.status === "reviewed") {
+            // Cannot update if approved
+            if (logbook.status === "approved") {
                 return res.status(400).json({
                     success: false,
-                    message: "Cannot update reviewed logbook",
+                    message: "Cannot update approved logbook",
                 });
             }
 
@@ -378,6 +378,10 @@ class LogbookController {
                 description: description || logbook.description,
                 location: location || logbook.location,
                 attachments: attachments || logbook.attachments,
+                status: "pending", // Reset status back to pending so supervisor can re-review
+                review_notes: null, // Clear old review notes
+                reviewed_by: null,
+                reviewed_at: null,
             });
 
             res.json({
@@ -843,7 +847,7 @@ class LogbookController {
                 status: "rejected",
                 reviewed_by: supervisorId,
                 reviewed_at: new Date(),
-                feedback: feedback,
+                review_notes: feedback,
             });
 
             res.json({

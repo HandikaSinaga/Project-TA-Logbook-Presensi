@@ -33,6 +33,10 @@ const AdminReports = () => {
     const [divisionDropdownOpen, setDivisionDropdownOpen] = useState(false);
     const [selectedDivision, setSelectedDivision] = useState(null); // { id, name }
 
+    // Single-select periode searchable combobox
+    const [periodeSearch, setPeriodeSearch] = useState("");
+    const [periodeDropdownOpen, setPeriodeDropdownOpen] = useState(false);
+
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(50);
@@ -641,11 +645,9 @@ const AdminReports = () => {
                                     setReportData(null);
                                 }}
                             >
-                                <option value="attendance">
-                                    Laporan Presensi
-                                </option>
-                                <option value="leave">Laporan Izin/Cuti</option>
+                                <option value="attendance">Laporan Presensi</option>
                                 <option value="logbook">Laporan Logbook</option>
+                                <option value="leave">Laporan Izin/Cuti</option>
                                 <option value="summary">Laporan Summary</option>
                             </select>
                         </div>
@@ -863,40 +865,166 @@ const AdminReports = () => {
                                 }
                             >
                                 <option value="">Semua Sumber</option>
-                                {[...new Set(users.map((u) => u.sumber_magang))]
-                                    .filter(Boolean)
-                                    .map((source) => (
-                                        <option key={source} value={source}>
-                                            {source}
-                                        </option>
-                                    ))}
+                                <option value="kampus">Kampus</option>
+                                <option value="pemerintah">Pemerintah</option>
+                                <option value="swasta">Swasta</option>
+                                <option value="internal">Internal</option>
+                                <option value="umum">Umum</option>
                             </select>
                         </div>
                         <div className="col-md-3">
                             <label className="form-label fw-bold">
                                 <i className="bi bi-calendar3 me-2"></i>
                                 Periode/Batch
+                                {filters.periode && (
+                                    <span className="badge bg-primary ms-2">1 dipilih</span>
+                                )}
                             </label>
-                            <select
-                                className="form-select"
-                                value={filters.periode}
-                                onChange={(e) =>
-                                    setFilters({
-                                        ...filters,
-                                        periode: e.target.value,
-                                    })
-                                }
+                            {/* Searchable single-select combobox periode */}
+                            <div
+                                className="position-relative"
+                                onBlur={(e) => {
+                                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                                        setPeriodeDropdownOpen(false);
+                                        if (!filters.periode) setPeriodeSearch("");
+                                    }
+                                }}
+                                tabIndex={-1}
                             >
-                                <option value="">Semua Periode</option>
-                                {[...new Set(users.map((u) => u.periode))]
-                                    .filter(Boolean)
-                                    .sort((a, b) => b - a)
-                                    .map((period) => (
-                                        <option key={period} value={period}>
-                                            Periode {period}
-                                        </option>
-                                    ))}
-                            </select>
+                                <div
+                                    className="form-control d-flex align-items-center gap-1"
+                                    style={{ minHeight: "42px", cursor: "text", height: "auto" }}
+                                    onClick={() => {
+                                        setPeriodeDropdownOpen(true);
+                                        document.getElementById("periode-search-input").focus();
+                                    }}
+                                >
+                                    {filters.periode ? (
+                                        <span
+                                            className="badge bg-primary d-inline-flex align-items-center gap-1 py-1 px-2"
+                                            style={{ fontSize: "0.8rem", fontWeight: 500 }}
+                                        >
+                                            <i className="bi bi-calendar3" style={{ fontSize: "0.7rem" }}></i>
+                                            Periode {filters.periode}
+                                            <button
+                                                type="button"
+                                                className="btn-close btn-close-white"
+                                                style={{ fontSize: "0.5rem" }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setPeriodeSearch("");
+                                                    setFilters((f) => ({ ...f, periode: "" }));
+                                                }}
+                                            ></button>
+                                        </span>
+                                    ) : null}
+                                    <input
+                                        id="periode-search-input"
+                                        type="text"
+                                        className="border-0 flex-grow-1"
+                                        style={{ outline: "none", minWidth: "120px", background: "transparent" }}
+                                        placeholder={filters.periode ? "" : "Ketik periode..."}
+                                        value={periodeSearch}
+                                        onChange={(e) => {
+                                            setPeriodeSearch(e.target.value);
+                                            setPeriodeDropdownOpen(true);
+                                            if (filters.periode) {
+                                                setFilters((f) => ({ ...f, periode: "" }));
+                                            }
+                                        }}
+                                        onFocus={() => setPeriodeDropdownOpen(true)}
+                                    />
+                                    {(filters.periode || periodeSearch) && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-link p-0 ms-auto text-muted"
+                                            style={{ fontSize: "0.85rem" }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setPeriodeSearch("");
+                                                setPeriodeDropdownOpen(false);
+                                                setFilters((f) => ({ ...f, periode: "" }));
+                                            }}
+                                        >
+                                            <i className="bi bi-x-circle"></i>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Dropdown list periode */}
+                                {periodeDropdownOpen && (
+                                    <div
+                                        className="position-absolute w-100 bg-white border rounded shadow-sm"
+                                        style={{ zIndex: 1050, maxHeight: "220px", overflowY: "auto", top: "100%", left: 0 }}
+                                    >
+                                        {/* Opsi Semua Periode */}
+                                        <div
+                                            className="px-3 py-2 d-flex align-items-center gap-2"
+                                            style={{ cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => {
+                                                setPeriodeSearch("");
+                                                setPeriodeDropdownOpen(false);
+                                                setFilters((f) => ({ ...f, periode: "" }));
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = "#f0f4ff"}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                                        >
+                                            <i className="bi bi-calendar-event text-muted"></i>
+                                            <span className="text-muted" style={{ fontSize: "0.875rem" }}>Semua Periode</span>
+                                        </div>
+
+                                        {(() => {
+                                            const term = periodeSearch.toLowerCase().trim();
+                                            const allPeriods = [...new Set(users.map((u) => u.periode))].filter(Boolean).sort((a, b) => b - a);
+                                            const filtered = allPeriods.filter((p) => !term || p.toString().toLowerCase().includes(term));
+                                            
+                                            if (filtered.length === 0) {
+                                                return (
+                                                    <div className="px-3 py-2 text-muted small">
+                                                        <i className="bi bi-search me-2"></i>
+                                                        Tidak ada periode &quot;{periodeSearch}&quot;
+                                                    </div>
+                                                );
+                                            }
+                                            return filtered.map((period) => (
+                                                <div
+                                                    key={period}
+                                                    className="px-3 py-2 d-flex align-items-center gap-2"
+                                                    style={{
+                                                        cursor: "pointer",
+                                                        background: filters.periode === period ? "#e8f0fe" : "transparent"
+                                                    }}
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => {
+                                                        setPeriodeSearch("");
+                                                        setPeriodeDropdownOpen(false);
+                                                        setFilters((f) => ({ ...f, periode: period }));
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        if (filters.periode !== period)
+                                                            e.currentTarget.style.background = "#f0f4ff";
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        if (filters.periode !== period)
+                                                            e.currentTarget.style.background = "transparent";
+                                                    }}
+                                                >
+                                                    <div
+                                                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                        style={{ width: 30, height: 30 }}
+                                                    >
+                                                        <i className="bi bi-calendar3 text-primary" style={{ fontSize: "0.8rem" }}></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-medium" style={{ fontSize: "0.875rem" }}>Periode {period}</div>
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="col-md-3">
                             <label className="form-label fw-bold">
@@ -1275,7 +1403,7 @@ const AdminReports = () => {
                                         {filters.sumber_magang && (
                                             <span className="badge bg-light text-dark border">
                                                 <i className="bi bi-building me-1"></i>
-                                                {filters.sumber_magang}
+                                                {filters.sumber_magang.charAt(0).toUpperCase() + filters.sumber_magang.slice(1)}
                                             </span>
                                         )}
                                         {reportType === "attendance" &&

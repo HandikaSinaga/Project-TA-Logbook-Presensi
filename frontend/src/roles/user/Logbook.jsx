@@ -771,7 +771,7 @@ const Logbook = () => {
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        {logbook.review_notes ? (
+                                                        {logbook.status !== "pending" && logbook.status !== "not_filled" ? (
                                                             <div>
                                                                 <div
                                                                     className="text-muted small"
@@ -786,9 +786,7 @@ const Logbook = () => {
                                                                             "nowrap",
                                                                     }}
                                                                 >
-                                                                    {
-                                                                        logbook.review_notes
-                                                                    }
+                                                                    {logbook.review_notes ? logbook.review_notes : <span className="fst-italic text-secondary">Tidak ada catatan</span>}
                                                                 </div>
                                                                 {logbook.reviewed_at && (
                                                                     <small className="text-muted">
@@ -1147,25 +1145,15 @@ const Logbook = () => {
                                         </label>
                                         <input
                                             type="date"
-                                            className="form-control form-control-lg"
+                                            className="form-control form-control-lg bg-light"
                                             value={formData.date}
-                                            onChange={(e) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    date: e.target.value,
-                                                })
-                                            }
-                                            disabled={editingId ? true : false}
+                                            disabled={true}
                                             required
                                         />
-                                        {editingId && (
-                                            <div className="form-text text-warning">
-                                                <i className="bi bi-lock-fill me-1"></i>
-                                                Tanggal tidak dapat diubah saat
-                                                edit. Hanya 1 logbook per
-                                                tanggal.
-                                            </div>
-                                        )}
+                                        <div className="form-text text-muted mt-2">
+                                            <i className="bi bi-lock-fill me-1"></i>
+                                            Tanggal tidak dapat diubah. Hanya 1 logbook per tanggal.
+                                        </div>
                                     </div>
 
                                     <div className="mb-4">
@@ -1579,7 +1567,7 @@ const Logbook = () => {
                                                         : "bg-warning bg-opacity-10"
                                                 }`}
                                             >
-                                                {selectedLogbook.review_notes ? (
+                                                {selectedLogbook.status !== "pending" ? (
                                                     <>
                                                         {/* Review Status Icon */}
                                                         <div className="d-flex align-items-start mb-3">
@@ -1625,9 +1613,7 @@ const Logbook = () => {
                                                                             "1rem",
                                                                     }}
                                                                 >
-                                                                    {
-                                                                        selectedLogbook.review_notes
-                                                                    }
+                                                                    {selectedLogbook.review_notes ? selectedLogbook.review_notes : <span className="fst-italic text-secondary">Tidak ada catatan</span>}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -1674,13 +1660,7 @@ const Logbook = () => {
                                                                                     oleh
                                                                                 </small>
                                                                                 <strong className="small">
-                                                                                    Supervisor
-                                                                                    (ID:{" "}
-                                                                                    {
-                                                                                        selectedLogbook.reviewed_by
-                                                                                    }
-
-                                                                                    )
+                                                                                    {selectedLogbook.reviewer?.name || "Supervisor"}
                                                                                 </strong>
                                                                             </div>
                                                                         </div>
@@ -1800,7 +1780,7 @@ const Logbook = () => {
                                     <i className="bi bi-x-circle me-2"></i>
                                     Tutup
                                 </button>
-                                {selectedLogbook.status === "pending" && (
+                                {(selectedLogbook.status === "pending" || selectedLogbook.status === "rejected") && (
                                     <button
                                         type="button"
                                         className="btn btn-primary"

@@ -899,16 +899,16 @@ const SupervisorLogbook = () => {
                                 )}
 
                             {/* Feedback */}
-                            {selectedLogbook.feedback && (
+                            {selectedLogbook.review_notes && (
                                 <div>
                                     <h6 className="text-muted mb-3">
                                         <i className="bi bi-chat-left-quote me-2"></i>
-                                        Feedback
+                                        Catatan Review
                                     </h6>
                                     <div className="alert alert-warning">
-                                        <strong>Alasan Penolakan:</strong>
+                                        <strong>Hasil Review:</strong>
                                         <p className="mb-0 mt-2">
-                                            {selectedLogbook.feedback}
+                                            {selectedLogbook.review_notes}
                                         </p>
                                     </div>
                                 </div>

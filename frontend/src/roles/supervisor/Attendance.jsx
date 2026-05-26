@@ -439,7 +439,8 @@ const Attendance = () => {
                                             <th>Karyawan</th>
                                             <th>Tanggal</th>
                                             <th>Waktu</th>
-                                            <th>Tipe Kerja</th>
+                                            <th>Keterangan Check-in</th>
+                                            <th>Keterangan Check-out</th>
                                             <th>Status</th>
                                             <th className="text-center">
                                                 Aksi
@@ -534,45 +535,43 @@ const Attendance = () => {
                                                             </div>
                                                         </div>
                                                     </td>
+                                                    {/* Keterangan Check-in */}
                                                     <td>
-                                                        {attendance.work_type ===
-                                                            "offsite" ? (
-                                                            <div>
-                                                                <Badge
-                                                                    bg="info"
-                                                                    className="mb-1"
-                                                                >
-                                                                    <i className="bi bi-house-door me-1"></i>
-                                                                    Offsite
-                                                                </Badge>
-                                                                {attendance.offsite_reason && (
-                                                                    <div
-                                                                        className="small text-muted"
-                                                                        style={{
-                                                                            maxWidth:
-                                                                                "150px",
-                                                                            whiteSpace:
-                                                                                "nowrap",
-                                                                            overflow:
-                                                                                "hidden",
-                                                                            textOverflow:
-                                                                                "ellipsis",
-                                                                        }}
-                                                                        title={
-                                                                            attendance.offsite_reason
-                                                                        }
-                                                                    >
-                                                                        {
-                                                                            attendance.offsite_reason
-                                                                        }
-                                                                    </div>
+                                                        {attendance.check_in_time ? (
+                                                            <div style={{ minWidth: "150px" }}>
+                                                                {attendance.work_type === "onsite" ? (
+                                                                    <span className="text-muted small">User melakukan presensi onsite</span>
+                                                                ) : (
+                                                                    <span className="small" title={attendance.offsite_reason || ""}>
+                                                                        {attendance.offsite_reason ? (attendance.offsite_reason.length > 30 ? attendance.offsite_reason.substring(0, 30) + "..." : attendance.offsite_reason) : "Tidak ada keterangan"}
+                                                                        {attendance.check_in_photo && (
+                                                                            <i className="bi bi-image ms-1 text-primary" title="Bukti Foto"></i>
+                                                                        )}
+                                                                    </span>
                                                                 )}
                                                             </div>
                                                         ) : (
-                                                            <Badge bg="success">
-                                                                <i className="bi bi-building me-1"></i>
-                                                                Onsite
-                                                            </Badge>
+                                                            <span className="text-muted">-</span>
+                                                        )}
+                                                    </td>
+                                                    
+                                                    {/* Keterangan Check-out */}
+                                                    <td>
+                                                        {attendance.check_out_time ? (
+                                                            <div style={{ minWidth: "150px" }}>
+                                                                {!attendance.checkout_offsite_reason && !attendance.check_out_photo ? (
+                                                                    <span className="text-muted small">User melakukan presensi onsite</span>
+                                                                ) : (
+                                                                    <span className="small" title={attendance.checkout_offsite_reason || ""}>
+                                                                        {attendance.checkout_offsite_reason ? (attendance.checkout_offsite_reason.length > 30 ? attendance.checkout_offsite_reason.substring(0, 30) + "..." : attendance.checkout_offsite_reason) : "Tidak ada keterangan"}
+                                                                        {attendance.check_out_photo && (
+                                                                            <i className="bi bi-image ms-1 text-primary" title="Bukti Foto"></i>
+                                                                        )}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted">-</span>
                                                         )}
                                                     </td>
                                                     <td>

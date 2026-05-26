@@ -15,6 +15,7 @@ const Monitoring = () => {
     const [refreshing, setRefreshing] = useState(false);
     const [attendances, setAttendances] = useState([]);
     const [divisions, setDivisions] = useState([]);
+    const [users, setUsers] = useState([]);
     const [stats, setStats] = useState({
         total: 0,
         present: 0,
@@ -32,7 +33,23 @@ const Monitoring = () => {
         status: "",
         work_type: "",
         search: "",
+        sumber_magang: "",
+        periode: "",
     });
+
+    // Searchable division combobox
+    const [divisionSearch, setDivisionSearch] = useState("");
+    const [divisionDropdownOpen, setDivisionDropdownOpen] = useState(false);
+    const [selectedDivision, setSelectedDivision] = useState(null);
+
+    // Searchable periode combobox
+    const [periodeSearch, setPeriodeSearch] = useState("");
+    const [periodeDropdownOpen, setPeriodeDropdownOpen] = useState(false);
+
+    // Multi-select user filter
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
+    const [userSearch, setUserSearch] = useState("");
+    const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
     // View mode
     const [viewMode, setViewMode] = useState("grid"); // grid or table
@@ -51,8 +68,13 @@ const Monitoring = () => {
 
     useEffect(() => {
         fetchDivisions();
+        fetchUsers();
         fetchAttendances();
-    }, [filters]);
+    }, []);
+
+    useEffect(() => {
+        fetchAttendances();
+    }, [filters, selectedUserIds]);
 
     useEffect(() => {
         if (autoRefresh) {
@@ -70,7 +92,7 @@ const Monitoring = () => {
                 clearInterval(refreshInterval.current);
             }
         };
-    }, [autoRefresh, filters]);
+    }, [autoRefresh, filters, selectedUserIds]);
 
     const fetchDivisions = async () => {
         try {
@@ -80,6 +102,41 @@ const Monitoring = () => {
         } catch (error) {
             console.error("Error fetching divisions:", error);
         }
+    };
+
+    const fetchUsers = async () => {
+        try {
+            const response = await axiosInstance.get("/admin/users");
+            const data = response.data.data || response.data || [];
+            setUsers(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Error fetching users:", error);
+        }
+    };
+
+    const handleQuickDate = (type) => {
+        const today = new Date();
+        let date;
+        switch (type) {
+            case "today":
+                date = today;
+                break;
+            case "yesterday":
+                date = new Date(today);
+                date.setDate(today.getDate() - 1);
+                break;
+            case "thisMonday": {
+                const day = today.getDay();
+                const diff = day === 0 ? -6 : 1 - day;
+                date = new Date(today);
+                date.setDate(today.getDate() + diff);
+                break;
+            }
+            default:
+                return;
+        }
+        setFilters((f) => ({ ...f, date: date.toISOString().split("T")[0] }));
+        setCurrentPage(1);
     };
 
     const fetchAttendances = async (silent = false) => {
@@ -101,16 +158,18 @@ const Monitoring = () => {
             let data = response.data.data || response.data || [];
             data = Array.isArray(data) ? data : [];
 
-            // Client-side search filtering
-            if (filters.search) {
-                const searchLower = filters.search.toLowerCase();
+            // Client-side filtering: userIds, sumber_magang, periode
+            if (selectedUserIds.length > 0) {
+                data = data.filter((a) => selectedUserIds.includes(a.user_id));
+            }
+            if (filters.sumber_magang) {
                 data = data.filter(
-                    (a) =>
-                        a.user?.name?.toLowerCase().includes(searchLower) ||
-                        a.user?.nip?.toLowerCase().includes(searchLower) ||
-                        a.user?.division?.name
-                            ?.toLowerCase()
-                            .includes(searchLower),
+                    (a) => a.user?.sumber_magang === filters.sumber_magang,
+                );
+            }
+            if (filters.periode) {
+                data = data.filter(
+                    (a) => String(a.user?.periode) === String(filters.periode),
                 );
             }
 
@@ -161,7 +220,11 @@ const Monitoring = () => {
             status: "",
             work_type: "",
             search: "",
+            sumber_magang: "",
+            periode: "",
         });
+        setSelectedDivision(null);
+        setDivisionSearch("");
         setCurrentPage(1);
     };
 
@@ -413,8 +476,53 @@ const Monitoring = () => {
 
             {/* Filters & Actions */}
             <div className="card border-0 shadow-sm mb-4">
+                <div className="card-header bg-white py-3 border-bottom">
+                    <h6 className="mb-0 fw-semibold">
+                        <i className="bi bi-funnel me-2 text-primary"></i>
+                        Filter Monitoring
+                    </h6>
+                </div>
                 <div className="card-body">
-                    <div className="row g-3 align-items-end">
+                    {/* Quick Date Buttons */}
+                    <div className="mb-3 pb-3 border-bottom">
+                        <label className="form-label small fw-semibold mb-2">
+                            <i className="bi bi-calendar-check me-1"></i>
+                            Pilih Cepat Tanggal
+                        </label>
+                        <div className="d-flex gap-2 flex-wrap align-items-center">
+                            <button
+                                className={`btn btn-sm ${filters.date === new Date().toISOString().split("T")[0] ? "btn-primary" : "btn-outline-primary"}`}
+                                onClick={() => handleQuickDate("today")}
+                            >
+                                <i className="bi bi-calendar-day me-1"></i>
+                                Hari Ini
+                            </button>
+                            <button
+                                className="btn btn-sm btn-outline-primary"
+                                onClick={() => handleQuickDate("yesterday")}
+                            >
+                                <i className="bi bi-calendar-minus me-1"></i>
+                                Kemarin
+                            </button>
+                            <button
+                                className="btn btn-sm btn-outline-primary"
+                                onClick={() => handleQuickDate("thisMonday")}
+                            >
+                                <i className="bi bi-calendar-week me-1"></i>
+                                Senin Ini
+                            </button>
+                            <button
+                                className="btn btn-sm btn-outline-danger ms-auto"
+                                onClick={handleResetFilters}
+                            >
+                                <i className="bi bi-arrow-counterclockwise me-1"></i>
+                                Reset Filter
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Row 1: Tanggal + Divisi Searchable + Sumber Magang + Periode */}
+                    <div className="row g-3 mb-3">
                         <div className="col-md-3">
                             <label className="form-label small fw-semibold">
                                 <i className="bi bi-calendar3 me-1"></i>
@@ -425,97 +533,502 @@ const Monitoring = () => {
                                 className="form-control"
                                 value={filters.date}
                                 onChange={(e) =>
-                                    setFilters({
-                                        ...filters,
-                                        date: e.target.value,
-                                    })
+                                    setFilters({ ...filters, date: e.target.value })
                                 }
                             />
                         </div>
-                        <div className="col-md-2">
+                        <div className="col-md-3">
+                            <label className="form-label small fw-semibold">
+                                <i className="bi bi-diagram-3 me-1"></i>
+                                Divisi
+                                {selectedDivision && (
+                                    <span className="badge bg-primary ms-2">1 dipilih</span>
+                                )}
+                            </label>
+                            <div
+                                className="position-relative"
+                                onBlur={(e) => {
+                                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                                        setDivisionDropdownOpen(false);
+                                        if (!selectedDivision) setDivisionSearch("");
+                                    }
+                                }}
+                                tabIndex={-1}
+                            >
+                                <div
+                                    className="form-control d-flex align-items-center gap-1"
+                                    style={{ minHeight: "42px", cursor: "text", height: "auto" }}
+                                    onClick={() => {
+                                        setDivisionDropdownOpen(true);
+                                        document.getElementById("mon-division-search").focus();
+                                    }}
+                                >
+                                    {selectedDivision ? (
+                                        <span className="badge bg-primary d-inline-flex align-items-center gap-1 py-1 px-2" style={{ fontSize: "0.8rem" }}>
+                                            <i className="bi bi-diagram-3-fill" style={{ fontSize: "0.7rem" }}></i>
+                                            {selectedDivision.name}
+                                            <button
+                                                type="button"
+                                                className="btn-close btn-close-white"
+                                                style={{ fontSize: "0.5rem" }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedDivision(null);
+                                                    setDivisionSearch("");
+                                                    setFilters((f) => ({ ...f, division_id: "" }));
+                                                }}
+                                            ></button>
+                                        </span>
+                                    ) : null}
+                                    <input
+                                        id="mon-division-search"
+                                        type="text"
+                                        className="border-0 flex-grow-1"
+                                        style={{ outline: "none", minWidth: "80px", background: "transparent", fontSize: "0.875rem" }}
+                                        placeholder={selectedDivision ? "" : "Semua Divisi..."}
+                                        value={divisionSearch}
+                                        onChange={(e) => {
+                                            setDivisionSearch(e.target.value);
+                                            setDivisionDropdownOpen(true);
+                                            if (selectedDivision) {
+                                                setSelectedDivision(null);
+                                                setFilters((f) => ({ ...f, division_id: "" }));
+                                            }
+                                        }}
+                                        onFocus={() => setDivisionDropdownOpen(true)}
+                                    />
+                                    {(selectedDivision || divisionSearch) && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-link p-0 ms-auto text-muted"
+                                            style={{ fontSize: "0.8rem" }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedDivision(null);
+                                                setDivisionSearch("");
+                                                setDivisionDropdownOpen(false);
+                                                setFilters((f) => ({ ...f, division_id: "" }));
+                                            }}
+                                        >
+                                            <i className="bi bi-x-circle"></i>
+                                        </button>
+                                    )}
+                                </div>
+                                {divisionDropdownOpen && (
+                                    <div
+                                        className="position-absolute w-100 bg-white border rounded shadow-sm"
+                                        style={{ zIndex: 1050, maxHeight: "200px", overflowY: "auto", top: "100%", left: 0 }}
+                                    >
+                                        <div
+                                            className="px-3 py-2 d-flex align-items-center gap-2"
+                                            style={{ cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => {
+                                                setSelectedDivision(null);
+                                                setDivisionSearch("");
+                                                setDivisionDropdownOpen(false);
+                                                setFilters((f) => ({ ...f, division_id: "" }));
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = "#f0f4ff"}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                                        >
+                                            <i className="bi bi-grid-3x3-gap-fill text-muted"></i>
+                                            <span className="text-muted" style={{ fontSize: "0.875rem" }}>Semua Divisi</span>
+                                        </div>
+                                        {divisions
+                                            .filter((d) => !divisionSearch || d.name?.toLowerCase().includes(divisionSearch.toLowerCase()))
+                                            .map((d) => (
+                                                <div
+                                                    key={d.id}
+                                                    className="px-3 py-2 d-flex align-items-center gap-2"
+                                                    style={{ cursor: "pointer", background: selectedDivision?.id === d.id ? "#e8f0fe" : "transparent" }}
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => {
+                                                        setSelectedDivision(d);
+                                                        setDivisionSearch("");
+                                                        setDivisionDropdownOpen(false);
+                                                        setFilters((f) => ({ ...f, division_id: d.id }));
+                                                    }}
+                                                    onMouseEnter={(e) => { if (selectedDivision?.id !== d.id) e.currentTarget.style.background = "#f0f4ff"; }}
+                                                    onMouseLeave={(e) => { if (selectedDivision?.id !== d.id) e.currentTarget.style.background = "transparent"; }}
+                                                >
+                                                    <div className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: 28, height: 28 }}>
+                                                        <i className="bi bi-diagram-3-fill text-primary" style={{ fontSize: "0.75rem" }}></i>
+                                                    </div>
+                                                    <div style={{ fontSize: "0.875rem" }}>
+                                                        {d.name}
+                                                        {selectedDivision?.id === d.id && (
+                                                            <i className="bi bi-check-circle-fill text-primary ms-2" style={{ fontSize: "0.75rem" }}></i>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="col-md-3">
                             <label className="form-label small fw-semibold">
                                 <i className="bi bi-building me-1"></i>
-                                Divisi
+                                Sumber Magang
                             </label>
                             <select
                                 className="form-select"
-                                value={filters.division_id}
-                                onChange={(e) =>
-                                    setFilters({
-                                        ...filters,
-                                        division_id: e.target.value,
-                                    })
-                                }
+                                value={filters.sumber_magang}
+                                onChange={(e) => setFilters({ ...filters, sumber_magang: e.target.value })}
                             >
-                                <option value="">Semua Divisi</option>
-                                {divisions.map((div) => (
-                                    <option key={div.id} value={div.id}>
-                                        {div.name}
-                                    </option>
-                                ))}
+                                <option value="">Semua Sumber</option>
+                                {[...new Set(users.map((u) => u.sumber_magang))]
+                                    .filter(Boolean)
+                                    .map((src) => (
+                                        <option key={src} value={src}>{src}</option>
+                                    ))}
                             </select>
                         </div>
-                        <div className="col-md-2">
+                        <div className="col-md-3">
+                            <label className="form-label small fw-semibold">
+                                <i className="bi bi-calendar3 me-1"></i>
+                                Periode/Batch
+                                {filters.periode && (
+                                    <span className="badge bg-primary ms-2">1 dipilih</span>
+                                )}
+                            </label>
+                            {/* Searchable single-select combobox periode */}
+                            <div
+                                className="position-relative"
+                                onBlur={(e) => {
+                                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                                        setPeriodeDropdownOpen(false);
+                                        if (!filters.periode) setPeriodeSearch("");
+                                    }
+                                }}
+                                tabIndex={-1}
+                            >
+                                <div
+                                    className="form-control d-flex align-items-center gap-1"
+                                    style={{ minHeight: "42px", cursor: "text", height: "auto" }}
+                                    onClick={() => {
+                                        setPeriodeDropdownOpen(true);
+                                        document.getElementById("monitoring-periode-search").focus();
+                                    }}
+                                >
+                                    {filters.periode ? (
+                                        <span
+                                            className="badge bg-primary d-inline-flex align-items-center gap-1 py-1 px-2"
+                                            style={{ fontSize: "0.75rem", fontWeight: 500 }}
+                                        >
+                                            <i className="bi bi-calendar3" style={{ fontSize: "0.7rem" }}></i>
+                                            Periode {filters.periode}
+                                            <button
+                                                type="button"
+                                                className="btn-close btn-close-white"
+                                                style={{ fontSize: "0.5rem" }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setPeriodeSearch("");
+                                                    setFilters((f) => ({ ...f, periode: "" }));
+                                                }}
+                                            ></button>
+                                        </span>
+                                    ) : null}
+                                    <input
+                                        id="monitoring-periode-search"
+                                        type="text"
+                                        className="border-0 flex-grow-1"
+                                        style={{ outline: "none", minWidth: "120px", background: "transparent", fontSize: "0.875rem" }}
+                                        placeholder={filters.periode ? "" : "Ketik periode..."}
+                                        value={periodeSearch}
+                                        onChange={(e) => {
+                                            setPeriodeSearch(e.target.value);
+                                            setPeriodeDropdownOpen(true);
+                                            if (filters.periode) {
+                                                setFilters((f) => ({ ...f, periode: "" }));
+                                            }
+                                        }}
+                                        onFocus={() => setPeriodeDropdownOpen(true)}
+                                    />
+                                    {(filters.periode || periodeSearch) && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-link p-0 ms-auto text-muted"
+                                            style={{ fontSize: "0.85rem" }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setPeriodeSearch("");
+                                                setPeriodeDropdownOpen(false);
+                                                setFilters((f) => ({ ...f, periode: "" }));
+                                            }}
+                                        >
+                                            <i className="bi bi-x-circle"></i>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Dropdown list periode */}
+                                {periodeDropdownOpen && (
+                                    <div
+                                        className="position-absolute w-100 bg-white border rounded shadow-sm"
+                                        style={{ zIndex: 1050, maxHeight: "220px", overflowY: "auto", top: "100%", left: 0 }}
+                                    >
+                                        {/* Opsi Semua Periode */}
+                                        <div
+                                            className="px-3 py-2 d-flex align-items-center gap-2"
+                                            style={{ cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => {
+                                                setPeriodeSearch("");
+                                                setPeriodeDropdownOpen(false);
+                                                setFilters((f) => ({ ...f, periode: "" }));
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = "#f0f4ff"}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                                        >
+                                            <i className="bi bi-calendar-event text-muted"></i>
+                                            <span className="text-muted" style={{ fontSize: "0.875rem" }}>Semua Periode</span>
+                                        </div>
+
+                                        {(() => {
+                                            const term = periodeSearch.toLowerCase().trim();
+                                            const allPeriods = [...new Set(users.map((u) => u.periode))].filter(Boolean).sort((a, b) => b - a);
+                                            const filtered = allPeriods.filter((p) => !term || p.toString().toLowerCase().includes(term));
+                                            
+                                            if (filtered.length === 0) {
+                                                return (
+                                                    <div className="px-3 py-2 text-muted small">
+                                                        <i className="bi bi-search me-2"></i>
+                                                        Tidak ada periode &quot;{periodeSearch}&quot;
+                                                    </div>
+                                                );
+                                            }
+                                            return filtered.map((period) => (
+                                                <div
+                                                    key={period}
+                                                    className="px-3 py-2 d-flex align-items-center gap-2"
+                                                    style={{
+                                                        cursor: "pointer",
+                                                        background: filters.periode === period ? "#e8f0fe" : "transparent"
+                                                    }}
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => {
+                                                        setPeriodeSearch("");
+                                                        setPeriodeDropdownOpen(false);
+                                                        setFilters((f) => ({ ...f, periode: period }));
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        if (filters.periode !== period)
+                                                            e.currentTarget.style.background = "#f0f4ff";
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        if (filters.periode !== period)
+                                                            e.currentTarget.style.background = "transparent";
+                                                    }}
+                                                >
+                                                    <div
+                                                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                        style={{ width: 30, height: 30 }}
+                                                    >
+                                                        <i className="bi bi-calendar3 text-primary" style={{ fontSize: "0.8rem" }}></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-medium" style={{ fontSize: "0.875rem" }}>Periode {period}</div>
+                                                    </div>
+                                                </div>
+                                            ));
+                                        })()}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Row 2: Status + Tipe Kerja + Search */}
+                    <div className="row g-3">
+                        <div className="col-md-3">
                             <label className="form-label small fw-semibold">
                                 <i className="bi bi-check-circle me-1"></i>
-                                Status
+                                Status Kehadiran
                             </label>
                             <select
                                 className="form-select"
                                 value={filters.status}
-                                onChange={(e) =>
-                                    setFilters({
-                                        ...filters,
-                                        status: e.target.value,
-                                    })
-                                }
+                                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                             >
                                 <option value="">Semua Status</option>
                                 <option value="present">Hadir</option>
                                 <option value="late">Terlambat</option>
-                                <option value="leave">Izin</option>
+                                <option value="leave">Izin/Cuti</option>
                                 <option value="sick">Sakit</option>
+                                <option value="absent">Tidak Hadir</option>
                             </select>
                         </div>
-                        <div className="col-md-2">
+                        <div className="col-md-3">
                             <label className="form-label small fw-semibold">
-                                <i className="bi bi-geo-alt me-1"></i>
+                                <i className="bi bi-briefcase me-1"></i>
                                 Tipe Kerja
                             </label>
                             <select
                                 className="form-select"
                                 value={filters.work_type}
-                                onChange={(e) =>
-                                    setFilters({
-                                        ...filters,
-                                        work_type: e.target.value,
-                                    })
-                                }
+                                onChange={(e) => setFilters({ ...filters, work_type: e.target.value })}
                             >
                                 <option value="">Semua Tipe</option>
                                 <option value="onsite">Onsite</option>
                                 <option value="offsite">Offsite</option>
                             </select>
                         </div>
-                        <div className="col-md-3">
+                        <div className="col-md-6">
                             <label className="form-label small fw-semibold">
-                                <i className="bi bi-search me-1"></i>
-                                Cari
+                                <i className="bi bi-people me-1"></i>
+                                Filter User Spesifik
+                                {selectedUserIds.length > 0 && (
+                                    <span className="badge bg-primary ms-2">{selectedUserIds.length} dipilih</span>
+                                )}
                             </label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Nama, NIP, Divisi..."
-                                value={filters.search}
-                                onChange={(e) =>
-                                    setFilters({
-                                        ...filters,
-                                        search: e.target.value,
-                                    })
-                                }
-                            />
+                            {/* Combobox container */}
+                            <div
+                                className="position-relative"
+                                onBlur={(e) => {
+                                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                                        setUserDropdownOpen(false);
+                                    }
+                                }}
+                                tabIndex={-1}
+                            >
+                                {/* Input box with chips */}
+                                <div
+                                    className="form-control d-flex flex-wrap gap-1 align-items-center"
+                                    style={{ minHeight: "42px", cursor: "text", height: "auto" }}
+                                    onClick={() => {
+                                        setUserDropdownOpen(true);
+                                        document.getElementById("monitoring-user-search").focus();
+                                    }}
+                                >
+                                    {selectedUserIds.map((id) => {
+                                        const u = users.find((x) => x.id === id);
+                                        if (!u) return null;
+                                        return (
+                                            <span
+                                                key={id}
+                                                className="badge bg-primary d-inline-flex align-items-center gap-1 py-1 px-2"
+                                                style={{ fontSize: "0.75rem", fontWeight: 500 }}
+                                            >
+                                                <i className="bi bi-person-fill" style={{ fontSize: "0.7rem" }}></i>
+                                                {u.name}
+                                                <button
+                                                    type="button"
+                                                    className="btn-close btn-close-white"
+                                                    style={{ fontSize: "0.5rem" }}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedUserIds((prev) => prev.filter((x) => x !== id));
+                                                    }}
+                                                ></button>
+                                            </span>
+                                        );
+                                    })}
+                                    <input
+                                        id="monitoring-user-search"
+                                        type="text"
+                                        className="border-0 flex-grow-1"
+                                        style={{ outline: "none", minWidth: "140px", background: "transparent", fontSize: "0.875rem" }}
+                                        placeholder={selectedUserIds.length === 0 ? "Ketik nama/NIP..." : "Tambah user..."}
+                                        value={userSearch}
+                                        onChange={(e) => {
+                                            setUserSearch(e.target.value);
+                                            setUserDropdownOpen(true);
+                                        }}
+                                        onFocus={() => setUserDropdownOpen(true)}
+                                    />
+                                    {selectedUserIds.length > 0 && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-link p-0 ms-auto text-muted"
+                                            style={{ fontSize: "0.85rem" }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedUserIds([]);
+                                                setUserSearch("");
+                                            }}
+                                        >
+                                            <i className="bi bi-x-circle"></i>
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Dropdown list for Users */}
+                                {userDropdownOpen && (
+                                    <div
+                                        className="position-absolute w-100 bg-white border rounded shadow-sm"
+                                        style={{ zIndex: 1050, maxHeight: "250px", overflowY: "auto", top: "100%", left: 0 }}
+                                    >
+                                        {users
+                                            .filter((u) => {
+                                                const term = userSearch.toLowerCase();
+                                                return (
+                                                    u.name?.toLowerCase().includes(term) ||
+                                                    u.nip?.toLowerCase().includes(term) ||
+                                                    u.division?.name?.toLowerCase().includes(term)
+                                                );
+                                            })
+                                            .map((u) => (
+                                                <div
+                                                    key={u.id}
+                                                    className="px-3 py-2 d-flex align-items-center justify-content-between"
+                                                    style={{
+                                                        cursor: "pointer",
+                                                        borderBottom: "1px solid #f8f9fa",
+                                                        background: selectedUserIds.includes(u.id) ? "#e8f0fe" : "transparent"
+                                                    }}
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => {
+                                                        setSelectedUserIds((prev) => {
+                                                            if (prev.includes(u.id)) {
+                                                                return prev.filter((id) => id !== u.id);
+                                                            } else {
+                                                                return [...prev, u.id];
+                                                            }
+                                                        });
+                                                        setUserSearch("");
+                                                    }}
+                                                    onMouseEnter={(e) => {
+                                                        if (!selectedUserIds.includes(u.id)) {
+                                                            e.currentTarget.style.background = "#f0f4ff";
+                                                        }
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        if (!selectedUserIds.includes(u.id)) {
+                                                            e.currentTarget.style.background = "transparent";
+                                                        }
+                                                    }}
+                                                >
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        <div
+                                                            className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
+                                                            style={{ width: 32, height: 32 }}
+                                                        >
+                                                            <i className="bi bi-person-fill text-primary"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div className="fw-medium text-dark" style={{ fontSize: "0.875rem", lineHeight: "1.2" }}>
+                                                                {u.name}
+                                                            </div>
+                                                            <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                                                                {u.nip || "-"} • {u.division?.name || "Tanpa Divisi"}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {selectedUserIds.includes(u.id) && (
+                                                        <i className="bi bi-check-circle-fill text-primary"></i>
+                                                    )}
+                                                </div>
+                                            ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
+
+                    {/* Bottom bar: View toggle + Export */}
                     <div className="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
                         <div className="btn-group" role="group">
                             <button
@@ -535,14 +1048,11 @@ const Monitoring = () => {
                                 Table
                             </button>
                         </div>
-                        <div className="d-flex gap-2">
-                            <button
-                                className="btn btn-sm btn-outline-secondary"
-                                onClick={handleResetFilters}
-                            >
-                                <i className="bi bi-x-circle me-1"></i>
-                                Reset Filter
-                            </button>
+                        <div className="d-flex align-items-center gap-2">
+                            <span className="text-muted small">
+                                <i className="bi bi-people me-1"></i>
+                                {attendances.length} data ditemukan
+                            </span>
                             <button
                                 className="btn btn-sm btn-success"
                                 onClick={handleExport}
@@ -556,6 +1066,7 @@ const Monitoring = () => {
             </div>
 
             {/* Content */}
+
             {currentAttendances.length === 0 ? (
                 <div className="card border-0 shadow-sm">
                     <div className="card-body text-center py-5">

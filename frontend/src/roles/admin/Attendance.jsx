@@ -679,7 +679,7 @@ const AdminAttendance = () => {
                         </div>
                     </div>
 
-                    <div className="row g-3">
+                    <div className="row g-3 align-items-end">
                         <div className="col-md-3">
                             <label className="form-label small fw-semibold">
                                 Tanggal Mulai
@@ -715,7 +715,7 @@ const AdminAttendance = () => {
                                 min={filters.start_date}
                             />
                         </div>
-                        <div className="col-md-3">
+                        <div className="col-md-2">
                             <label className="form-label small fw-semibold">
                                 Sumber Magang
                             </label>
@@ -737,7 +737,7 @@ const AdminAttendance = () => {
                                 <option value="umum">Umum</option>
                             </select>
                         </div>
-                        <div className="col-md-3">
+                        <div className="col-md-2">
                             <label className="form-label small fw-semibold">
                                 Periode/Batch
                             </label>
@@ -759,7 +759,7 @@ const AdminAttendance = () => {
                                 ))}
                             </select>
                         </div>
-                        <div className="col-md-3">
+                        <div className="col-md-2">
                             <label className="form-label small fw-semibold">
                                 Divisi
                             </label>
@@ -781,9 +781,22 @@ const AdminAttendance = () => {
                                 ))}
                             </select>
                         </div>
-                        <div className="col-md-3">
+
+                        <div className="col-md-4">
                             <label className="form-label small fw-semibold">
-                                Status
+                                Cari Nama/NIP/Email
+                            </label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Ketik nama, NIP, atau email..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        <div className="col-md-2">
+                            <label className="form-label small fw-semibold">
+                                Status Kehadiran
                             </label>
                             <select
                                 className="form-select"
@@ -800,7 +813,7 @@ const AdminAttendance = () => {
                                 <option value="sick">Sakit</option>
                             </select>
                         </div>
-                        <div className="col-md-3">
+                        <div className="col-md-2">
                             <label className="form-label small fw-semibold">
                                 Tipe Kerja
                             </label>
@@ -819,63 +832,29 @@ const AdminAttendance = () => {
                                 <option value="offsite">Offsite</option>
                             </select>
                         </div>
-                        <div className="col-md-12">
+                        <div className="col-md-2">
                             <label className="form-label small fw-semibold">
-                                <i className="bi bi-search me-1"></i>
-                                Pencarian Cepat
+                                &nbsp;
                             </label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Cari berdasarkan nama, NIP, email, atau divisi..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                            {searchTerm && searchTerm !== filters.search && (
-                                <small className="text-muted mt-1">
-                                    <i className="bi bi-hourglass-split me-1"></i>
-                                    Mencari...
-                                </small>
-                            )}
+                            <button
+                                className="btn btn-primary w-100"
+                                onClick={() => fetchAttendances()}
+                            >
+                                <i className="bi bi-search me-1"></i>
+                                Cari
+                            </button>
                         </div>
-                    </div>
-
-                    <div className="mt-3 d-flex justify-content-between align-items-center">
-                        <button
-                            className="btn btn-sm btn-outline-danger"
-                            onClick={handleResetFilters}
-                        >
-                            <i className="bi bi-arrow-clockwise me-1"></i>
-                            Reset Filter
-                        </button>
-                        <div className="d-flex gap-2 align-items-center">
-                            <span className="text-muted small">
-                                <i className="bi bi-calendar-range me-1"></i>
-                                {filters.start_date === filters.end_date
-                                    ? `Tanggal: ${new Date(
-                                        filters.start_date,
-                                    ).toLocaleDateString("id-ID", {
-                                        day: "numeric",
-                                        month: "short",
-                                        year: "numeric",
-                                    })}`
-                                    : `${new Date(
-                                        filters.start_date,
-                                    ).toLocaleDateString("id-ID", {
-                                        day: "numeric",
-                                        month: "short",
-                                    })} - ${new Date(
-                                        filters.end_date,
-                                    ).toLocaleDateString("id-ID", {
-                                        day: "numeric",
-                                        month: "short",
-                                        year: "numeric",
-                                    })}`}
-                            </span>
-                            <span className="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
-                                <i className="bi bi-database-fill me-1"></i>
-                                {attendances.length} data ditemukan
-                            </span>
+                        <div className="col-md-2">
+                            <label className="form-label small fw-semibold">
+                                &nbsp;
+                            </label>
+                            <button
+                                className="btn btn-outline-danger w-100"
+                                onClick={handleResetFilters}
+                            >
+                                <i className="bi bi-arrow-clockwise me-1"></i>
+                                Reset
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -898,7 +877,8 @@ const AdminAttendance = () => {
                                         <th>Check In</th>
                                         <th>Check Out</th>
                                         <th>Status</th>
-                                        <th>Tipe Kerja</th>
+                                        <th>Keterangan Check-in</th>
+                                        <th>Keterangan Check-out</th>
                                         <th style={{ width: "100px" }}>Aksi</th>
                                     </tr>
                                 </thead>
@@ -1001,17 +981,44 @@ const AdminAttendance = () => {
                                                             {statusBadge.text}
                                                         </Badge>
                                                     </td>
+                                                    {/* Keterangan Check-in */}
                                                     <td>
-                                                        <Badge
-                                                            bg={
-                                                                workTypeBadge.bg
-                                                            }
-                                                        >
-                                                            <i
-                                                                className={`bi bi-${workTypeBadge.icon} me-1`}
-                                                            ></i>
-                                                            {workTypeBadge.text}
-                                                        </Badge>
+                                                        {attendance.check_in_time ? (
+                                                            <div style={{ minWidth: "150px" }}>
+                                                                {attendance.work_type === "onsite" ? (
+                                                                    <span className="text-muted small">User melakukan presensi onsite</span>
+                                                                ) : (
+                                                                    <span className="small" title={attendance.offsite_reason || ""}>
+                                                                        {attendance.offsite_reason ? (attendance.offsite_reason.length > 30 ? attendance.offsite_reason.substring(0, 30) + "..." : attendance.offsite_reason) : "Tidak ada keterangan"}
+                                                                        {attendance.check_in_photo && (
+                                                                            <i className="bi bi-image ms-1 text-primary" title="Bukti Foto"></i>
+                                                                        )}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted">-</span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Keterangan Check-out */}
+                                                    <td>
+                                                        {attendance.check_out_time ? (
+                                                            <div style={{ minWidth: "150px" }}>
+                                                                {!attendance.checkout_offsite_reason && !attendance.check_out_photo ? (
+                                                                    <span className="text-muted small">User melakukan presensi onsite</span>
+                                                                ) : (
+                                                                    <span className="small" title={attendance.checkout_offsite_reason || ""}>
+                                                                        {attendance.checkout_offsite_reason ? (attendance.checkout_offsite_reason.length > 30 ? attendance.checkout_offsite_reason.substring(0, 30) + "..." : attendance.checkout_offsite_reason) : "Tidak ada keterangan"}
+                                                                        {attendance.check_out_photo && (
+                                                                            <i className="bi bi-image ms-1 text-primary" title="Bukti Foto"></i>
+                                                                        )}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted">-</span>
+                                                        )}
                                                     </td>
                                                     <td>
                                                         <button
@@ -1032,7 +1039,7 @@ const AdminAttendance = () => {
                                     ) : (
                                         <tr>
                                             <td
-                                                colSpan="9"
+                                                colSpan="10"
                                                 className="text-center py-5"
                                             >
                                                 <div className="text-muted">

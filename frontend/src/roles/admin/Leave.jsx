@@ -642,6 +642,19 @@ const AdminLeave = () => {
                                 </Form.Select>
                             </Form.Group>
                         </Col>
+                        <Col md={6}>
+                            <Form.Group>
+                                <Form.Label className="small fw-semibold">
+                                    Cari Nama/NIP/Email
+                                </Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Ketik nama, NIP, atau email..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </Form.Group>
+                        </Col>
                         <Col md={2}>
                             <Form.Group>
                                 <Form.Label className="small fw-semibold">

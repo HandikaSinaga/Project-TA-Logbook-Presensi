@@ -1,4 +1,5 @@
 import models from "../models/index.js";
+import { Op } from "sequelize";
 
 const { Division, User } = models;
 
@@ -217,6 +218,7 @@ class DivisionController {
                 where: {
                     division_id: supervisor.division_id,
                     is_active: true,
+                    id: { [Op.ne]: supervisorId }, // Exclude supervisor themselves
                 },
                 attributes: [
                     "id",
@@ -312,9 +314,15 @@ class DivisionController {
                 });
             }
 
+            // Convert empty string to null
+            const resolvedSupervisorId =
+                supervisor_id && supervisor_id !== ""
+                    ? parseInt(supervisor_id)
+                    : null;
+
             // Check if supervisor exists
-            if (supervisor_id) {
-                const supervisor = await User.findByPk(supervisor_id);
+            if (resolvedSupervisorId) {
+                const supervisor = await User.findByPk(resolvedSupervisorId);
                 if (!supervisor) {
                     return res.status(404).json({
                         success: false,
@@ -326,11 +334,19 @@ class DivisionController {
             const division = await Division.create({
                 name,
                 description,
-                supervisor_id: supervisor_id || null,
+                supervisor_id: resolvedSupervisorId,
                 periode: periode || null,
                 is_active_periode: true,
                 is_active: is_active !== undefined ? is_active : true,
             });
+
+            // Sync supervisor's division_id
+            if (resolvedSupervisorId) {
+                await User.update(
+                    { division_id: division.id },
+                    { where: { id: resolvedSupervisorId } }
+                );
+            }
 
             res.status(201).json({
                 success: true,
@@ -408,8 +424,22 @@ class DivisionController {
                 });
             }
 
-            if (supervisor_id) {
-                const supervisor = await User.findByPk(supervisor_id);
+            // Convert empty string to null for integer FK
+            const newSupervisorId =
+                supervisor_id === "" || supervisor_id === null || supervisor_id === undefined
+                    ? (supervisor_id === "" ? null : (supervisor_id ?? division.supervisor_id))
+                    : parseInt(supervisor_id);
+
+            // Resolve: explicit "" → null, explicit valid id → that id, undefined → keep existing
+            const resolvedSupervisorId =
+                supervisor_id === ""
+                    ? null
+                    : supervisor_id !== undefined
+                    ? parseInt(supervisor_id)
+                    : division.supervisor_id;
+
+            if (resolvedSupervisorId) {
+                const supervisor = await User.findByPk(resolvedSupervisorId);
                 if (!supervisor) {
                     return res.status(404).json({
                         success: false,
@@ -418,16 +448,15 @@ class DivisionController {
                 }
             }
 
+            const previousSupervisorId = division.supervisor_id;
+
             await division.update({
                 name: name || division.name,
                 description:
                     description !== undefined
                         ? description
                         : division.description,
-                supervisor_id:
-                    supervisor_id !== undefined
-                        ? supervisor_id
-                        : division.supervisor_id,
+                supervisor_id: resolvedSupervisorId,
                 periode: periode !== undefined ? periode : division.periode,
                 is_active_periode:
                     is_active_periode !== undefined
@@ -436,6 +465,26 @@ class DivisionController {
                 is_active:
                     is_active !== undefined ? is_active : division.is_active,
             });
+
+            // --- Sync supervisor's division_id ---
+            // If supervisor changed, update the new supervisor's division_id AND clear old supervisor
+            if (resolvedSupervisorId !== previousSupervisorId) {
+                // Clear old supervisor's division_id if there was one
+                if (previousSupervisorId) {
+                    await User.update(
+                        { division_id: null },
+                        { where: { id: previousSupervisorId, division_id: parseInt(id) } }
+                    );
+                }
+                
+                // Update new supervisor's division_id if one was selected
+                if (resolvedSupervisorId) {
+                    await User.update(
+                        { division_id: parseInt(id) },
+                        { where: { id: resolvedSupervisorId } }
+                    );
+                }
+            }
 
             res.json({
                 success: true,
@@ -565,6 +614,47 @@ class DivisionController {
             res.status(500).json({
                 success: false,
                 message: "Failed to get division members",
+            });
+        }
+    }
+
+    // Admin remove user from division
+    async adminRemoveUserFromDivision(req, res) {
+        try {
+            const { id, user_id } = req.params;
+            
+            const division = await Division.findByPk(id);
+            if (!division) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Division not found"
+                });
+            }
+
+            const user = await User.findByPk(user_id);
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: "User not found"
+                });
+            }
+
+            // Also clear supervisor_id when removing from division so they don't stay bound to the supervisor
+            await user.update({ 
+                division_id: null, 
+                division_assigned_at: null,
+                supervisor_id: null
+            });
+
+            res.json({
+                success: true,
+                message: "User removed from division successfully"
+            });
+        } catch (error) {
+            console.error("Admin remove user from division error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Failed to remove user from division"
             });
         }
     }
@@ -794,6 +884,14 @@ class DivisionController {
                 return res.status(403).json({
                     success: false,
                     message: "You can only remove users you supervise",
+                });
+            }
+
+            // Prevent supervisor from removing themselves
+            if (user_id === supervisorId || parseInt(user_id) === supervisorId) {
+                return res.status(403).json({
+                    success: false,
+                    message: "You cannot remove yourself from the division",
                 });
             }
 

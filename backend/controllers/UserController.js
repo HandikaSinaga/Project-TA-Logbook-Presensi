@@ -84,6 +84,14 @@ class UserController {
                 periode,
                 sumber_magang,
                 is_active,
+                position,
+                bio,
+                linkedin,
+                instagram,
+                telegram,
+                github,
+                twitter,
+                facebook,
             } = req.body;
 
             if (!name || !email || !password) {
@@ -120,6 +128,14 @@ class UserController {
                 is_active_periode: true,
                 sumber_magang: sumber_magang || null,
                 is_active: is_active !== undefined ? is_active : true,
+                position: position || null,
+                bio: bio || null,
+                linkedin: linkedin || null,
+                instagram: instagram || null,
+                telegram: telegram || null,
+                github: github || null,
+                twitter: twitter || null,
+                facebook: facebook || null,
             });
 
             res.status(201).json({
@@ -197,6 +213,14 @@ class UserController {
                 is_active_periode,
                 sumber_magang,
                 is_active,
+                position,
+                bio,
+                linkedin,
+                instagram,
+                telegram,
+                github,
+                twitter,
+                facebook,
             } = req.body;
 
             const user = await User.findByPk(id);
@@ -245,6 +269,14 @@ class UserController {
                         ? sumber_magang
                         : user.sumber_magang,
                 is_active: is_active !== undefined ? is_active : user.is_active,
+                position: position !== undefined ? position : user.position,
+                bio: bio !== undefined ? bio : user.bio,
+                linkedin: linkedin !== undefined ? linkedin : user.linkedin,
+                instagram: instagram !== undefined ? instagram : user.instagram,
+                telegram: telegram !== undefined ? telegram : user.telegram,
+                github: github !== undefined ? github : user.github,
+                twitter: twitter !== undefined ? twitter : user.twitter,
+                facebook: facebook !== undefined ? facebook : user.facebook,
             });
 
             res.json({

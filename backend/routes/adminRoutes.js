@@ -53,6 +53,10 @@ router.put("/divisions/:id", DivisionController.update);
 router.put("/divisions/:id/toggle-status", DivisionController.toggleStatus);
 router.delete("/divisions/:id", DivisionController.delete);
 router.get("/divisions/:id/members", DivisionController.getMembers);
+router.delete(
+    "/divisions/:id/members/:user_id",
+    DivisionController.adminRemoveUserFromDivision,
+);
 router.put(
     "/divisions/:id/assign-users",
     DivisionController.assignUsersToDivision,
