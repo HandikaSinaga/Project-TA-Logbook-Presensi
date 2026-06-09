@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Navbar, ButtonGroup, Dropdown, Button, Modal } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { logout } from "../../../services/authService";
 import { getAvatarUrl } from "../../../utils/Constant";
+import { clearStorage } from "../../../utils/storageHelper";
 import {
     validName,
     getDateNow,
@@ -16,6 +17,7 @@ const SUBTITLE_SIZE = "14px";
 import ThemeToggle from "../../ui/ThemeToggle";
 
 const UserNavbar = ({ onToggleSidebar }) => {
+    const navigate = useNavigate();
     const [show, setShow] = useState(false);
     const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 992);
     const [userData, setUserData] = useState({ name: "User", email: "" });
@@ -50,9 +52,9 @@ const UserNavbar = ({ onToggleSidebar }) => {
             await logout();
             window.location.href = "/login";
         } catch (error) {
-            console.error("Logout error:", error);
-            localStorage.clear();
-            window.location.href = "/login";
+            console.error("Logout failed", error);
+            clearStorage();
+            navigate("/login");
         }
     };
 

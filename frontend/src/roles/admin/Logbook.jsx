@@ -16,6 +16,9 @@ import {
 } from "react-bootstrap";
 import { getAvatarUrl } from "../../utils/Constant";
 import { getJakartaDate } from "../../utils/dateUtils";
+import LogbookDetailModal from "../../components/LogbookDetailModal";
+import AdvancedFilters from "../../components/common/AdvancedFilters";
+
 
 const AdminLogbook = () => {
     const [loading, setLoading] = useState(true);
@@ -35,8 +38,9 @@ const AdminLogbook = () => {
         periode: "",
         sumber_magang: "",
         status: "",
-        search: "",
     });
+    
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [stats, setStats] = useState({
         total: 0,
         pending: 0,
@@ -47,17 +51,7 @@ const AdminLogbook = () => {
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedLogbook, setSelectedLogbook] = useState(null);
 
-    // Debounced search effect
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (searchTerm !== filters.search) {
-                setFilters((prev) => ({ ...prev, search: searchTerm }));
-                setPage(1);
-            }
-        }, 500);
 
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
 
     useEffect(() => {
         fetchDivisions();
@@ -71,9 +65,9 @@ const AdminLogbook = () => {
         filters.end_date,
         filters.division_id,
         filters.status,
-        filters.search,
         filters.periode,
         filters.sumber_magang,
+        selectedUserIds,
         page,
     ]);
 
@@ -107,18 +101,20 @@ const AdminLogbook = () => {
             if (filters.status) params.status = filters.status;
             if (filters.periode) params.periode = filters.periode;
             if (filters.sumber_magang) params.sumber_magang = filters.sumber_magang;
-            if (filters.search && filters.search.trim() !== "") {
-                params.search = filters.search.trim();
+            if (selectedUserIds.length > 0) {
+                params.user_ids = selectedUserIds.join(",");
             }
 
-            // Stats params — tanpa filter status agar tampilkan breakdown per status
+            // Stats params â€” tanpa filter status agar tampilkan breakdown per status
             const statsParams = {};
             if (filters.start_date) statsParams.start_date = filters.start_date;
             if (filters.end_date) statsParams.end_date = filters.end_date;
             if (filters.division_id) statsParams.division_id = filters.division_id;
             if (filters.periode) statsParams.periode = filters.periode;
             if (filters.sumber_magang) statsParams.sumber_magang = filters.sumber_magang;
-            if (filters.search?.trim()) statsParams.search = filters.search.trim();
+            if (selectedUserIds.length > 0) {
+                statsParams.user_ids = selectedUserIds.join(",");
+            }
 
             const [dataRes, statsRes] = await Promise.all([
                 axiosInstance.get("/admin/logbook", { params }),
@@ -204,9 +200,8 @@ const AdminLogbook = () => {
             periode: "",
             sumber_magang: "",
             status: "",
-            search: "",
         });
-        setSearchTerm("");
+        setSelectedUserIds([]);
         setPage(1);
     };
 
@@ -382,7 +377,21 @@ const AdminLogbook = () => {
                         </div>
                     </div>
 
-                    <Row className="g-3 align-items-end">
+                    <AdvancedFilters
+                        filters={filters}
+                        setFilters={setFilters}
+                        selectedUserIds={selectedUserIds}
+                        setSelectedUserIds={setSelectedUserIds}
+                        showDivision={true}
+                        showPeriode={true}
+                        showUser={true}
+                        showSumberMagang={true}
+                        role="admin"
+                        externalUsers={users}
+                        externalDivisions={divisions}
+                    />
+
+                    <Row className="g-3 mt-2">
                         <Col md={3}>
                             <Form.Label className="small fw-semibold">
                                 Tanggal Mulai
@@ -418,88 +427,6 @@ const AdminLogbook = () => {
                         </Col>
                         <Col md={2}>
                             <Form.Label className="small fw-semibold">
-                                Sumber Magang
-                            </Form.Label>
-                            <Form.Select
-                                value={filters.sumber_magang}
-                                onChange={(e) =>
-                                    handleFilterChange(
-                                        "sumber_magang",
-                                        e.target.value
-                                    )
-                                }
-                            >
-                                <option value="">Semua Sumber</option>
-                                <option value="kampus">Kampus</option>
-                                <option value="pemerintah">Pemerintah</option>
-                                <option value="swasta">Swasta</option>
-                                <option value="internal">Internal</option>
-                                <option value="umum">Umum</option>
-                            </Form.Select>
-                        </Col>
-                        <Col md={2}>
-                            <Form.Label className="small fw-semibold">
-                                Periode/Batch
-                            </Form.Label>
-                            <Form.Select
-                                value={filters.periode}
-                                onChange={(e) =>
-                                    handleFilterChange(
-                                        "periode",
-                                        e.target.value
-                                    )
-                                }
-                            >
-                                <option value="">Semua Periode</option>
-                                {[
-                                    ...new Set(
-                                        users
-                                            .map((u) => u.periode)
-                                            .filter(Boolean)
-                                    ),
-                                ]
-                                    .sort()
-                                    .map((periode) => (
-                                        <option key={periode} value={periode}>
-                                            {periode}
-                                        </option>
-                                    ))}
-                            </Form.Select>
-                        </Col>
-                        <Col md={2}>
-                            <Form.Label className="small fw-semibold">
-                                Divisi
-                            </Form.Label>
-                            <Form.Select
-                                value={filters.division_id}
-                                onChange={(e) =>
-                                    handleFilterChange(
-                                        "division_id",
-                                        e.target.value
-                                    )
-                                }
-                            >
-                                <option value="">Semua Divisi</option>
-                                {divisions.map((div) => (
-                                    <option key={div.id} value={div.id}>
-                                        {div.name}
-                                    </option>
-                                ))}
-                            </Form.Select>
-                        </Col>
-                        <Col md={6}>
-                            <Form.Label className="small fw-semibold">
-                                Cari Nama/NIP/Email
-                            </Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Ketik nama, NIP, atau email..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </Col>
-                        <Col md={2}>
-                            <Form.Label className="small fw-semibold">
                                 Status
                             </Form.Label>
                             <Form.Select
@@ -515,30 +442,20 @@ const AdminLogbook = () => {
                                 <option value="not_filled">Tidak Mengisi</option>
                             </Form.Select>
                         </Col>
-                        <Col md={2}>
-                            <Form.Label className="small fw-semibold">
-                                &nbsp;
-                            </Form.Label>
+                        <Col md={2} className="d-flex align-items-end gap-2">
                             <Button
                                 variant="primary"
-                                className="w-100"
+                                className="flex-grow-1"
                                 onClick={fetchLogbooks}
                             >
                                 <i className="bi bi-search me-1"></i>
                                 Cari
                             </Button>
-                        </Col>
-                        <Col md={2}>
-                            <Form.Label className="small fw-semibold">
-                                &nbsp;
-                            </Form.Label>
                             <Button
                                 variant="outline-danger"
-                                className="w-100"
                                 onClick={handleResetFilters}
                             >
-                                <i className="bi bi-arrow-clockwise me-1"></i>
-                                Reset
+                                <i className="bi bi-arrow-clockwise"></i>
                             </Button>
                         </Col>
                     </Row>
@@ -790,389 +707,12 @@ const AdminLogbook = () => {
                 </Card.Body>
             </Card>
 
-            {/* Detail Modal */}
-            <Modal
-                show={showDetailModal}
-                onHide={() => setShowDetailModal(false)}
-                size="lg"
-            >
-                <Modal.Header closeButton>
-                    <Modal.Title>Detail Logbook</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {selectedLogbook && (
-                        <div>
-                            <Row className="mb-3">
-                                <Col md={6}>
-                                    <div className="mb-3">
-                                        <small className="text-muted d-block">
-                                            Karyawan
-                                        </small>
-                                        <div className="d-flex align-items-center mt-1">
-                                            <img
-                                                src={getAvatarUrl(
-                                                    selectedLogbook.user
-                                                )}
-                                                alt={selectedLogbook.user?.name}
-                                                className="rounded-circle me-2"
-                                                width="40"
-                                                height="40"
-                                                style={{ objectFit: "cover" }}
-                                                onError={(e) => {
-                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                        selectedLogbook.user
-                                                            ?.name || "User"
-                                                    )}&background=0D8ABC&color=fff&size=128`;
-                                                }}
-                                            />
-                                            <div>
-                                                <strong>
-                                                    {selectedLogbook.user?.name}
-                                                </strong>
-                                                <br />
-                                                <small className="text-muted">
-                                                    {selectedLogbook.user?.nip}
-                                                </small>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Col>
-                                <Col md={6}>
-                                    <div className="mb-3">
-                                        <small className="text-muted d-block">
-                                            Divisi
-                                        </small>
-                                        <strong>
-                                            {selectedLogbook.user?.division
-                                                ?.name || "-"}
-                                        </strong>
-                                    </div>
-                                </Col>
-                            </Row>
-                            <Row className="mb-3">
-                                {selectedLogbook.user?.periode && (
-                                    <Col md={6}>
-                                        <div className="mb-3">
-                                            <small className="text-muted d-block">
-                                                Periode
-                                            </small>
-                                            <Badge bg="info">
-                                                <i className="bi bi-calendar-range me-1"></i>
-                                                {selectedLogbook.user.periode}
-                                            </Badge>
-                                        </div>
-                                    </Col>
-                                )}
-                                {selectedLogbook.user?.sumber_magang && (
-                                    <Col md={6}>
-                                        <div className="mb-3">
-                                            <small className="text-muted d-block">
-                                                Sumber Magang
-                                            </small>
-                                            <Badge bg="secondary">
-                                                <i className="bi bi-building me-1"></i>
-                                                {
-                                                    selectedLogbook.user
-                                                        .sumber_magang
-                                                }
-                                            </Badge>
-                                        </div>
-                                    </Col>
-                                )}
-                            </Row>
-                            <Row className="mb-3">
-                                <Col md={6}>
-                                    <div className="mb-3">
-                                        <small className="text-muted d-block">
-                                            Tanggal
-                                        </small>
-                                        <strong>
-                                            {selectedLogbook.date
-                                                ? new Date(
-                                                      selectedLogbook.date
-                                                  ).toLocaleDateString(
-                                                      "id-ID",
-                                                      {
-                                                          weekday: "long",
-                                                          day: "numeric",
-                                                          month: "long",
-                                                          year: "numeric",
-                                                      }
-                                                  )
-                                                : "-"}
-                                        </strong>
-                                    </div>
-                                </Col>
-                                <Col md={6}>
-                                    <div className="mb-3">
-                                        <small className="text-muted d-block">
-                                            Status
-                                        </small>
-                                        <Badge
-                                            bg={getStatusBadge(
-                                                selectedLogbook.status
-                                            )}
-                                            className="mt-1"
-                                        >
-                                            {getStatusText(
-                                                selectedLogbook.status
-                                            )}
-                                        </Badge>
-                                    </div>
-                                </Col>
-                            </Row>
-                            <Row className="mb-3">
-                                <Col md={6}>
-                                    <div className="mb-3">
-                                        <small className="text-muted d-block">
-                                            Waktu
-                                        </small>
-                                        <strong>
-                                            <i className="bi bi-clock me-2 text-info"></i>
-                                            {selectedLogbook.time || "-"}
-                                        </strong>
-                                    </div>
-                                </Col>
-                                {selectedLogbook.location && (
-                                    <Col md={6}>
-                                        <div className="mb-3">
-                                            <small className="text-muted d-block">
-                                                Lokasi
-                                            </small>
-                                            <strong>
-                                                <i className="bi bi-geo-alt me-2 text-danger"></i>
-                                                {selectedLogbook.location}
-                                            </strong>
-                                        </div>
-                                    </Col>
-                                )}
-                            </Row>
-                            <div className="mb-3">
-                                <small className="text-muted d-block">
-                                    Nama Kegiatan
-                                </small>
-                                <Card className="mt-2 border-0 bg-light">
-                                    <Card.Body>
-                                        <p className="mb-0 fw-semibold">
-                                            {selectedLogbook.activity ||
-                                                "Kegiatan Harian"}
-                                        </p>
-                                    </Card.Body>
-                                </Card>
-                            </div>
-                            <div className="mb-3">
-                                <small className="text-muted d-block">
-                                    Deskripsi Aktivitas
-                                </small>
-                                <Card className="mt-2 border-0 bg-light">
-                                    <Card.Body>
-                                        <p
-                                            className="mb-0"
-                                            style={{ whiteSpace: "pre-wrap" }}
-                                        >
-                                            {selectedLogbook.description ||
-                                                "Tidak ada deskripsi"}
-                                        </p>
-                                    </Card.Body>
-                                </Card>
-                            </div>
-                            {selectedLogbook.attachments &&
-                                selectedLogbook.attachments.length > 0 && (
-                                    <div className="mb-3">
-                                        <small className="text-muted d-block mb-2">
-                                            <i className="bi bi-paperclip me-1"></i>
-                                            Lampiran (
-                                            {selectedLogbook.attachments.length}
-                                            )
-                                        </small>
-                                        <Row className="g-2">
-                                            {selectedLogbook.attachments.map(
-                                                (attachment, index) => {
-                                                    const isImage =
-                                                        /\.(jpg|jpeg|png|gif|webp)$/i.test(
-                                                            attachment
-                                                        );
-                                                    return (
-                                                        <Col md={6} key={index}>
-                                                            {isImage ? (
-                                                                <Card className="border-0 shadow-sm">
-                                                                    <img
-                                                                        src={`http://localhost:3000${attachment}`}
-                                                                        alt={`Attachment ${
-                                                                            index +
-                                                                            1
-                                                                        }`}
-                                                                        className="card-img-top"
-                                                                        style={{
-                                                                            height: "200px",
-                                                                            objectFit:
-                                                                                "cover",
-                                                                            cursor: "pointer",
-                                                                        }}
-                                                                        onClick={() =>
-                                                                            window.open(
-                                                                                `http://localhost:3000${attachment}`,
-                                                                                "_blank"
-                                                                            )
-                                                                        }
-                                                                        onError={(
-                                                                            e
-                                                                        ) => {
-                                                                            e.target.src =
-                                                                                'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="14" dy="100" dx="50"%3EGambar tidak tersedia%3C/text%3E%3C/svg%3E';
-                                                                        }}
-                                                                    />
-                                                                    <Card.Body className="p-2 text-center">
-                                                                        <small className="text-muted">
-                                                                            <i className="bi bi-zoom-in me-1"></i>
-                                                                            Klik
-                                                                            untuk
-                                                                            memperbesar
-                                                                        </small>
-                                                                    </Card.Body>
-                                                                </Card>
-                                                            ) : (
-                                                                <a
-                                                                    href={`http://localhost:3000${attachment}`}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="btn btn-outline-primary w-100"
-                                                                >
-                                                                    <i className="bi bi-file-earmark me-2"></i>
-                                                                    Lampiran{" "}
-                                                                    {index + 1}
-                                                                </a>
-                                                            )}
-                                                        </Col>
-                                                    );
-                                                }
-                                            )}
-                                        </Row>
-                                    </div>
-                                )}
-
-                            {/* Feedback */}
-                            {selectedLogbook.status !== "pending" && (
-                                <div className="mb-3">
-                                    <small className="text-muted d-block mb-2">
-                                        <i className="bi bi-chat-left-text me-1"></i>
-                                        Hasil Review dari Supervisor
-                                    </small>
-                                    <Card
-                                        className={`mt-2 border-2 border-${
-                                            selectedLogbook.status ===
-                                            "approved"
-                                                ? "success"
-                                                : "danger"
-                                        }`}
-                                    >
-                                        <Card.Body>
-                                            <div className="mb-3">
-                                                <h6
-                                                    className={`text-${
-                                                        selectedLogbook.status ===
-                                                        "approved"
-                                                            ? "success"
-                                                            : "danger"
-                                                    } mb-2`}
-                                                >
-                                                    <i
-                                                        className={`bi bi-${
-                                                            selectedLogbook.status ===
-                                                            "approved"
-                                                                ? "check-circle"
-                                                                : "x-circle"
-                                                        }-fill me-2`}
-                                                    ></i>
-                                                    {selectedLogbook.status ===
-                                                    "approved"
-                                                        ? "Feedback Approval"
-                                                        : "Alasan Penolakan"}
-                                                </h6>
-                                                {selectedLogbook.review_notes ? (
-                                                    <p
-                                                        className="mb-2"
-                                                        style={{
-                                                            whiteSpace:
-                                                                "pre-wrap",
-                                                        }}
-                                                    >
-                                                        {
-                                                            selectedLogbook.review_notes
-                                                        }
-                                                    </p>
-                                                ) : (
-                                                    <p className="mb-2 text-muted fst-italic">
-                                                        Tidak ada catatan
-                                                    </p>
-                                                )}
-                                            </div>
-                                            {selectedLogbook.reviewer && (
-                                                <div className="d-flex align-items-center mt-3 pt-2 border-top">
-                                                    <i className="bi bi-person-circle me-2 text-muted"></i>
-                                                    <small className="text-muted">
-                                                        Direview oleh:{" "}
-                                                        <span className="fw-semibold">
-                                                            {
-                                                                selectedLogbook
-                                                                    .reviewer
-                                                                    .name
-                                                            }
-                                                        </span>
-                                                    </small>
-                                                </div>
-                                            )}
-                                            {selectedLogbook.reviewed_at && (
-                                                <div className="d-flex align-items-center mt-1">
-                                                    <i className="bi bi-clock me-2 text-muted"></i>
-                                                    <small className="text-muted">
-                                                        {new Date(
-                                                            selectedLogbook.reviewed_at
-                                                        ).toLocaleString(
-                                                            "id-ID",
-                                                            {
-                                                                dateStyle:
-                                                                    "full",
-                                                                timeStyle:
-                                                                    "short",
-                                                            }
-                                                        )}
-                                                    </small>
-                                                </div>
-                                            )}
-                                        </Card.Body>
-                                    </Card>
-                                </div>
-                            )}
-                            {selectedLogbook.status === "pending" && (
-                                <div className="mb-3">
-                                    <Card
-                                        className="border-0"
-                                        bg="info"
-                                        text="white"
-                                    >
-                                        <Card.Body className="py-2">
-                                            <small>
-                                                <i className="bi bi-info-circle me-2"></i>
-                                                Logbook ini sedang menunggu
-                                                review dari supervisor.
-                                            </small>
-                                        </Card.Body>
-                                    </Card>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button
-                        variant="secondary"
-                        onClick={() => setShowDetailModal(false)}
-                    >
-                        Tutup
-                    </Button>
-                </Modal.Footer>
-            </Modal>
+            <LogbookDetailModal
+                show={showDetailModal && !!selectedLogbook}
+                onClose={() => setShowDetailModal(false)}
+                logbook={selectedLogbook}
+                showUserInfo={true}
+            />
         </div>
     );
 };

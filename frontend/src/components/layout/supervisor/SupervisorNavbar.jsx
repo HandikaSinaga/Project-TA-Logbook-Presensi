@@ -3,6 +3,7 @@ import { Navbar, ButtonGroup, Dropdown, Button, Modal } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { logout } from "../../../services/authService";
 import { getAvatarUrl } from "../../../utils/Constant";
+import { clearStorage } from "../../../utils/storageHelper";
 import {
     validName,
     getDateNow,
@@ -50,8 +51,8 @@ const SupervisorNavbar = ({ onToggleSidebar }) => {
             await logout();
             window.location.href = "/login";
         } catch (error) {
-            console.error("Logout error:", error);
-            localStorage.clear();
+            console.error("Logout failed", error);
+            clearStorage();
             window.location.href = "/login";
         }
     };

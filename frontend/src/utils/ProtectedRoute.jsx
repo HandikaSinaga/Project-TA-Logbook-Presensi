@@ -1,9 +1,10 @@
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
+import { getStorageToken, clearStorage } from "./storageHelper";
 
 const ProtectedRoute = ({ role }) => {
-    const token = localStorage.getItem("token");
+    const token = getStorageToken();
 
     if (!token) {
         return <Navigate to="/login" replace />;
@@ -14,7 +15,7 @@ const ProtectedRoute = ({ role }) => {
         const currentTime = Date.now() / 1000;
 
         if (decoded.exp < currentTime) {
-            localStorage.removeItem("token");
+            clearStorage();
             return <Navigate to="/login" replace />;
         }
 
@@ -32,13 +33,13 @@ const ProtectedRoute = ({ role }) => {
             }
 
             // If role not recognized, logout
-            localStorage.removeItem("token");
+            clearStorage();
             return <Navigate to="/login" replace />;
         }
 
         return <Outlet />;
     } catch (error) {
-        localStorage.removeItem("token");
+        clearStorage();
         return <Navigate to="/login" replace />;
     }
 };

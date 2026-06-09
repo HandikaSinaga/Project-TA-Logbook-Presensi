@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import toast from "react-hot-toast";
 import { getImageUrl } from "../../utils/Constant";
+import AttendanceDetailModal from "../../components/AttendanceDetailModal";
 
 const Attendance = () => {
     const [loading, setLoading] = useState(true);
@@ -1275,7 +1276,7 @@ const Attendance = () => {
                                     className={`card-header border-0 ${
                                         workTypeDetection.isOnsite
                                             ? "bg-primary"
-                                            : "bg-warning"
+                                            : "bg-warning text-dark"
                                     } bg-opacity-10`}
                                 >
                                     <div className="d-flex align-items-center justify-content-between">
@@ -1284,7 +1285,7 @@ const Attendance = () => {
                                                 className={`rounded-circle ${
                                                     workTypeDetection.isOnsite
                                                         ? "bg-primary"
-                                                        : "bg-warning"
+                                                        : "bg-warning text-dark"
                                                 } bg-opacity-20 p-3 me-3`}
                                             >
                                                 <i
@@ -1335,7 +1336,7 @@ const Attendance = () => {
                                                 className={`p-3 rounded ${
                                                     workTypeDetection.isOnsite
                                                         ? "bg-primary"
-                                                        : "bg-warning"
+                                                        : "bg-warning text-dark"
                                                 } bg-opacity-10`}
                                             >
                                                 <div className="d-flex align-items-center">
@@ -1393,11 +1394,11 @@ const Attendance = () => {
                                                     Presensi ONSITE
                                                 </strong>
                                                 <ul className="mb-0 ps-3">
-                                                    <li>
+                                                    <li className="mb-2">
                                                         Anda berada di area
                                                         kantor
                                                     </li>
-                                                    <li>
+                                                    <li className="mb-2">
                                                         Tidak perlu upload foto
                                                         atau keterangan
                                                     </li>
@@ -1435,18 +1436,18 @@ const Attendance = () => {
                                                     Presensi OFFSITE
                                                 </strong>
                                                 <ul className="mb-0 ps-3">
-                                                    <li>
+                                                    <li className="mb-2">
                                                         Anda berada di luar area
                                                         kantor
                                                     </li>
-                                                    <li>
+                                                    <li className="mb-2">
                                                         <strong className="text-danger">
                                                             WAJIB
                                                         </strong>{" "}
                                                         mengisi
                                                         keterangan/alasan
                                                     </li>
-                                                    <li>
+                                                    <li className="mb-2">
                                                         <strong className="text-danger">
                                                             WAJIB
                                                         </strong>{" "}
@@ -1561,7 +1562,7 @@ const Attendance = () => {
                                                                 todayAttendance.check_in_time,
                                                             )}
                                                         </h3>
-                                                        <span className={`badge bg-${todayAttendance.work_type === 'onsite' ? 'primary' : 'warning'} mt-2`}>
+                                                        <span className={`badge bg-${todayAttendance.work_type === 'onsite' ? 'primary' : 'warning text-dark'} mt-2`}>
                                                             <i className={`bi bi-${todayAttendance.work_type === 'onsite' ? 'building' : 'house-door'} me-1`}></i>
                                                             {todayAttendance.work_type === 'onsite' ? 'ONSITE' : 'OFFSITE'}
                                                         </span>
@@ -1611,7 +1612,7 @@ const Attendance = () => {
                                                             ) || "Belum"}
                                                         </h3>
                                                         {todayAttendance.check_out_time && (
-                                                            <span className={`badge bg-${!todayAttendance.checkout_offsite_reason && !todayAttendance.check_out_photo ? 'primary' : 'warning'} mt-2`}>
+                                                            <span className={`badge bg-${!todayAttendance.checkout_offsite_reason && !todayAttendance.check_out_photo ? 'primary' : 'warning text-dark'} mt-2`}>
                                                                 <i className={`bi bi-${!todayAttendance.checkout_offsite_reason && !todayAttendance.check_out_photo ? 'building' : 'house-door'} me-1`}></i>
                                                                 {!todayAttendance.checkout_offsite_reason && !todayAttendance.check_out_photo ? 'ONSITE' : 'OFFSITE'}
                                                             </span>
@@ -2226,7 +2227,7 @@ const Attendance = () => {
                                                         )}
                                                     </div>
                                                     {item.check_in_time && (
-                                                        <span className={`badge bg-${item.work_type === 'onsite' ? 'primary' : 'warning'}`}>
+                                                        <span className={`badge bg-${item.work_type === 'onsite' ? 'primary' : 'warning text-dark'}`}>
                                                             {item.work_type === 'onsite' ? 'ONSITE' : 'OFFSITE'}
                                                         </span>
                                                     )}
@@ -2238,7 +2239,7 @@ const Attendance = () => {
                                                         )}
                                                     </div>
                                                     {item.check_out_time && (
-                                                        <span className={`badge bg-${!item.checkout_offsite_reason && !item.check_out_photo ? 'primary' : 'warning'}`}>
+                                                        <span className={`badge bg-${!item.checkout_offsite_reason && !item.check_out_photo ? 'primary' : 'warning text-dark'}`}>
                                                             {!item.checkout_offsite_reason && !item.check_out_photo ? 'ONSITE' : 'OFFSITE'}
                                                         </span>
                                                     )}
@@ -2432,367 +2433,12 @@ const Attendance = () => {
             </div>
 
             {/* Detail Modal */}
-            {showDetailModal && selectedAttendance && (
-                <div
-                    className="modal show d-block"
-                    style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-                    onClick={(e) => {
-                        if (e.target.className.includes("modal show")) {
-                            setShowDetailModal(false);
-                            setSelectedAttendance(null);
-                        }
-                    }}
-                >
-                    <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-                        <div className="modal-content border-0 shadow-lg">
-                            <div
-                                className="modal-header bg-gradient"
-                                style={{
-                                    background:
-                                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                                    color: "white",
-                                }}
-                            >
-                                <h5 className="modal-title">
-                                    <i className="bi bi-calendar-check me-2"></i>
-                                    Detail Presensi
-                                </h5>
-                                <button
-                                    type="button"
-                                    className="btn-close btn-close-white"
-                                    onClick={() => {
-                                        setShowDetailModal(false);
-                                        setSelectedAttendance(null);
-                                    }}
-                                ></button>
-                            </div>
-                            <div className="modal-body p-4">
-                                <div className="row g-3 mb-4">
-                                    <div className="col-md-6">
-                                        <div className="border rounded p-3 bg-light">
-                                            <small className="text-muted d-block mb-1">
-                                                <i className="bi bi-calendar-event me-2"></i>
-                                                Tanggal
-                                            </small>
-                                            <strong className="fs-6">
-                                                {formatDate(
-                                                    selectedAttendance.date,
-                                                )}
-                                            </strong>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-6">
-                                        <div className="border rounded p-3 bg-light">
-                                            <small className="text-muted d-block mb-1">
-                                                <i className="bi bi-flag me-2"></i>
-                                                Status
-                                            </small>
-                                            <span
-                                                className={`badge bg-${getStatusBadge(
-                                                    selectedAttendance.status,
-                                                ).bg} fs-6`}
-                                            >
-                                                <i className={`bi bi-${getStatusBadge(selectedAttendance.status).icon} me-1`}></i>
-                                                {getStatusBadge(selectedAttendance.status).text}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Time Display Section */}
-                                <div className="row g-3 mb-4">
-                                    <div className="col-md-6">
-                                        <div
-                                            className="border rounded p-3 bg-success bg-opacity-10 border-success border-opacity-25"
-                                        >
-                                            <small className="text-muted d-block mb-1">
-                                                <i className="bi bi-box-arrow-in-right me-2 text-success"></i>
-                                                Check-in Time
-                                            </small>
-                                            <strong className="fs-4 text-success d-block mb-2">
-                                                {formatTime(
-                                                    selectedAttendance.check_in_time,
-                                                )}
-                                            </strong>
-                                            {selectedAttendance.check_in_time && (
-                                                <span className={`badge bg-${selectedAttendance.work_type === 'onsite' ? 'primary' : 'warning'}`}>
-                                                    <i className={`bi bi-${selectedAttendance.work_type === 'onsite' ? 'building' : 'house-door'} me-1`}></i>
-                                                    {selectedAttendance.work_type === 'onsite' ? 'ONSITE' : 'OFFSITE'}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="col-md-6">
-                                        <div
-                                            className="border rounded p-3 bg-danger bg-opacity-10 border-danger border-opacity-25"
-                                        >
-                                            <small className="text-muted d-block mb-1">
-                                                <i className="bi bi-box-arrow-right me-2 text-danger"></i>
-                                                Check-out Time
-                                            </small>
-                                            <strong className="fs-4 text-danger d-block mb-2">
-                                                {formatTime(
-                                                    selectedAttendance.check_out_time,
-                                                ) || "Belum Checkout"}
-                                            </strong>
-                                            {selectedAttendance.check_out_time && (
-                                                <span className={`badge bg-${!selectedAttendance.checkout_offsite_reason && !selectedAttendance.check_out_photo ? 'primary' : 'warning'}`}>
-                                                    <i className={`bi bi-${!selectedAttendance.checkout_offsite_reason && !selectedAttendance.check_out_photo ? 'building' : 'house-door'} me-1`}></i>
-                                                    {!selectedAttendance.checkout_offsite_reason && !selectedAttendance.check_out_photo ? 'ONSITE' : 'OFFSITE'}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* GPS Locations */}
-                                <div className="row g-3 mb-4">
-                                    {selectedAttendance.check_in_latitude &&
-                                        selectedAttendance.check_in_longitude && (
-                                            <div className="col-md-6">
-                                                <label className="fw-semibold text-muted mb-2">
-                                                    <i className="bi bi-geo-alt-fill me-2 text-success"></i>
-                                                    Lokasi Check-in
-                                                </label>
-                                                <div className="border rounded p-2 bg-white small">
-                                                    <i className="bi bi-pin-map-fill text-primary me-1"></i>
-                                                    {
-                                                        selectedAttendance.check_in_latitude
-                                                    }
-                                                    ,{" "}
-                                                    {
-                                                        selectedAttendance.check_in_longitude
-                                                    }
-                                                    {selectedAttendance.check_in_address && (
-                                                        <div className="mt-1 border-top pt-1 text-secondary">
-                                                            <i className="bi bi-building me-1"></i>
-                                                            {
-                                                                selectedAttendance.check_in_address
-                                                            }
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                    {selectedAttendance.check_out_latitude &&
-                                        selectedAttendance.check_out_longitude && (
-                                            <div className="col-md-6">
-                                                <label className="fw-semibold text-muted mb-2">
-                                                    <i className="bi bi-geo-alt-fill me-2 text-danger"></i>
-                                                    Lokasi Check-out
-                                                </label>
-                                                <div className="border rounded p-2 bg-white small">
-                                                    <i className="bi bi-pin-map-fill text-danger me-1"></i>
-                                                    {
-                                                        selectedAttendance.check_out_latitude
-                                                    }
-                                                    ,{" "}
-                                                    {
-                                                        selectedAttendance.check_out_longitude
-                                                    }
-                                                    {selectedAttendance.check_out_address && (
-                                                        <div className="mt-1 border-top pt-1 text-secondary">
-                                                            <i className="bi bi-building me-1"></i>
-                                                            {
-                                                                selectedAttendance.check_out_address
-                                                            }
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
-                                </div>
-
-                                {/* Check-in OFFSITE Info */}
-                                {(selectedAttendance.offsite_reason ||
-                                    selectedAttendance.check_in_photo) && (
-                                    <div className="mb-4 pb-3 border-bottom">
-                                        <h6 className="text-success mb-3">
-                                            <i className="bi bi-box-arrow-in-right me-2"></i>
-                                            CHECK-IN INFORMATION{" "}
-                                            {selectedAttendance.offsite_reason &&
-                                                "(OFFSITE)"}
-                                        </h6>
-                                        {selectedAttendance.offsite_reason && (
-                                            <div className="mb-3">
-                                                <label className="fw-semibold text-muted mb-2">
-                                                    <i className="bi bi-chat-left-text-fill me-2"></i>
-                                                    Keterangan Check-in OFFSITE
-                                                </label>
-                                                <div className="border rounded p-3 bg-warning bg-opacity-10 border-warning">
-                                                    <p
-                                                        className="mb-0"
-                                                        style={{
-                                                            whiteSpace:
-                                                                "pre-wrap",
-                                                        }}
-                                                    >
-                                                        {
-                                                            selectedAttendance.offsite_reason
-                                                        }
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {selectedAttendance.check_in_photo && (
-                                            <div>
-                                                <label className="fw-semibold text-muted mb-2">
-                                                    <i className="bi bi-camera-fill me-2"></i>
-                                                    Foto Check-in{" "}
-                                                    {selectedAttendance.offsite_reason &&
-                                                        "OFFSITE"}
-                                                </label>
-                                                <div className="text-center border rounded p-3 bg-white">
-                                                    <img
-                                                        src={getImageUrl(
-                                                            selectedAttendance.check_in_photo,
-                                                        )}
-                                                        alt="Check-in Photo"
-                                                        className="img-fluid rounded shadow"
-                                                        style={{
-                                                            maxHeight: "300px",
-                                                            cursor: "pointer",
-                                                        }}
-                                                        onClick={() =>
-                                                            window.open(
-                                                                getImageUrl(
-                                                                    selectedAttendance.check_in_photo,
-                                                                ),
-                                                                "_blank",
-                                                            )
-                                                        }
-                                                        onError={(e) => {
-                                                            e.target.onerror =
-                                                                null;
-                                                            e.target.src =
-                                                                "https://via.placeholder.com/300x300?text=Foto+Tidak+Tersedia";
-                                                        }}
-                                                    />
-                                                    <div className="text-muted small mt-2">
-                                                        <i className="bi bi-info-circle me-1"></i>
-                                                        Klik untuk memperbesar
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                {/* Check-out OFFSITE Info */}
-                                {selectedAttendance.check_out_time &&
-                                    (selectedAttendance.checkout_offsite_reason ||
-                                        selectedAttendance.check_out_photo) && (
-                                        <div className="mb-4 pb-3 border-bottom">
-                                            <h6 className="text-danger mb-3">
-                                                <i className="bi bi-box-arrow-right me-2"></i>
-                                                CHECK-OUT INFORMATION{" "}
-                                                {selectedAttendance.checkout_offsite_reason &&
-                                                    "(OFFSITE)"}
-                                            </h6>
-                                            {selectedAttendance.checkout_offsite_reason && (
-                                                <div className="mb-3">
-                                                    <label className="fw-semibold text-muted mb-2">
-                                                        <i className="bi bi-chat-left-text-fill me-2"></i>
-                                                        Keterangan Check-out
-                                                        OFFSITE
-                                                    </label>
-                                                    <div className="border rounded p-3 bg-danger bg-opacity-10 border-danger">
-                                                        <p
-                                                            className="mb-0"
-                                                            style={{
-                                                                whiteSpace:
-                                                                    "pre-wrap",
-                                                            }}
-                                                        >
-                                                            {
-                                                                selectedAttendance.checkout_offsite_reason
-                                                            }
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            {selectedAttendance.check_out_photo && (
-                                                <div>
-                                                    <label className="fw-semibold text-muted mb-2">
-                                                        <i className="bi bi-camera-fill me-2"></i>
-                                                        Foto Check-out{" "}
-                                                        {selectedAttendance.checkout_offsite_reason &&
-                                                            "OFFSITE"}
-                                                    </label>
-                                                    <div className="text-center border rounded p-3 bg-white">
-                                                        <img
-                                                            src={getImageUrl(
-                                                                selectedAttendance.check_out_photo,
-                                                            )}
-                                                            alt="Check-out Photo"
-                                                            className="img-fluid rounded shadow"
-                                                            style={{
-                                                                maxHeight:
-                                                                    "300px",
-                                                                cursor: "pointer",
-                                                            }}
-                                                            onClick={() =>
-                                                                window.open(
-                                                                    getImageUrl(
-                                                                        selectedAttendance.check_out_photo,
-                                                                    ),
-                                                                    "_blank",
-                                                                )
-                                                            }
-                                                            onError={(e) => {
-                                                                e.target.onerror =
-                                                                    null;
-                                                                e.target.src =
-                                                                    "https://via.placeholder.com/300x300?text=Foto+Tidak+Tersedia";
-                                                            }}
-                                                        />
-                                                        <div className="text-muted small mt-2">
-                                                            <i className="bi bi-info-circle me-1"></i>
-                                                            Klik untuk
-                                                            memperbesar
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                {selectedAttendance.notes && (
-                                    <div className="mb-4">
-                                        <label className="fw-semibold text-muted mb-2">
-                                            <i className="bi bi-sticky me-2"></i>
-                                            CATATAN
-                                        </label>
-                                        <div className="border rounded p-3 bg-white">
-                                            <p
-                                                className="mb-0"
-                                                style={{
-                                                    whiteSpace: "pre-wrap",
-                                                }}
-                                            >
-                                                {selectedAttendance.notes}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="modal-footer bg-light">
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={() => {
-                                        setShowDetailModal(false);
-                                        setSelectedAttendance(null);
-                                    }}
-                                >
-                                    <i className="bi bi-x-circle me-2"></i>
-                                    Tutup
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <AttendanceDetailModal
+                show={showDetailModal}
+                onClose={() => { setShowDetailModal(false); setSelectedAttendance(null); }}
+                attendance={selectedAttendance}
+                showUserInfo={false}
+            />
         </div>
     );
 };

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import toast from "react-hot-toast";
+import LogbookDetailModal from "../../components/LogbookDetailModal";
 
 const Logbook = () => {
     const [loading, setLoading] = useState(true);
@@ -196,7 +197,7 @@ const Logbook = () => {
         try {
             await axiosInstance.delete(`/user/logbook/${id}`);
             toast.success("Logbook berhasil dihapus", {
-                icon: "🗑️",
+                icon: "ðŸ—‘ï¸",
                 duration: 3000,
             });
             fetchLogbookHistory();
@@ -295,7 +296,7 @@ const Logbook = () => {
                                     "Anda harus check-in terlebih dahulu sebelum mengisi logbook!",
                                     {
                                         duration: 4000,
-                                        icon: "⚠️",
+                                        icon: "âš ï¸",
                                     }
                                 );
                                 return;
@@ -324,7 +325,7 @@ const Logbook = () => {
                                         "Anda sudah memiliki logbook untuk hari ini. Silakan edit logbook yang sudah ada.",
                                         {
                                             duration: 4000,
-                                            icon: "ℹ️",
+                                            icon: "â„¹ï¸",
                                         }
                                     );
                                     // Auto open edit modal
@@ -340,7 +341,7 @@ const Logbook = () => {
                                         }. Hanya 1 logbook per hari yang diperbolehkan.`,
                                         {
                                             duration: 5000,
-                                            icon: "🔒",
+                                            icon: "ðŸ”’",
                                         }
                                     );
                                 }
@@ -381,7 +382,7 @@ const Logbook = () => {
                             <h5 className="alert-heading mb-2">
                                 <strong>Check-in Diperlukan!</strong>
                             </h5>
-                            <p className="mb-2">
+                            <p className="mb-3">
                                 Anda belum melakukan check-in hari ini. Logbook
                                 hanya dapat diisi setelah Anda melakukan
                                 check-in.
@@ -438,7 +439,7 @@ const Logbook = () => {
                                         : "Logbook Hari Ini (Ditolak)"}
                                 </strong>
                             </h5>
-                            <p className="mb-2">
+                            <p className="mb-3">
                                 <strong>Aktivitas:</strong>{" "}
                                 {todayLogbook.activity}
                             </p>
@@ -532,11 +533,11 @@ const Logbook = () => {
                                     setPage(1);
                                 }}
                             >
-                                <option value="all">📋 Semua Status</option>
-                                <option value="pending">⏳ Pending</option>
-                                <option value="approved">✅ Approved</option>
-                                <option value="rejected">❌ Rejected</option>
-                                <option value="not_filled">⚪ Tidak Mengisi</option>
+                                <option value="all">ðŸ“‹ Semua Status</option>
+                                <option value="pending">â³ Pending</option>
+                                <option value="approved">âœ… Approved</option>
+                                <option value="rejected">âŒ Rejected</option>
+                                <option value="not_filled">âšª Tidak Mengisi</option>
                             </select>
                         </div>
                         <div className="col-md-3">
@@ -579,7 +580,7 @@ const Logbook = () => {
                                     setSearchQuery("");
                                     setPage(1);
                                     toast.success("Filter berhasil direset", {
-                                        icon: "🔄",
+                                        icon: "ðŸ”„",
                                         duration: 2000,
                                     });
                                 }}
@@ -1035,7 +1036,7 @@ const Logbook = () => {
                                     <div
                                         className={`${
                                             editingId
-                                                ? "bg-warning"
+                                                ? "bg-warning text-dark"
                                                 : "bg-primary"
                                         } bg-opacity-10 rounded-circle p-2 me-3`}
                                     >
@@ -1218,7 +1219,7 @@ const Logbook = () => {
                                                     description: e.target.value,
                                                 })
                                             }
-                                            placeholder="Jelaskan aktivitas secara detail:&#10;&#10;• Apa yang dikerjakan?&#10;• Hasil yang dicapai?&#10;• Kendala yang dihadapi?&#10;• Solusi yang diterapkan?&#10;&#10;Contoh: Melakukan meeting dengan klien untuk membahas requirements proyek baru. Hasil meeting adalah persetujuan fitur utama dan timeline pengerjaan 3 bulan. Kendala: klien meminta perubahan UI yang cukup signifikan..."
+                                            placeholder="Jelaskan aktivitas secara detail:&#10;&#10;â€¢ Apa yang dikerjakan?&#10;â€¢ Hasil yang dicapai?&#10;â€¢ Kendala yang dihadapi?&#10;â€¢ Solusi yang diterapkan?&#10;&#10;Contoh: Melakukan meeting dengan klien untuk membahas requirements proyek baru. Hasil meeting adalah persetujuan fitur utama dan timeline pengerjaan 3 bulan. Kendala: klien meminta perubahan UI yang cukup signifikan..."
                                             required
                                             maxLength={2000}
                                             style={{
@@ -1293,511 +1294,14 @@ const Logbook = () => {
                 </div>
             )}
 
-            {/* Detail Modal - Enhanced & Scrollable */}
-            {showDetailModal && selectedLogbook && (
-                <div
-                    className="modal show d-block"
-                    style={{
-                        backgroundColor: "rgba(0,0,0,0.5)",
-                        overflow: "auto",
-                    }}
-                    onClick={(e) => {
-                        if (e.target.className.includes("modal show")) {
-                            setShowDetailModal(false);
-                            setSelectedLogbook(null);
-                        }
-                    }}
-                >
-                    <div
-                        className="modal-dialog modal-lg modal-dialog-scrollable"
-                        style={{ margin: "1.75rem auto" }}
-                    >
-                        <div
-                            className="modal-content border-0 shadow-lg"
-                            style={{ maxHeight: "calc(100vh - 3.5rem)" }}
-                        >
-                            {/* Header dengan gradient subtle berdasarkan status */}
-                            <div
-                                className="modal-header border-0 flex-shrink-0"
-                                style={{
-                                    background:
-                                        selectedLogbook.status === "approved"
-                                            ? "linear-gradient(135deg, #d1fae5 0%, #ecfdf5 100%)"
-                                            : selectedLogbook.status ===
-                                              "rejected"
-                                            ? "linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%)"
-                                            : "linear-gradient(135deg, #fef3c7 0%, #fefce8 100%)",
-                                }}
-                            >
-                                <h5 className="modal-title d-flex align-items-center">
-                                    <i
-                                        className={`bi bi-journal-bookmark-fill me-2 fs-4 ${
-                                            selectedLogbook.status ===
-                                            "approved"
-                                                ? "text-success"
-                                                : selectedLogbook.status ===
-                                                  "rejected"
-                                                ? "text-danger"
-                                                : "text-warning"
-                                        }`}
-                                    ></i>
-                                    <div>
-                                        <div
-                                            className={`fw-bold ${
-                                                selectedLogbook.status ===
-                                                "approved"
-                                                    ? "text-success"
-                                                    : selectedLogbook.status ===
-                                                      "rejected"
-                                                    ? "text-danger"
-                                                    : "text-warning"
-                                            }`}
-                                        >
-                                            Detail Logbook
-                                        </div>
-                                        <small
-                                            className="text-muted"
-                                            style={{ fontSize: "0.8rem" }}
-                                        >
-                                            ID: #{selectedLogbook.id}
-                                        </small>
-                                    </div>
-                                </h5>
-                                <button
-                                    type="button"
-                                    className="btn-close"
-                                    onClick={() => {
-                                        setShowDetailModal(false);
-                                        setSelectedLogbook(null);
-                                    }}
-                                ></button>
-                            </div>
+            <LogbookDetailModal
+                show={showDetailModal && !!selectedLogbook}
+                onClose={() => { setShowDetailModal(false); setSelectedLogbook(null); }}
+                logbook={selectedLogbook}
+                showUserInfo={false}
+                onEdit={handleEdit}
+            />
 
-                            <div
-                                className="modal-body p-4"
-                                style={{ overflowY: "auto" }}
-                            >
-                                {/* Status Badge Large */}
-                                <div className="text-center mb-4">
-                                    <span
-                                        className={`badge bg-${getStatusBadge(
-                                            selectedLogbook.status
-                                        )} px-4 py-3 fs-6`}
-                                        style={{ borderRadius: "50px" }}
-                                    >
-                                        <i
-                                            className={`bi ${
-                                                selectedLogbook.status ===
-                                                "approved"
-                                                    ? "bi-check-circle-fill"
-                                                    : selectedLogbook.status ===
-                                                      "rejected"
-                                                    ? "bi-x-circle-fill"
-                                                    : "bi-clock-fill"
-                                            } me-2`}
-                                        ></i>
-                                        {selectedLogbook.status === "approved"
-                                            ? "DISETUJUI"
-                                            : selectedLogbook.status ===
-                                              "rejected"
-                                            ? "DITOLAK"
-                                            : "MENUNGGU REVIEW"}
-                                    </span>
-                                </div>
-
-                                {/* Info Cards - Subtle Gradient */}
-                                <div className="row g-3 mb-4">
-                                    <div className="col-md-6">
-                                        <div
-                                            className="card border-0 shadow-sm h-100"
-                                            style={{
-                                                background:
-                                                    "linear-gradient(135deg, #e0e7ff 0%, #f0f4ff 100%)",
-                                            }}
-                                        >
-                                            <div className="card-body">
-                                                <div className="d-flex align-items-center">
-                                                    <div className="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
-                                                        <i className="bi bi-calendar-event text-primary fs-4"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small className="text-muted d-block mb-1">
-                                                            Tanggal Aktivitas
-                                                        </small>
-                                                        <strong className="fs-6 text-dark">
-                                                            {formatDate(
-                                                                selectedLogbook.date
-                                                            )}
-                                                        </strong>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="col-md-6">
-                                        <div
-                                            className="card border-0 shadow-sm h-100"
-                                            style={{
-                                                background:
-                                                    "linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%)",
-                                            }}
-                                        >
-                                            <div className="card-body">
-                                                <div className="d-flex align-items-center">
-                                                    <div className="bg-info bg-opacity-10 rounded-circle p-3 me-3">
-                                                        <i className="bi bi-clock-history text-info fs-4"></i>
-                                                    </div>
-                                                    <div>
-                                                        <small className="text-muted d-block mb-1">
-                                                            Dibuat Pada
-                                                        </small>
-                                                        <strong className="fs-6 text-dark">
-                                                            {new Date(
-                                                                selectedLogbook.created_at
-                                                            ).toLocaleString(
-                                                                "id-ID",
-                                                                {
-                                                                    day: "numeric",
-                                                                    month: "long",
-                                                                    year: "numeric",
-                                                                    hour: "2-digit",
-                                                                    minute: "2-digit",
-                                                                }
-                                                            )}
-                                                        </strong>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Activity Section */}
-                                <div className="mb-4">
-                                    <div className="d-flex align-items-center mb-3">
-                                        <div className="bg-primary rounded-circle p-2 me-2">
-                                            <i className="bi bi-briefcase-fill text-white"></i>
-                                        </div>
-                                        <h6 className="mb-0 text-uppercase text-muted fw-semibold">
-                                            Aktivitas
-                                        </h6>
-                                    </div>
-                                    <div className="card border-0 shadow-sm">
-                                        <div className="card-body bg-light">
-                                            <p className="mb-0 fs-5 fw-semibold text-dark">
-                                                {selectedLogbook.activity}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Description Section */}
-                                <div className="mb-4">
-                                    <div className="d-flex align-items-center mb-3">
-                                        <div className="bg-info rounded-circle p-2 me-2">
-                                            <i className="bi bi-text-paragraph text-white"></i>
-                                        </div>
-                                        <h6 className="mb-0 text-uppercase text-muted fw-semibold">
-                                            Deskripsi Detail
-                                        </h6>
-                                    </div>
-                                    <div className="card border-0 shadow-sm">
-                                        <div
-                                            className="card-body bg-light"
-                                            style={{ minHeight: "120px" }}
-                                        >
-                                            <p
-                                                className="mb-0"
-                                                style={{
-                                                    whiteSpace: "pre-wrap",
-                                                    lineHeight: "1.8",
-                                                }}
-                                            >
-                                                {selectedLogbook.description}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Review Section - Enhanced */}
-                                {(selectedLogbook.review_notes ||
-                                    selectedLogbook.status !== "pending") && (
-                                    <div className="mb-4">
-                                        <div className="d-flex align-items-center mb-3">
-                                            <div
-                                                className={`rounded-circle p-2 me-2 ${
-                                                    selectedLogbook.status ===
-                                                    "approved"
-                                                        ? "bg-success"
-                                                        : "bg-danger"
-                                                }`}
-                                            >
-                                                <i
-                                                    className={`bi ${
-                                                        selectedLogbook.status ===
-                                                        "approved"
-                                                            ? "bi-hand-thumbs-up-fill"
-                                                            : "bi-hand-thumbs-down-fill"
-                                                    } text-white`}
-                                                ></i>
-                                            </div>
-                                            <h6 className="mb-0 text-uppercase text-muted fw-semibold">
-                                                Review Supervisor
-                                            </h6>
-                                        </div>
-                                        <div
-                                            className={`card border-2 shadow-sm ${
-                                                selectedLogbook.status ===
-                                                "approved"
-                                                    ? "border-success"
-                                                    : selectedLogbook.status ===
-                                                      "rejected"
-                                                    ? "border-danger"
-                                                    : "border-warning"
-                                            }`}
-                                        >
-                                            <div
-                                                className={`card-body ${
-                                                    selectedLogbook.status ===
-                                                    "approved"
-                                                        ? "bg-success bg-opacity-10"
-                                                        : selectedLogbook.status ===
-                                                          "rejected"
-                                                        ? "bg-danger bg-opacity-10"
-                                                        : "bg-warning bg-opacity-10"
-                                                }`}
-                                            >
-                                                {selectedLogbook.status !== "pending" ? (
-                                                    <>
-                                                        {/* Review Status Icon */}
-                                                        <div className="d-flex align-items-start mb-3">
-                                                            <div
-                                                                className={`flex-shrink-0 rounded-circle p-3 me-3 ${
-                                                                    selectedLogbook.status ===
-                                                                    "approved"
-                                                                        ? "bg-success text-white"
-                                                                        : "bg-danger text-white"
-                                                                }`}
-                                                            >
-                                                                <i
-                                                                    className={`bi ${
-                                                                        selectedLogbook.status ===
-                                                                        "approved"
-                                                                            ? "bi-check-circle-fill fs-3"
-                                                                            : "bi-x-circle-fill fs-3"
-                                                                    }`}
-                                                                ></i>
-                                                            </div>
-                                                            <div className="flex-grow-1">
-                                                                <h5
-                                                                    className={`mb-2 ${
-                                                                        selectedLogbook.status ===
-                                                                        "approved"
-                                                                            ? "text-success"
-                                                                            : "text-danger"
-                                                                    }`}
-                                                                >
-                                                                    {selectedLogbook.status ===
-                                                                    "approved"
-                                                                        ? "✓ Logbook Disetujui"
-                                                                        : "✗ Logbook Ditolak"}
-                                                                </h5>
-                                                                <p
-                                                                    className="mb-0 text-dark"
-                                                                    style={{
-                                                                        whiteSpace:
-                                                                            "pre-wrap",
-                                                                        lineHeight:
-                                                                            "1.8",
-                                                                        fontSize:
-                                                                            "1rem",
-                                                                    }}
-                                                                >
-                                                                    {selectedLogbook.review_notes ? selectedLogbook.review_notes : <span className="fst-italic text-secondary">Tidak ada catatan</span>}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Review Metadata */}
-                                                        <div className="border-top pt-3 mt-3">
-                                                            <div className="row g-3">
-                                                                {selectedLogbook.reviewed_at && (
-                                                                    <div className="col-md-6">
-                                                                        <div className="d-flex align-items-center">
-                                                                            <i className="bi bi-calendar-check me-2 text-muted"></i>
-                                                                            <div>
-                                                                                <small className="text-muted d-block">
-                                                                                    Direview
-                                                                                    pada
-                                                                                </small>
-                                                                                <strong className="small">
-                                                                                    {new Date(
-                                                                                        selectedLogbook.reviewed_at
-                                                                                    ).toLocaleString(
-                                                                                        "id-ID",
-                                                                                        {
-                                                                                            weekday:
-                                                                                                "long",
-                                                                                            day: "numeric",
-                                                                                            month: "long",
-                                                                                            year: "numeric",
-                                                                                            hour: "2-digit",
-                                                                                            minute: "2-digit",
-                                                                                        }
-                                                                                    )}
-                                                                                </strong>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {selectedLogbook.reviewed_by && (
-                                                                    <div className="col-md-6">
-                                                                        <div className="d-flex align-items-center">
-                                                                            <i className="bi bi-person-check me-2 text-muted"></i>
-                                                                            <div>
-                                                                                <small className="text-muted d-block">
-                                                                                    Direview
-                                                                                    oleh
-                                                                                </small>
-                                                                                <strong className="small">
-                                                                                    {selectedLogbook.reviewer?.name || "Supervisor"}
-                                                                                </strong>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Action Suggestion for Rejected */}
-                                                        {selectedLogbook.status ===
-                                                            "rejected" && (
-                                                            <div className="alert alert-warning mt-3 mb-0">
-                                                                <div className="d-flex align-items-start">
-                                                                    <i className="bi bi-lightbulb-fill fs-5 me-2"></i>
-                                                                    <div>
-                                                                        <strong>
-                                                                            Saran:
-                                                                        </strong>{" "}
-                                                                        Perbaiki
-                                                                        logbook
-                                                                        Anda
-                                                                        berdasarkan
-                                                                        feedback
-                                                                        di atas,
-                                                                        kemudian
-                                                                        buat
-                                                                        logbook
-                                                                        baru
-                                                                        dengan
-                                                                        informasi
-                                                                        yang
-                                                                        lebih
-                                                                        lengkap
-                                                                        dan
-                                                                        akurat.
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <div className="text-center py-3">
-                                                        <i className="bi bi-hourglass-split fs-3 text-muted d-block mb-2"></i>
-                                                        <p className="mb-0 text-muted">
-                                                            Menunggu review dari
-                                                            supervisor
-                                                        </p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Timeline Info */}
-                                <div className="card border-0 bg-light">
-                                    <div className="card-body">
-                                        <h6 className="text-muted mb-3">
-                                            <i className="bi bi-clock-history me-2"></i>
-                                            Timeline
-                                        </h6>
-                                        <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                                            <div>
-                                                <small className="text-muted d-block">
-                                                    Dibuat
-                                                </small>
-                                                <strong className="small">
-                                                    {new Date(
-                                                        selectedLogbook.created_at
-                                                    ).toLocaleString("id-ID")}
-                                                </strong>
-                                            </div>
-                                            {selectedLogbook.updated_at &&
-                                                selectedLogbook.updated_at !==
-                                                    selectedLogbook.created_at && (
-                                                    <div>
-                                                        <small className="text-muted d-block">
-                                                            Diupdate
-                                                        </small>
-                                                        <strong className="small">
-                                                            {new Date(
-                                                                selectedLogbook.updated_at
-                                                            ).toLocaleString(
-                                                                "id-ID"
-                                                            )}
-                                                        </strong>
-                                                    </div>
-                                                )}
-                                            {selectedLogbook.reviewed_at && (
-                                                <div>
-                                                    <small className="text-muted d-block">
-                                                        Direview
-                                                    </small>
-                                                    <strong className="small">
-                                                        {new Date(
-                                                            selectedLogbook.reviewed_at
-                                                        ).toLocaleString(
-                                                            "id-ID"
-                                                        )}
-                                                    </strong>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="modal-footer bg-light border-0 flex-shrink-0">
-                                <button
-                                    type="button"
-                                    className="btn btn-secondary"
-                                    onClick={() => {
-                                        setShowDetailModal(false);
-                                        setSelectedLogbook(null);
-                                    }}
-                                >
-                                    <i className="bi bi-x-circle me-2"></i>
-                                    Tutup
-                                </button>
-                                {(selectedLogbook.status === "pending" || selectedLogbook.status === "rejected") && (
-                                    <button
-                                        type="button"
-                                        className="btn btn-primary"
-                                        onClick={() => {
-                                            setShowDetailModal(false);
-                                            handleEdit(selectedLogbook);
-                                        }}
-                                    >
-                                        <i className="bi bi-pencil me-2"></i>
-                                        Edit Logbook
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Delete Confirmation Modal */}
             {showDeleteModal && logbookToDelete && (

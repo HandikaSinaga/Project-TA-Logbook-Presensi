@@ -303,6 +303,17 @@ class DashboardController {
                 where: { is_active: true },
             });
 
+            // Active users by role
+            const activeUserAccounts = await User.count({
+                where: { is_active: true, role: "user" },
+            });
+            const activeAdminAccounts = await User.count({
+                where: { is_active: true, role: "admin" },
+            });
+            const activeSupervisorAccounts = await User.count({
+                where: { is_active: true, role: "supervisor" },
+            });
+
             // New users this month
             const newUsersThisMonth = await User.count({
                 where: {
@@ -383,6 +394,9 @@ class DashboardController {
                     stats: {
                         total_users: totalUsers,
                         active_users: activeUsers,
+                        active_user_accounts: activeUserAccounts,
+                        active_admin_accounts: activeAdminAccounts,
+                        active_supervisor_accounts: activeSupervisorAccounts,
                         new_users_this_month: newUsersThisMonth,
                         total_divisions: totalDivisions,
                         total_locations: totalLocations,

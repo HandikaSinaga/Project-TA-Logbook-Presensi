@@ -9,6 +9,8 @@ import {
 import axiosInstance from "../../utils/axiosInstance";
 import { getAvatarUrl, getImageUrl } from "../../utils/Constant";
 import toast from "react-hot-toast";
+import AttendanceDetailModal from "../../components/AttendanceDetailModal";
+import AdvancedFilters from "../../components/common/AdvancedFilters";
 
 const AdminAttendance = () => {
     const [loading, setLoading] = useState(true);
@@ -38,13 +40,13 @@ const AdminAttendance = () => {
         sumber_magang: "",
         status: "",
         work_type: "",
-        search: "",
     });
+
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
 
     // Pagination state
     const [page, setPage] = useState(1);
     const [pagination, setPagination] = useState(null);
-    const [searchTerm, setSearchTerm] = useState("");
 
     // View mode
     const [viewMode, setViewMode] = useState("table"); // table or grid
@@ -57,17 +59,7 @@ const AdminAttendance = () => {
     const [autoRefresh, setAutoRefresh] = useState(false);
     const refreshInterval = useRef(null);
 
-    // Debounced search effect
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (searchTerm !== filters.search) {
-                setFilters((prev) => ({ ...prev, search: searchTerm }));
-                setPage(1);
-            }
-        }, 500);
 
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
 
     useEffect(() => {
         fetchDivisions();
@@ -84,7 +76,7 @@ const AdminAttendance = () => {
         filters.sumber_magang,
         filters.status,
         filters.work_type,
-        filters.search,
+        selectedUserIds,
         page,
     ]);
 
@@ -141,8 +133,8 @@ const AdminAttendance = () => {
             if (filters.division_id) params.division_id = filters.division_id;
             if (filters.status) params.status = filters.status;
             if (filters.work_type) params.work_type = filters.work_type;
-            if (filters.search && filters.search.trim() !== "") {
-                params.search = filters.search.trim();
+            if (selectedUserIds.length > 0) {
+                params.user_ids = selectedUserIds.join(",");
             }
 
             const response = await axiosInstance.get("/admin/attendances", {
@@ -237,9 +229,8 @@ const AdminAttendance = () => {
             sumber_magang: "",
             status: "",
             work_type: "",
-            search: "",
         });
-        setSearchTerm("");
+        setSelectedUserIds([]);
         setPage(1);
     };
 
@@ -281,7 +272,7 @@ const AdminAttendance = () => {
             start_date: startDate.toISOString().split("T")[0],
             end_date: endDate.toISOString().split("T")[0],
         });
-        setCurrentPage(1);
+        setPage(1);
     };
 
     const handleViewDetail = (attendance) => {
@@ -289,13 +280,7 @@ const AdminAttendance = () => {
         setShowDetailModal(true);
     };
 
-    // Get unique periodes and sumber_magang from users
-    const uniquePeriodes = [
-        ...new Set(users.map((u) => u.periode).filter(Boolean)),
-    ].sort();
-    const uniqueSumberMagang = [
-        ...new Set(users.map((u) => u.sumber_magang).filter(Boolean)),
-    ];
+
 
     const getStatusBadge = (status) => {
         const badges = {
@@ -679,7 +664,21 @@ const AdminAttendance = () => {
                         </div>
                     </div>
 
-                    <div className="row g-3 align-items-end">
+                    <AdvancedFilters
+                        filters={filters}
+                        setFilters={setFilters}
+                        selectedUserIds={selectedUserIds}
+                        setSelectedUserIds={setSelectedUserIds}
+                        showDivision={true}
+                        showPeriode={true}
+                        showUser={true}
+                        showSumberMagang={true}
+                        role="admin"
+                        externalUsers={users}
+                        externalDivisions={divisions}
+                    />
+
+                    <div className="row g-3 align-items-end mt-2">
                         <div className="col-md-3">
                             <label className="form-label small fw-semibold">
                                 Tanggal Mulai
@@ -713,85 +712,6 @@ const AdminAttendance = () => {
                                     )
                                 }
                                 min={filters.start_date}
-                            />
-                        </div>
-                        <div className="col-md-2">
-                            <label className="form-label small fw-semibold">
-                                Sumber Magang
-                            </label>
-                            <select
-                                className="form-select"
-                                value={filters.sumber_magang}
-                                onChange={(e) =>
-                                    handleFilterChange(
-                                        "sumber_magang",
-                                        e.target.value,
-                                    )
-                                }
-                            >
-                                <option value="">Semua Sumber</option>
-                                <option value="kampus">Kampus</option>
-                                <option value="pemerintah">Pemerintah</option>
-                                <option value="swasta">Swasta</option>
-                                <option value="internal">Internal</option>
-                                <option value="umum">Umum</option>
-                            </select>
-                        </div>
-                        <div className="col-md-2">
-                            <label className="form-label small fw-semibold">
-                                Periode/Batch
-                            </label>
-                            <select
-                                className="form-select"
-                                value={filters.periode}
-                                onChange={(e) =>
-                                    handleFilterChange(
-                                        "periode",
-                                        e.target.value,
-                                    )
-                                }
-                            >
-                                <option value="">Semua Periode</option>
-                                {uniquePeriodes.map((periode) => (
-                                    <option key={periode} value={periode}>
-                                        {periode}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="col-md-2">
-                            <label className="form-label small fw-semibold">
-                                Divisi
-                            </label>
-                            <select
-                                className="form-select"
-                                value={filters.division_id}
-                                onChange={(e) =>
-                                    handleFilterChange(
-                                        "division_id",
-                                        e.target.value,
-                                    )
-                                }
-                            >
-                                <option value="">Semua Divisi</option>
-                                {divisions.map((div) => (
-                                    <option key={div.id} value={div.id}>
-                                        {div.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div className="col-md-4">
-                            <label className="form-label small fw-semibold">
-                                Cari Nama/NIP/Email
-                            </label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Ketik nama, NIP, atau email..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
                         <div className="col-md-2">
@@ -831,18 +751,6 @@ const AdminAttendance = () => {
                                 <option value="onsite">Onsite</option>
                                 <option value="offsite">Offsite</option>
                             </select>
-                        </div>
-                        <div className="col-md-2">
-                            <label className="form-label small fw-semibold">
-                                &nbsp;
-                            </label>
-                            <button
-                                className="btn btn-primary w-100"
-                                onClick={() => fetchAttendances()}
-                            >
-                                <i className="bi bi-search me-1"></i>
-                                Cari
-                            </button>
                         </div>
                         <div className="col-md-2">
                             <label className="form-label small fw-semibold">
@@ -972,28 +880,45 @@ const AdminAttendance = () => {
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <Badge
-                                                            bg={statusBadge.bg}
-                                                        >
-                                                            <i
-                                                                className={`bi bi-${statusBadge.icon} me-1`}
-                                                            ></i>
-                                                            {statusBadge.text}
-                                                        </Badge>
+                                                        <div className="d-flex flex-column gap-1 align-items-start">
+                                                            <Badge
+                                                                bg={statusBadge.bg}
+                                                            >
+                                                                <i
+                                                                    className={`bi bi-${statusBadge.icon} me-1`}
+                                                                ></i>
+                                                                {statusBadge.text}
+                                                            </Badge>
+                                                            {attendance.status !== 'absent' && attendance.status !== 'leave' && attendance.status !== 'sick' && attendance.work_type && (
+                                                                <Badge bg={workTypeBadge.bg} text={workTypeBadge.bg === 'warning' ? 'dark' : 'white'}>
+                                                                    <i className={`bi bi-${workTypeBadge.icon} me-1`}></i>
+                                                                    {workTypeBadge.text}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     {/* Keterangan Check-in */}
                                                     <td>
                                                         {attendance.check_in_time ? (
-                                                            <div style={{ minWidth: "150px" }}>
-                                                                {attendance.work_type === "onsite" ? (
-                                                                    <span className="text-muted small">User melakukan presensi onsite</span>
-                                                                ) : (
-                                                                    <span className="small" title={attendance.offsite_reason || ""}>
-                                                                        {attendance.offsite_reason ? (attendance.offsite_reason.length > 30 ? attendance.offsite_reason.substring(0, 30) + "..." : attendance.offsite_reason) : "Tidak ada keterangan"}
-                                                                        {attendance.check_in_photo && (
-                                                                            <i className="bi bi-image ms-1 text-primary" title="Bukti Foto"></i>
-                                                                        )}
-                                                                    </span>
+                                                            <div style={{ minWidth: "160px" }}>
+                                                                {/* Badge ONSITE / OFFSITE */}
+                                                                <span className={`badge bg-${attendance.work_type === 'onsite' ? 'primary' : 'warning text-dark'} me-1`}>
+                                                                    <i className={`bi bi-${attendance.work_type === 'onsite' ? 'building' : 'house-door'} me-1`}></i>
+                                                                    {attendance.work_type === 'onsite' ? 'ONSITE' : 'OFFSITE'}
+                                                                </span>
+                                                                {attendance.work_type !== 'onsite' && (
+                                                                    <div className="mt-1">
+                                                                        <span className="small" title={attendance.offsite_reason || ""}>
+                                                                            {attendance.offsite_reason
+                                                                                ? (attendance.offsite_reason.length > 30
+                                                                                    ? attendance.offsite_reason.substring(0, 30) + "..."
+                                                                                    : attendance.offsite_reason)
+                                                                                : "Tidak ada keterangan"}
+                                                                            {attendance.check_in_photo && (
+                                                                                <i className="bi bi-image ms-1 text-primary" title="Bukti Foto"></i>
+                                                                            )}
+                                                                        </span>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         ) : (
@@ -1004,16 +929,25 @@ const AdminAttendance = () => {
                                                     {/* Keterangan Check-out */}
                                                     <td>
                                                         {attendance.check_out_time ? (
-                                                            <div style={{ minWidth: "150px" }}>
-                                                                {!attendance.checkout_offsite_reason && !attendance.check_out_photo ? (
-                                                                    <span className="text-muted small">User melakukan presensi onsite</span>
-                                                                ) : (
-                                                                    <span className="small" title={attendance.checkout_offsite_reason || ""}>
-                                                                        {attendance.checkout_offsite_reason ? (attendance.checkout_offsite_reason.length > 30 ? attendance.checkout_offsite_reason.substring(0, 30) + "..." : attendance.checkout_offsite_reason) : "Tidak ada keterangan"}
-                                                                        {attendance.check_out_photo && (
-                                                                            <i className="bi bi-image ms-1 text-primary" title="Bukti Foto"></i>
-                                                                        )}
-                                                                    </span>
+                                                            <div style={{ minWidth: "160px" }}>
+                                                                {/* Badge ONSITE / OFFSITE untuk checkout */}
+                                                                <span className={`badge bg-${!attendance.checkout_offsite_reason && !attendance.check_out_photo ? 'primary' : 'warning text-dark'} me-1`}>
+                                                                    <i className={`bi bi-${!attendance.checkout_offsite_reason && !attendance.check_out_photo ? 'building' : 'house-door'} me-1`}></i>
+                                                                    {!attendance.checkout_offsite_reason && !attendance.check_out_photo ? 'ONSITE' : 'OFFSITE'}
+                                                                </span>
+                                                                {(attendance.checkout_offsite_reason || attendance.check_out_photo) && (
+                                                                    <div className="mt-1">
+                                                                        <span className="small" title={attendance.checkout_offsite_reason || ""}>
+                                                                            {attendance.checkout_offsite_reason
+                                                                                ? (attendance.checkout_offsite_reason.length > 30
+                                                                                    ? attendance.checkout_offsite_reason.substring(0, 30) + "..."
+                                                                                    : attendance.checkout_offsite_reason)
+                                                                                : "Tidak ada keterangan"}
+                                                                            {attendance.check_out_photo && (
+                                                                                <i className="bi bi-image ms-1 text-primary" title="Bukti Foto"></i>
+                                                                            )}
+                                                                        </span>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         ) : (
@@ -1200,301 +1134,12 @@ const AdminAttendance = () => {
             )}
 
             {/* Detail Modal */}
-            <Modal
+            <AttendanceDetailModal
                 show={showDetailModal}
-                onHide={() => setShowDetailModal(false)}
-                size="lg"
-            >
-                <Modal.Header closeButton>
-                    <Modal.Title>
-                        <i className="bi bi-info-circle me-2"></i>
-                        Detail Presensi
-                    </Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {selectedAttendance && (
-                        <div>
-                            {/* User Info */}
-                            <div className="d-flex align-items-center mb-4 p-3 bg-light rounded">
-                                <img
-                                    src={getAvatarUrl(selectedAttendance.user)}
-                                    alt={selectedAttendance.user?.name}
-                                    className="rounded-circle me-3"
-                                    style={{
-                                        width: "80px",
-                                        height: "80px",
-                                        objectFit: "cover",
-                                    }}
-                                />
-                                <div>
-                                    <h5 className="mb-1">
-                                        {selectedAttendance.user?.name}
-                                    </h5>
-                                    <p className="mb-1 text-muted">
-                                        {selectedAttendance.user?.email}
-                                    </p>
-                                    {selectedAttendance.user?.nip && (
-                                        <p className="mb-1 text-muted">
-                                            NIP: {selectedAttendance.user.nip}
-                                        </p>
-                                    )}
-                                    <div className="d-flex gap-2 flex-wrap">
-                                        <Badge bg="secondary">
-                                            {selectedAttendance.user?.division
-                                                ?.name || "-"}
-                                        </Badge>
-                                        {selectedAttendance.user?.periode && (
-                                            <Badge bg="info">
-                                                {
-                                                    selectedAttendance.user
-                                                        .periode
-                                                }
-                                            </Badge>
-                                        )}
-                                        {selectedAttendance.user
-                                            ?.sumber_magang && (
-                                                <Badge bg="warning">
-                                                    {
-                                                        selectedAttendance.user
-                                                            .sumber_magang
-                                                    }
-                                                </Badge>
-                                            )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Attendance Info */}
-                            <div className="row g-3">
-                                <div className="col-md-6">
-                                    <div className="card">
-                                        <div className="card-body">
-                                            <h6 className="card-subtitle mb-2 text-muted">
-                                                Tanggal
-                                            </h6>
-                                            <p className="card-text fw-semibold">
-                                                {formatDate(
-                                                    selectedAttendance.date,
-                                                )}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="col-md-6">
-                                    <div className="card">
-                                        <div className="card-body">
-                                            <h6 className="card-subtitle mb-2 text-muted">
-                                                Status
-                                            </h6>
-                                            <Badge
-                                                bg={
-                                                    getStatusBadge(
-                                                        selectedAttendance.status,
-                                                    ).bg
-                                                }
-                                                className="fs-6"
-                                            >
-                                                <i
-                                                    className={`bi bi-${getStatusBadge(
-                                                        selectedAttendance.status,
-                                                    ).icon
-                                                        } me-1`}
-                                                ></i>
-                                                {
-                                                    getStatusBadge(
-                                                        selectedAttendance.status,
-                                                    ).text
-                                                }
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="col-md-6">
-                                    <div className="card">
-                                        <div className="card-body">
-                                            <h6 className="card-subtitle mb-2 text-muted">
-                                                Check In
-                                            </h6>
-                                            <p className="card-text fw-semibold mb-1">
-                                                {formatTime(
-                                                    selectedAttendance.check_in_time,
-                                                )}
-                                            </p>
-                                            {selectedAttendance.check_in_address && (
-                                                <small className="text-muted d-block">
-                                                    <i className="bi bi-geo-alt-fill text-success me-1"></i>
-                                                    {selectedAttendance.check_in_address}
-                                                </small>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="col-md-6">
-                                    <div className="card">
-                                        <div className="card-body">
-                                            <h6 className="card-subtitle mb-2 text-muted">
-                                                Check Out
-                                            </h6>
-                                            <p className="card-text fw-semibold mb-1">
-                                                {formatTime(
-                                                    selectedAttendance.check_out_time,
-                                                )}
-                                            </p>
-                                            {selectedAttendance.check_out_address && (
-                                                <small className="text-muted d-block">
-                                                    <i className="bi bi-geo-alt-fill text-danger me-1"></i>
-                                                    {selectedAttendance.check_out_address}
-                                                </small>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="col-md-6">
-                                    <div className="card">
-                                        <div className="card-body">
-                                            <h6 className="card-subtitle mb-2 text-muted">
-                                                Tipe Kerja
-                                            </h6>
-                                            <Badge
-                                                bg={
-                                                    getWorkTypeBadge(
-                                                        selectedAttendance.work_type,
-                                                    ).bg
-                                                }
-                                                className="fs-6"
-                                            >
-                                                <i
-                                                    className={`bi bi-${getWorkTypeBadge(
-                                                        selectedAttendance.work_type,
-                                                    ).icon
-                                                        } me-1`}
-                                                ></i>
-                                                {
-                                                    getWorkTypeBadge(
-                                                        selectedAttendance.work_type,
-                                                    ).text
-                                                }
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </div>
-                                {selectedAttendance.offsite_reason && (
-                                    <div className="col-md-6">
-                                        <div className="card border-warning">
-                                            <div className="card-body">
-                                                <h6 className="card-subtitle mb-2 text-muted">
-                                                    <i className="bi bi-box-arrow-in-right me-2"></i>
-                                                    Alasan Check-in Offsite
-                                                </h6>
-                                                <p className="card-text">
-                                                    {
-                                                        selectedAttendance.offsite_reason
-                                                    }
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                {selectedAttendance.checkout_offsite_reason && (
-                                    <div className="col-md-6">
-                                        <div className="card border-danger">
-                                            <div className="card-body">
-                                                <h6 className="card-subtitle mb-2 text-muted">
-                                                    <i className="bi bi-box-arrow-right me-2"></i>
-                                                    Alasan Check-out Offsite
-                                                </h6>
-                                                <p className="card-text">
-                                                    {
-                                                        selectedAttendance.checkout_offsite_reason
-                                                    }
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                {selectedAttendance.check_in_photo && (
-                                    <div className="col-12">
-                                        <div className="card">
-                                            <div className="card-body">
-                                                <h6 className="card-subtitle mb-2 text-muted">
-                                                    Foto Check In
-                                                </h6>
-                                                <img
-                                                    src={getImageUrl(
-                                                        selectedAttendance.check_in_photo,
-                                                    )}
-                                                    alt="Check In"
-                                                    className="img-fluid rounded"
-                                                    style={{
-                                                        maxHeight: "300px",
-                                                        cursor: "pointer",
-                                                    }}
-                                                    onClick={() =>
-                                                        window.open(
-                                                            getImageUrl(
-                                                                selectedAttendance.check_in_photo,
-                                                            ),
-                                                            "_blank",
-                                                        )
-                                                    }
-                                                    onError={(e) => {
-                                                        e.target.onerror = null;
-                                                        e.target.src =
-                                                            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23f0f0f0' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' dy='150' dx='50'%3EFoto tidak tersedia%3C/text%3E%3C/svg%3E";
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                                {selectedAttendance.check_out_photo && (
-                                    <div className="col-12">
-                                        <div className="card">
-                                            <div className="card-body">
-                                                <h6 className="card-subtitle mb-2 text-muted">
-                                                    Foto Check Out
-                                                </h6>
-                                                <img
-                                                    src={getImageUrl(
-                                                        selectedAttendance.check_out_photo,
-                                                    )}
-                                                    alt="Check Out"
-                                                    className="img-fluid rounded"
-                                                    style={{
-                                                        maxHeight: "300px",
-                                                        cursor: "pointer",
-                                                    }}
-                                                    onClick={() =>
-                                                        window.open(
-                                                            getImageUrl(
-                                                                selectedAttendance.check_out_photo,
-                                                            ),
-                                                            "_blank",
-                                                        )
-                                                    }
-                                                    onError={(e) => {
-                                                        e.target.onerror = null;
-                                                        e.target.src =
-                                                            "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23f0f0f0' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' dy='150' dx='50'%3EFoto tidak tersedia%3C/text%3E%3C/svg%3E";
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <button
-                        className="btn btn-secondary"
-                        onClick={() => setShowDetailModal(false)}
-                    >
-                        Tutup
-                    </button>
-                </Modal.Footer>
-            </Modal>
+                onClose={() => setShowDetailModal(false)}
+                attendance={selectedAttendance}
+                showUserInfo={true}
+            />
 
             <style>{`
                 .hover-lift:hover {

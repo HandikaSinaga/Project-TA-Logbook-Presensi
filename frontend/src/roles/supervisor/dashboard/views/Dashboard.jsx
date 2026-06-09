@@ -147,7 +147,7 @@ const Dashboard = () => {
                         </td>
                         <td>{item.date}</td>
                         <td>
-                          <span className="badge bg-warning">Pending</span>
+                          <span className="badge bg-warning text-dark">Pending</span>
                         </td>
                         <td>
                           <Button size="sm" variant="success" className="me-2">

@@ -247,7 +247,7 @@ const Attendance = () => {
                                             <td>
                                                 {attendance.approval_status ===
                                                     "pending" && (
-                                                    <span className="badge bg-warning">
+                                                    <span className="badge bg-warning text-dark">
                                                         <i className="bi bi-clock-history me-1"></i>
                                                         Pending
                                                     </span>

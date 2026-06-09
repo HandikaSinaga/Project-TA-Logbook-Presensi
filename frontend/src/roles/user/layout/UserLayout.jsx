@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { Container, Navbar, Nav, Dropdown } from "react-bootstrap";
 import { logout } from "../../../services/authService";
+import { getStorageUser, clearStorage } from "../../../utils/storageHelper";
 import toast from "react-hot-toast";
 
 const UserLayout = ({ children }) => {
@@ -10,7 +11,7 @@ const UserLayout = ({ children }) => {
     const [user, setUser] = useState(null);
 
     useEffect(() => {
-        const userData = localStorage.getItem("user");
+        const userData = getStorageUser();
         if (userData) {
             try {
                 setUser(JSON.parse(userData));
@@ -27,8 +28,7 @@ const UserLayout = ({ children }) => {
             navigate("/login", { replace: true });
         } catch (error) {
             console.error("Logout error:", error);
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
+            clearStorage();
             navigate("/login", { replace: true });
         }
     };

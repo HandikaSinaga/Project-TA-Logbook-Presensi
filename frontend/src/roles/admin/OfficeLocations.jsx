@@ -191,16 +191,16 @@ const OfficeLocations = () => {
         );
     };
 
-    const testOfficeDetection = async () => {
+    const testOfficeDetection = async (mode = 'all') => {
         // GPS tidak mandatory - bisa test dengan IP saja
         setTestingLocation(true);
-        toast.loading("Melakukan test deteksi...", { id: "test-detection" });
+        toast.loading(`Melakukan test deteksi...`, { id: "test-detection" });
 
         try {
-            const payload = {};
+            const payload = { test_mode: mode };
 
             // GPS opsional
-            if (formData.latitude && formData.longitude) {
+            if (mode !== 'wifi' && formData.latitude && formData.longitude) {
                 payload.latitude = parseFloat(formData.latitude);
                 payload.longitude = parseFloat(formData.longitude);
             }
@@ -983,7 +983,7 @@ const OfficeLocations = () => {
                                             <button
                                                 type="button"
                                                 className="btn btn-outline-success"
-                                                onClick={testOfficeDetection}
+                                                onClick={() => testOfficeDetection('all')}
                                                 disabled={testingLocation}
                                             >
                                                 {testingLocation ? (
@@ -994,10 +994,18 @@ const OfficeLocations = () => {
                                                 ) : (
                                                     <>
                                                         <i className="bi bi-check-circle me-2"></i>
-                                                        Test Deteksi (WiFi
-                                                        Priority)
+                                                        Test Deteksi (WiFi & GPS)
                                                     </>
                                                 )}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-warning"
+                                                onClick={() => testOfficeDetection('gps')}
+                                                disabled={testingLocation || (!formData.latitude && !formData.longitude)}
+                                            >
+                                                <i className="bi bi-geo me-2"></i>
+                                                Test Deteksi Khusus GPS
                                             </button>
                                         </div>
 

@@ -16,6 +16,8 @@ import {
 } from "react-bootstrap";
 import { getAvatarUrl } from "../../utils/Constant";
 import { getJakartaDate } from "../../utils/dateUtils";
+import LeaveDetailModal from "../../components/LeaveDetailModal";
+import AdvancedFilters from "../../components/common/AdvancedFilters";
 
 const AdminLeave = () => {
     const [loading, setLoading] = useState(true);
@@ -36,8 +38,9 @@ const AdminLeave = () => {
         periode: "",
         sumber_magang: "",
         status: "",
-        search: "",
     });
+    
+    const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [stats, setStats] = useState({
         total: 0,
         pending: 0,
@@ -47,17 +50,7 @@ const AdminLeave = () => {
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedLeave, setSelectedLeave] = useState(null);
 
-    // Debounced search effect
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (searchTerm !== filters.search) {
-                setFilters((prev) => ({ ...prev, search: searchTerm }));
-                setPage(1);
-            }
-        }, 500);
 
-        return () => clearTimeout(timer);
-    }, [searchTerm]);
 
     useEffect(() => {
         fetchDivisions();
@@ -68,10 +61,12 @@ const AdminLeave = () => {
         fetchLeaves();
     }, [
         filters.start_date,
-        filters.end_date,
         filters.division_id,
         filters.status,
-        filters.search,
+        filters.leave_type,
+        filters.periode,
+        filters.sumber_magang,
+        selectedUserIds,
         page,
     ]);
 
@@ -107,8 +102,10 @@ const AdminLeave = () => {
             if (filters.division_id) params.division_id = filters.division_id;
             if (filters.status) params.status = filters.status;
             if (filters.leave_type) params.type = filters.leave_type;
-            if (filters.search && filters.search.trim() !== "") {
-                params.search = filters.search.trim();
+            if (filters.periode) params.periode = filters.periode;
+            if (filters.sumber_magang) params.sumber_magang = filters.sumber_magang;
+            if (selectedUserIds.length > 0) {
+                params.user_ids = selectedUserIds.join(",");
             }
 
             console.log("[Leave] Fetching with filters:", filters);
@@ -164,12 +161,10 @@ const AdminLeave = () => {
             end_date: today,
             division_id: "",
             leave_type: "",
-            periode: "",
             sumber_magang: "",
             status: "",
-            search: "",
         });
-        setSearchTerm("");
+        setSelectedUserIds([]);
         setPage(1);
     };
 
@@ -519,7 +514,21 @@ const AdminLeave = () => {
                         </div>
                     </div>
 
-                    <Row className="g-3">
+                    <AdvancedFilters
+                        filters={filters}
+                        setFilters={setFilters}
+                        selectedUserIds={selectedUserIds}
+                        setSelectedUserIds={setSelectedUserIds}
+                        showDivision={true}
+                        showPeriode={true}
+                        showUser={true}
+                        showSumberMagang={true}
+                        role="admin"
+                        externalUsers={users}
+                        externalDivisions={divisions}
+                    />
+
+                    <Row className="g-3 mt-2">
                         <Col md={3}>
                             <Form.Group>
                                 <Form.Label className="small fw-semibold">
@@ -554,104 +563,6 @@ const AdminLeave = () => {
                                         )
                                     }
                                     min={filters.start_date}
-                                />
-                            </Form.Group>
-                        </Col>
-                        <Col md={2}>
-                            <Form.Group>
-                                <Form.Label className="small fw-semibold">
-                                    Sumber Magang
-                                </Form.Label>
-                                <Form.Select
-                                    value={filters.sumber_magang}
-                                    onChange={(e) =>
-                                        handleFilterChange(
-                                            "sumber_magang",
-                                            e.target.value
-                                        )
-                                    }
-                                >
-                                    <option value="">Semua Sumber</option>
-                                    <option value="kampus">Kampus</option>
-                                    <option value="pemerintah">
-                                        Pemerintah
-                                    </option>
-                                    <option value="swasta">Swasta</option>
-                                    <option value="internal">Internal</option>
-                                    <option value="umum">Umum</option>
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
-                        <Col md={2}>
-                            <Form.Group>
-                                <Form.Label className="small fw-semibold">
-                                    Periode/Batch
-                                </Form.Label>
-                                <Form.Select
-                                    value={filters.periode}
-                                    onChange={(e) =>
-                                        handleFilterChange(
-                                            "periode",
-                                            e.target.value
-                                        )
-                                    }
-                                >
-                                    <option value="">Semua Periode</option>
-                                    {[
-                                        ...new Set(
-                                            users
-                                                .map((u) => u.periode)
-                                                .filter(Boolean)
-                                        ),
-                                    ]
-                                        .sort()
-                                        .map((periode) => (
-                                            <option
-                                                key={periode}
-                                                value={periode}
-                                            >
-                                                {periode}
-                                            </option>
-                                        ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
-                        <Col md={2}>
-                            <Form.Group>
-                                <Form.Label className="small fw-semibold">
-                                    Divisi
-                                </Form.Label>
-                                <Form.Select
-                                    value={filters.division_id}
-                                    onChange={(e) =>
-                                        handleFilterChange(
-                                            "division_id",
-                                            e.target.value
-                                        )
-                                    }
-                                >
-                                    <option value="">Semua Divisi</option>
-                                    {divisions.map((division) => (
-                                        <option
-                                            key={division.id}
-                                            value={division.id}
-                                        >
-                                            {division.name}
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                            <Form.Group>
-                                <Form.Label className="small fw-semibold">
-                                    Cari Nama/NIP/Email
-                                </Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    placeholder="Ketik nama, NIP, atau email..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </Form.Group>
                         </Col>
@@ -701,18 +612,12 @@ const AdminLeave = () => {
                         </Col>
                         <Col md={2} className="d-flex align-items-end gap-2">
                             <Button
-                                variant="primary"
-                                onClick={fetchLeaves}
-                                className="flex-grow-1"
-                            >
-                                <i className="bi bi-search me-2"></i>
-                                Cari
-                            </Button>
-                            <Button
                                 variant="outline-danger"
                                 onClick={handleResetFilters}
+                                className="w-100"
                             >
-                                <i className="bi bi-arrow-clockwise"></i>
+                                <i className="bi bi-arrow-clockwise me-2"></i>
+                                Reset
                             </Button>
                         </Col>
                     </Row>
@@ -978,254 +883,12 @@ const AdminLeave = () => {
                 </Card.Body>
             </Card>
 
-            {/* Detail Modal */}
-            <Modal
+            {/* Detail Modal – shared component */}
+            <LeaveDetailModal
                 show={showDetailModal}
-                onHide={() => setShowDetailModal(false)}
-                size="lg"
-            >
-                <Modal.Header closeButton>
-                    <Modal.Title>Detail Perizinan</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {selectedLeave && (
-                        <div>
-                            {/* User Info */}
-                            <div className="d-flex align-items-center mb-4 pb-3 border-bottom">
-                                <img
-                                    src={getAvatarUrl(selectedLeave.user)}
-                                    alt={selectedLeave.user?.name}
-                                    className="rounded-circle me-3"
-                                    style={{
-                                        width: "64px",
-                                        height: "64px",
-                                        objectFit: "cover",
-                                    }}
-                                    onError={(e) => {
-                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                            selectedLeave.user?.name || "User"
-                                        )}&background=0D8ABC&color=fff&size=128`;
-                                    }}
-                                />
-                                <div>
-                                    <h5 className="mb-1">
-                                        {selectedLeave.user?.name || "Unknown"}
-                                    </h5>
-                                    <p className="text-muted mb-1 small">
-                                        {selectedLeave.user?.email}
-                                    </p>
-                                    <Badge bg="light" text="dark">
-                                        {selectedLeave.user?.division?.name ||
-                                            "N/A"}
-                                    </Badge>
-                                    {selectedLeave.user?.periode && (
-                                        <Badge bg="info" className="ms-2">
-                                            <i className="bi bi-calendar-range me-1"></i>
-                                            {selectedLeave.user.periode}
-                                        </Badge>
-                                    )}
-                                    {selectedLeave.user?.sumber_magang && (
-                                        <Badge bg="secondary" className="ms-2">
-                                            <i className="bi bi-building me-1"></i>
-                                            {selectedLeave.user.sumber_magang}
-                                        </Badge>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Leave Info */}
-                            <Row className="g-3 mb-3">
-                                <Col md={6}>
-                                    <div className="mb-3">
-                                        <label className="small text-muted">
-                                            Jenis Izin
-                                        </label>
-                                        <div>
-                                            <Badge
-                                                bg={getLeaveTypeBadge(
-                                                    selectedLeave.type
-                                                )}
-                                            >
-                                                {getLeaveTypeText(
-                                                    selectedLeave.type
-                                                )}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </Col>
-                                <Col md={6}>
-                                    <div className="mb-3">
-                                        <label className="small text-muted">
-                                            Status
-                                        </label>
-                                        <div>
-                                            <Badge
-                                                bg={getStatusBadge(
-                                                    selectedLeave.status
-                                                )}
-                                            >
-                                                {getStatusText(
-                                                    selectedLeave.status
-                                                )}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </Col>
-                                <Col md={6}>
-                                    <div className="mb-3">
-                                        <label className="small text-muted">
-                                            Tanggal Mulai
-                                        </label>
-                                        <div>
-                                            {formatDate(
-                                                selectedLeave.start_date
-                                            )}
-                                        </div>
-                                    </div>
-                                </Col>
-                                <Col md={6}>
-                                    <div className="mb-3">
-                                        <label className="small text-muted">
-                                            Tanggal Selesai
-                                        </label>
-                                        <div>
-                                            {formatDate(selectedLeave.end_date)}
-                                        </div>
-                                    </div>
-                                </Col>
-                                <Col md={12}>
-                                    <div className="mb-3">
-                                        <label className="small text-muted">
-                                            Durasi
-                                        </label>
-                                        <div>
-                                            <Badge bg="info">
-                                                {calculateDuration(
-                                                    selectedLeave.start_date,
-                                                    selectedLeave.end_date
-                                                )}{" "}
-                                                hari
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                </Col>
-                                <Col md={12}>
-                                    <div className="mb-3">
-                                        <label className="small text-muted">
-                                            Alasan
-                                        </label>
-                                        <div className="p-3 bg-light rounded">
-                                            {selectedLeave.reason || "-"}
-                                        </div>
-                                    </div>
-                                </Col>
-
-                                {/* Review Info */}
-                                {selectedLeave.status !== "pending" && (
-                                    <Col md={12}>
-                                        <div className="mb-3">
-                                            <label className="small text-muted d-block mb-2">
-                                                <i className="bi bi-chat-left-text me-1"></i>
-                                                Hasil Review dari Supervisor
-                                            </label>
-                                            <Card
-                                                className={`mt-2 border-2 border-${
-                                                    selectedLeave.status ===
-                                                    "approved"
-                                                        ? "success"
-                                                        : "danger"
-                                                }`}
-                                            >
-                                                <Card.Body>
-                                                    <div className="mb-3">
-                                                        <h6
-                                                            className={`text-${
-                                                                selectedLeave.status ===
-                                                                "approved"
-                                                                    ? "success"
-                                                                    : "danger"
-                                                            } mb-2`}
-                                                        >
-                                                            <i
-                                                                className={`bi bi-${
-                                                                    selectedLeave.status ===
-                                                                    "approved"
-                                                                        ? "check-circle"
-                                                                        : "x-circle"
-                                                                }-fill me-2`}
-                                                            ></i>
-                                                            Feedback Review
-                                                        </h6>
-                                                        {selectedLeave.review_notes ? (
-                                                            <p
-                                                                className="mb-2"
-                                                                style={{
-                                                                    whiteSpace:
-                                                                        "pre-wrap",
-                                                                }}
-                                                            >
-                                                                {
-                                                                    selectedLeave.review_notes
-                                                                }
-                                                            </p>
-                                                        ) : (
-                                                            <p className="mb-2 text-muted fst-italic">
-                                                                Tidak ada
-                                                                catatan
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                    {selectedLeave.reviewer && (
-                                                        <div className="d-flex align-items-center mt-3 pt-2 border-top">
-                                                            <i className="bi bi-person-circle me-2 text-muted"></i>
-                                                            <small className="text-muted">
-                                                                Direview oleh:{" "}
-                                                                <span className="fw-semibold">
-                                                                    {
-                                                                        selectedLeave
-                                                                            .reviewer
-                                                                            .name
-                                                                    }
-                                                                </span>
-                                                            </small>
-                                                        </div>
-                                                    )}
-                                                    {selectedLeave.reviewed_at && (
-                                                        <div className="d-flex align-items-center mt-1">
-                                                            <i className="bi bi-clock me-2 text-muted"></i>
-                                                            <small className="text-muted">
-                                                                {new Date(
-                                                                    selectedLeave.reviewed_at
-                                                                ).toLocaleString(
-                                                                    "id-ID",
-                                                                    {
-                                                                        dateStyle:
-                                                                            "full",
-                                                                        timeStyle:
-                                                                            "short",
-                                                                    }
-                                                                )}
-                                                            </small>
-                                                        </div>
-                                                    )}
-                                                </Card.Body>
-                                            </Card>
-                                        </div>
-                                    </Col>
-                                )}
-                            </Row>
-                        </div>
-                    )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button
-                        variant="secondary"
-                        onClick={() => setShowDetailModal(false)}
-                    >
-                        Tutup
-                    </Button>
-                </Modal.Footer>
-            </Modal>
+                onClose={() => setShowDetailModal(false)}
+                leave={selectedLeave}
+            />
         </div>
     );
 };

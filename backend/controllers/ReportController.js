@@ -37,7 +37,12 @@ class ReportController {
             // Support single user_id or multi user_ids[]
             const userIdsRaw = req.query.user_ids;
             const userIdsList = userIdsRaw
-                ? (Array.isArray(userIdsRaw) ? userIdsRaw : [userIdsRaw]).map(Number).filter(Boolean)
+                ? (Array.isArray(userIdsRaw) 
+                    ? userIdsRaw 
+                    : typeof userIdsRaw === "string" 
+                        ? userIdsRaw.split(",") 
+                        : [userIdsRaw]
+                  ).map(Number).filter(Boolean)
                 : [];
 
             if (userIdsList.length > 0) {
@@ -172,7 +177,12 @@ class ReportController {
             // Support single user_id or multi user_ids[]
             const userIdsRaw = req.query.user_ids;
             const userIdsList = userIdsRaw
-                ? (Array.isArray(userIdsRaw) ? userIdsRaw : [userIdsRaw]).map(Number).filter(Boolean)
+                ? (Array.isArray(userIdsRaw) 
+                    ? userIdsRaw 
+                    : typeof userIdsRaw === "string" 
+                        ? userIdsRaw.split(",") 
+                        : [userIdsRaw]
+                  ).map(Number).filter(Boolean)
                 : [];
 
             if (userIdsList.length > 0) {
@@ -283,7 +293,12 @@ class ReportController {
             // Support single user_id or multi user_ids[]
             const userIdsRaw = req.query.user_ids;
             const userIdsList = userIdsRaw
-                ? (Array.isArray(userIdsRaw) ? userIdsRaw : [userIdsRaw]).map(Number).filter(Boolean)
+                ? (Array.isArray(userIdsRaw) 
+                    ? userIdsRaw 
+                    : typeof userIdsRaw === "string" 
+                        ? userIdsRaw.split(",") 
+                        : [userIdsRaw]
+                  ).map(Number).filter(Boolean)
                 : [];
 
             if (userIdsList.length > 0) {

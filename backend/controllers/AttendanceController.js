@@ -117,15 +117,21 @@ class AttendanceController {
     // Pre-check work type (ONSITE/OFFSITE) sebelum check-in/check-out
     async preCheckWorkType(req, res) {
         try {
-            const { latitude, longitude } = req.body;
+            const { latitude, longitude, test_mode } = req.body;
 
             // GPS opsional - WiFi/IP sebagai prioritas utama
             // Untuk admin testing, bisa tanpa GPS
 
             // Get client IP
-            const clientIp = LocationHelper.getClientIp(req);
+            let clientIp = LocationHelper.getClientIp(req);
+            
+            // Bypass IP check for GPS testing
+            if (test_mode === 'gps') {
+                clientIp = null;
+            }
+
             console.log(
-                `[Pre-check] IP: ${clientIp} | GPS: ${latitude || "none"},${longitude || "none"
+                `[Pre-check] IP: ${clientIp || "ignored (gps mode)"} | GPS: ${latitude || "none"},${longitude || "none"
                 }`,
             );
 
@@ -608,6 +614,9 @@ class AttendanceController {
                 work_type,
                 status,
                 search,
+                user_ids,
+                periode,
+                sumber_magang,
                 page = 1,
                 limit = 20,
             } = req.query;
@@ -620,8 +629,25 @@ class AttendanceController {
             const whereClause = {};
             const userWhereClause = { division_id: supervisor.division_id };
 
-            // Server-side search for user name, email, NIP
-            if (search && search.trim() !== "") {
+            // Apply user filters
+            if (periode) userWhereClause.periode = periode;
+            if (sumber_magang) userWhereClause.sumber_magang = sumber_magang;
+
+            // Support single user_id or multi user_ids[]
+            const userIdsRaw = user_ids;
+            const userIdsList = userIdsRaw
+                ? (Array.isArray(userIdsRaw) 
+                    ? userIdsRaw 
+                    : typeof userIdsRaw === "string" 
+                        ? userIdsRaw.split(",") 
+                        : [userIdsRaw]
+                  ).map(Number).filter(Boolean)
+                : [];
+
+            if (userIdsList.length > 0) {
+                whereClause.user_id = { [Op.in]: userIdsList };
+            } else if (search && search.trim() !== "") {
+                // Server-side search for user name, email, NIP
                 const searchTerm = `%${search.trim()}%`;
                 userWhereClause[Op.or] = [
                     { name: { [Op.like]: searchTerm } },
@@ -697,6 +723,9 @@ class AttendanceController {
                             "avatar",
                             "nip",
                             "position",
+                            "periode",
+                            "sumber_magang",
+                            "role",
                         ],
                         include: [
                             {
@@ -769,7 +798,13 @@ class AttendanceController {
                     is_active: true,
                     role: 'user'
                 },
-                attributes: ["id", "name", "email", "avatar", "nip", "position"],
+                attributes: ["id", "name", "email", "avatar", "nip", "position", "periode", "sumber_magang", "role"],
+                include: [
+                    {
+                        association: "division",
+                        attributes: ["id", "name"],
+                    },
+                ],
             });
 
             // 2. Get attendance records for today
@@ -821,6 +856,9 @@ class AttendanceController {
                 month,
                 year,
                 user_id,
+                user_ids,
+                periode,
+                sumber_magang,
                 date,
                 date_from,
                 date_to,
@@ -840,8 +878,24 @@ class AttendanceController {
             const whereClause = {};
             const userWhereClause = {};
 
-            // Server-side search for user name, email, NIP
-            if (search && search.trim() !== "") {
+            if (periode) userWhereClause.periode = periode;
+            if (sumber_magang) userWhereClause.sumber_magang = sumber_magang;
+
+            // Support single user_id or multi user_ids[]
+            const userIdsRaw = user_ids;
+            const userIdsList = userIdsRaw
+                ? (Array.isArray(userIdsRaw) 
+                    ? userIdsRaw 
+                    : typeof userIdsRaw === "string" 
+                        ? userIdsRaw.split(",") 
+                        : [userIdsRaw]
+                  ).map(Number).filter(Boolean)
+                : [];
+
+            if (userIdsList.length > 0) {
+                whereClause.user_id = { [Op.in]: userIdsList };
+            } else if (search && search.trim() !== "") {
+                // Server-side search for user name, email, NIP
                 const searchTerm = `%${search.trim()}%`;
                 userWhereClause[Op.or] = [
                     { name: { [Op.like]: searchTerm } },
@@ -982,6 +1036,16 @@ class AttendanceController {
                             "division_id",
                             "avatar",
                             "nip",
+                            "periode",
+                            "sumber_magang",
+                            "role",
+                        ],
+                        include: [
+                            {
+                                model: Division,
+                                as: "division",
+                                attributes: ["id", "name"],
+                            },
                         ],
                     },
                 ],
@@ -1023,6 +1087,16 @@ class AttendanceController {
                         "division_id",
                         "avatar",
                         "nip",
+                        "periode",
+                        "sumber_magang",
+                        "role",
+                    ],
+                    include: [
+                        {
+                            model: Division,
+                            as: "division",
+                            attributes: ["id", "name"],
+                        },
                     ],
                 },
             ];

@@ -826,7 +826,7 @@ const UserWorkCalendar = () => {
                                     ></span>
                                     <div className="flex-grow-1">
                                         <div
-                                            className="fw-medium"
+                                            className="fw-medium mb-1"
                                             style={{
                                                 fontSize: "0.85rem",
                                                 lineHeight: "1.2",
@@ -1393,7 +1393,7 @@ const UserWorkCalendar = () => {
                                                 <span style={{ fontSize: "0.9rem" }}>{item.icon}</span>
                                             </div>
                                             <div>
-                                                <div className="fw-bold small">{item.label}</div>
+                                                <div className="fw-bold small mb-1">{item.label}</div>
                                                 <div className="text-muted" style={{ fontSize: "0.7rem" }}>{item.desc}</div>
                                             </div>
                                         </div>

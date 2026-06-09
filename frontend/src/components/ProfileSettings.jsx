@@ -32,6 +32,7 @@ import axiosInstance from "../utils/axiosInstance";
 import ImageCropModal from "./common/ImageCropModal";
 import { getAvatarUrl } from "../utils/Constant";
 import toast from "react-hot-toast";
+import { getStorageUserString, updateStorageUser } from "../utils/storageHelper";
 
 const ProfileSettings = ({ role = "user" }) => {
     const [profile, setProfile] = useState(null);
@@ -191,18 +192,18 @@ const ProfileSettings = ({ role = "user" }) => {
             setSuccess("Foto profil berhasil diperbarui");
             toast.success("Foto profil berhasil diperbarui");
 
-            // Update localStorage with the actual avatar path from backend response
+            // Update localStorage/sessionStorage with the actual avatar path from backend response
             const avatarPath =
                 response.data.data?.avatar || response.data.avatar;
             if (avatarPath) {
                 const userFromStorage = JSON.parse(
-                    localStorage.getItem("user") || "{}",
+                    getStorageUserString() || "{}",
                 );
                 const updatedUser = {
                     ...userFromStorage,
                     avatar: avatarPath,
                 };
-                localStorage.setItem("user", JSON.stringify(updatedUser));
+                updateStorageUser(updatedUser);
                 window.dispatchEvent(new Event("storage"));
             }
         } catch (err) {
@@ -232,15 +233,15 @@ const ProfileSettings = ({ role = "user" }) => {
             toast.success("Foto profil berhasil dihapus");
             await fetchProfile();
 
-            // Update localStorage
+            // Update localStorage/sessionStorage
             const userFromStorage = JSON.parse(
-                localStorage.getItem("user") || "{}",
+                getStorageUserString() || "{}",
             );
             const updatedUser = {
                 ...userFromStorage,
                 avatar: null,
             };
-            localStorage.setItem("user", JSON.stringify(updatedUser));
+            updateStorageUser(updatedUser);
             window.dispatchEvent(new Event("storage"));
         } catch (err) {
             const msg =
@@ -840,7 +841,7 @@ const ProfileSettings = ({ role = "user" }) => {
 
                     {/* Password Change */}
                     <Card className="shadow-sm">
-                        <Card.Header className="bg-warning d-flex justify-content-between align-items-center">
+                        <Card.Header className="bg-warning text-dark d-flex justify-content-between align-items-center">
                             <h5 className="mb-0">
                                 <FaLock className="me-2" />
                                 Keamanan Akun

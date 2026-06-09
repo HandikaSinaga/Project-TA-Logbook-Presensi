@@ -381,6 +381,9 @@ class LeaveController {
                 date_from,
                 date_to,
                 search,
+                user_ids,
+                periode,
+                sumber_magang,
                 page = 1,
                 limit = 20,
             } = req.query;
@@ -393,8 +396,24 @@ class LeaveController {
             const whereClause = {};
             const userWhereClause = { division_id: supervisor.division_id };
 
-            // Server-side search for user name, email, NIP
-            if (search && search.trim() !== "") {
+            if (periode) userWhereClause.periode = periode;
+            if (sumber_magang) userWhereClause.sumber_magang = sumber_magang;
+
+            // Support single user_id or multi user_ids[]
+            const userIdsRaw = user_ids;
+            const userIdsList = userIdsRaw
+                ? (Array.isArray(userIdsRaw) 
+                    ? userIdsRaw 
+                    : typeof userIdsRaw === "string" 
+                        ? userIdsRaw.split(",") 
+                        : [userIdsRaw]
+                  ).map(Number).filter(Boolean)
+                : [];
+
+            if (userIdsList.length > 0) {
+                whereClause.user_id = { [Op.in]: userIdsList };
+            } else if (search && search.trim() !== "") {
+                // Server-side search for user name, email, NIP
                 const searchTerm = `%${search.trim()}%`;
                 userWhereClause[Op.or] = [
                     { name: { [Op.like]: searchTerm } },
@@ -735,6 +754,9 @@ class LeaveController {
                 division_id,
                 type,
                 search,
+                user_ids,
+                periode,
+                sumber_magang,
                 page = 1,
                 limit = 20,
             } = req.query;
@@ -747,8 +769,24 @@ class LeaveController {
             const whereClause = {};
             const userWhereClause = {};
 
-            // Server-side search for user name, email, NIP
-            if (search && search.trim() !== "") {
+            if (periode) userWhereClause.periode = periode;
+            if (sumber_magang) userWhereClause.sumber_magang = sumber_magang;
+
+            // Support single user_id or multi user_ids[]
+            const userIdsRaw = user_ids;
+            const userIdsList = userIdsRaw
+                ? (Array.isArray(userIdsRaw) 
+                    ? userIdsRaw 
+                    : typeof userIdsRaw === "string" 
+                        ? userIdsRaw.split(",") 
+                        : [userIdsRaw]
+                  ).map(Number).filter(Boolean)
+                : [];
+
+            if (userIdsList.length > 0) {
+                whereClause.user_id = { [Op.in]: userIdsList };
+            } else if (search && search.trim() !== "") {
+                // Server-side search for user name, email, NIP
                 const searchTerm = `%${search.trim()}%`;
                 userWhereClause[Op.or] = [
                     { name: { [Op.like]: searchTerm } },

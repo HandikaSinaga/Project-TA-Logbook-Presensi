@@ -1,5 +1,7 @@
 // Shared utility functions for navbar components
 
+import { getStorageUser } from "./storageHelper";
+
 export function validName(fullName, defaultName = "User") {
     if (!fullName) return defaultName;
     const nameArray = fullName.split(" ");
@@ -43,10 +45,8 @@ export function getDateNow() {
 
 export function loadUserData() {
     try {
-        const stored = localStorage.getItem("user");
-        if (stored) {
-            return JSON.parse(stored);
-        }
+        const stored = getStorageUser();
+        return stored || null;
     } catch (error) {
         console.error("Error parsing user data:", error);
     }

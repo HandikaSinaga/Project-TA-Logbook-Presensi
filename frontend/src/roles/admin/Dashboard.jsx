@@ -3,6 +3,7 @@ import { Table, Row, Col, Spinner } from "react-bootstrap";
 import { NavLink } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import toast from "react-hot-toast";
+import { getStorageUser } from "../../utils/storageHelper";
 
 function validName(text) {
     if (!text) return "Admin";
@@ -15,19 +16,19 @@ const AdminDashboard = () => {
     const [error, setError] = useState(null);
     const [stats, setStats] = useState({
         total_users: 0,
+        active_users: 0,
+        active_user_accounts: 0,
+        active_admin_accounts: 0,
+        active_supervisor_accounts: 0,
         total_divisions: 0,
         total_locations: 0,
         attendance_today: 0,
     });
 
     let userData = { name: "Admin" };
-    try {
-        const stored = localStorage.getItem("user");
-        if (stored) {
-            userData = JSON.parse(stored);
-        }
-    } catch (error) {
-        console.error("Error parsing user data:", error);
+    const storedUser = getStorageUser();
+    if (storedUser) {
+        userData = storedUser;
     }
 
     useEffect(() => {
@@ -46,6 +47,10 @@ const AdminDashboard = () => {
             } else {
                 setStats({
                     total_users: 0,
+                    active_users: 0,
+                    active_user_accounts: 0,
+                    active_admin_accounts: 0,
+                    active_supervisor_accounts: 0,
                     total_divisions: 0,
                     total_locations: 0,
                     attendance_today: 0,
@@ -133,6 +138,11 @@ const AdminDashboard = () => {
                                     {stats.total_users || 0}
                                     <span className="fs-6 fw-normal" style={{opacity: 0.85}}>({stats.active_users || 0} Aktif)</span>
                                 </h3>
+                                <div className="mt-2 text-white small" style={{opacity: 0.85}}>
+                                    <span className="me-2">User: {stats.active_user_accounts || 0}</span>
+                                    <span className="me-2">Spv: {stats.active_supervisor_accounts || 0}</span>
+                                    <span>Admin: {stats.active_admin_accounts || 0}</span>
+                                </div>
                             </div>
                             <div className="rounded-circle bg-white bg-opacity-25 p-3">
                                 <i className="bi bi-people fs-4 text-primary"></i>

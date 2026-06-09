@@ -308,9 +308,30 @@
     border-color: #2a5298 !important;
     color: #90caf9 !important;
 }
-[data-theme="dark"] .alert-warning {
+[data-theme="dark"] .alert-warning,
+[data-theme="dark"] .bg-warning {
     background-color: #3d2e00 !important;
     border-color: #5c4300 !important;
+    color: #ffd54f !important;
+}
+
+[data-theme="dark"] .alert-warning .text-dark,
+[data-theme="dark"] .bg-warning .text-dark,
+[data-theme="dark"] .bg-warning.text-dark {
+    color: #ffd54f !important;
+}
+
+[data-theme="dark"] .alert-warning .text-muted,
+[data-theme="dark"] .bg-warning .text-muted {
+    color: #cca425 !important; /* A slightly darker yellow for muted text inside warning */
+}
+
+[data-theme="dark"] .alert-warning h1, [data-theme="dark"] .alert-warning h2,
+[data-theme="dark"] .alert-warning h3, [data-theme="dark"] .alert-warning h4,
+[data-theme="dark"] .alert-warning h5, [data-theme="dark"] .alert-warning h6,
+[data-theme="dark"] .bg-warning h1, [data-theme="dark"] .bg-warning h2,
+[data-theme="dark"] .bg-warning h3, [data-theme="dark"] .bg-warning h4,
+[data-theme="dark"] .bg-warning h5, [data-theme="dark"] .bg-warning h6 {
     color: #ffd54f !important;
 }
 [data-theme="dark"] .alert-danger {
@@ -364,6 +385,11 @@
 [data-theme="dark"] .badge.text-bg-info {
     background-color: #1a2f3d !important;
     color: #7dd3fc !important;
+}
+[data-theme="dark"] .badge.bg-secondary-subtle,
+[data-theme="dark"] .badge.text-bg-secondary {
+    background-color: #2a2f3a !important;
+    color: #cbd5e1 !important;
 }
 
 /* Span/div badge yang memakai kelas bg-* langsung (non-.badge Bootstrap class) */

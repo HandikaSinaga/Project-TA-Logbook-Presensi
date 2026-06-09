@@ -3,6 +3,7 @@ import { Table, Row, Col, Spinner } from "react-bootstrap";
 import { NavLink } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import toast from "react-hot-toast";
+import { getStorageUser } from "../../utils/storageHelper";
 
 function validName(text) {
     if (!text) return "Supervisor";
@@ -21,13 +22,9 @@ const SupervisorDashboard = () => {
     const [recentActivities, setRecentActivities] = useState([]);
 
     let userData = { name: "Supervisor" };
-    try {
-        const stored = localStorage.getItem("user");
-        if (stored) {
-            userData = JSON.parse(stored);
-        }
-    } catch (error) {
-        console.error("Error parsing user data:", error);
+    const storedUser = getStorageUser();
+    if (storedUser) {
+        userData = storedUser;
     }
 
     useEffect(() => {
@@ -357,7 +354,7 @@ const SupervisorDashboard = () => {
                                                 </span>
                                             </td>
                                             <td className="text-center">
-                                                <span className="badge bg-warning">
+                                                <span className="badge bg-warning text-dark">
                                                     Pending
                                                 </span>
                                             </td>

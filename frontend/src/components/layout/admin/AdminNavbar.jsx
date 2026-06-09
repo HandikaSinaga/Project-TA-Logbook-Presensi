@@ -9,6 +9,7 @@ import {
 } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { logout } from "../../../services/authService";
+import { clearStorage } from "../../../utils/storageHelper";
 import { getAvatarUrl } from "../../../utils/Constant";
 import {
     validName,
@@ -61,8 +62,8 @@ const AdminNavbar = ({ onToggleSidebar }) => {
             await logout();
             window.location.href = "/login";
         } catch (error) {
-            console.error("Logout error:", error);
-            localStorage.clear();
+            console.error("Logout failed", error);
+            clearStorage();
             window.location.href = "/login";
         }
     };

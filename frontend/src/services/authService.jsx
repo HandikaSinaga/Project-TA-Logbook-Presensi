@@ -1,5 +1,6 @@
 import axiosInstance from "../utils/axiosInstance";
 import { API_URL } from "../utils/Constant";
+import { setAuthData, clearStorage } from "../utils/storageHelper";
 
 export const login = async (formData) => {
     const { email, password, remember } = formData;
@@ -9,14 +10,14 @@ export const login = async (formData) => {
         remember,
     });
     if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+        setAuthData(response.data.token, response.data.user || {}, remember);
     }
     return response.data;
 };
 
 export const logout = async () => {
     await axiosInstance.post("/logout");
-    localStorage.removeItem("token");
+    clearStorage();
 };
 
 export const getCurrentUser = async () => {

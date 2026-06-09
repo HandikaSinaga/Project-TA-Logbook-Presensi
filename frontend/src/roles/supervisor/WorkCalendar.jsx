@@ -1430,7 +1430,7 @@ const SupervisorWorkCalendar = () => {
                                             ></span>
                                             <div className="flex-grow-1">
                                                 <div
-                                                    className="fw-medium"
+                                                    className="fw-medium mb-1"
                                                     style={{
                                                         fontSize: "0.85rem",
                                                         lineHeight: "1.2",

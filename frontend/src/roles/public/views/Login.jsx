@@ -4,6 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 import axiosInstance from "../../../utils/axiosInstance";
 import toast from "react-hot-toast";
 import useConfig from "../../../hooks/useConfig";
+import { setAuthData } from "../../../utils/storageHelper";
 
 /**
  * Login Page - Logbook & Presensi System
@@ -90,8 +91,7 @@ const Login = () => {
             });
 
             if (result.data.success && result.data.token && result.data.user) {
-                localStorage.setItem("token", result.data.token);
-                localStorage.setItem("user", JSON.stringify(result.data.user));
+                setAuthData(result.data.token, result.data.user, true);
 
                 toast.success("Login dengan Google berhasil!");
 
@@ -174,11 +174,7 @@ const Login = () => {
                 response.data.token &&
                 response.data.user
             ) {
-                localStorage.setItem("token", response.data.token);
-                localStorage.setItem(
-                    "user",
-                    JSON.stringify(response.data.user),
-                );
+                setAuthData(response.data.token, response.data.user, credentials.remember);
 
                 toast.success("Login berhasil!");
 

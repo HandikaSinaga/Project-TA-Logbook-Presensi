@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import toast from "react-hot-toast";
 import { OverlayTrigger, Tooltip, Spinner } from "react-bootstrap";
+import AdvancedFilters from "../../components/common/AdvancedFilters";
 
 const AdminReports = () => {
     const [loading, setLoading] = useState(false);
@@ -22,20 +23,7 @@ const AdminReports = () => {
     });
     const [reportData, setReportData] = useState(null);
     const [activeTab, setActiveTab] = useState("attendance");
-
-    // Multi-select user filter
     const [selectedUserIds, setSelectedUserIds] = useState([]);
-    const [userSearch, setUserSearch] = useState("");
-    const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-
-    // Single-select division searchable combobox
-    const [divisionSearch, setDivisionSearch] = useState("");
-    const [divisionDropdownOpen, setDivisionDropdownOpen] = useState(false);
-    const [selectedDivision, setSelectedDivision] = useState(null); // { id, name }
-
-    // Single-select periode searchable combobox
-    const [periodeSearch, setPeriodeSearch] = useState("");
-    const [periodeDropdownOpen, setPeriodeDropdownOpen] = useState(false);
 
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
@@ -192,9 +180,6 @@ const AdminReports = () => {
             leave_type: "",
         });
         setSelectedUserIds([]);
-        setUserSearch("");
-        setSelectedDivision(null);
-        setDivisionSearch("");
         setReportData(null);
         setCurrentPage(1);
     };
@@ -687,619 +672,119 @@ const AdminReports = () => {
                         </div>
                     </div>
 
-                    {/* User Multi-Select Filter */}
-                    <div className="row g-3 mb-3">
-                        <div className="col-12">
-                            <label className="form-label fw-bold">
-                                <i className="bi bi-people me-2"></i>
-                                Filter User Spesifik
-                                {selectedUserIds.length > 0 && (
-                                    <span className="badge bg-primary ms-2">{selectedUserIds.length} dipilih</span>
-                                )}
-                            </label>
-                            {/* Combobox container */}
-                            <div
-                                className="position-relative"
-                                onBlur={(e) => {
-                                    if (!e.currentTarget.contains(e.relatedTarget)) {
-                                        setUserDropdownOpen(false);
-                                    }
-                                }}
-                                tabIndex={-1}
-                            >
-                                {/* Input box with chips */}
-                                <div
-                                    className="form-control d-flex flex-wrap gap-1 align-items-center"
-                                    style={{ minHeight: "42px", cursor: "text", height: "auto" }}
-                                    onClick={() => {
-                                        setUserDropdownOpen(true);
-                                        document.getElementById("user-search-input").focus();
-                                    }}
-                                >
-                                    {selectedUserIds.map((id) => {
-                                        const u = users.find((x) => x.id === id);
-                                        if (!u) return null;
-                                        return (
-                                            <span
-                                                key={id}
-                                                className="badge bg-primary d-inline-flex align-items-center gap-1 py-1 px-2"
-                                                style={{ fontSize: "0.8rem", fontWeight: 500 }}
-                                            >
-                                                <i className="bi bi-person-fill" style={{ fontSize: "0.7rem" }}></i>
-                                                {u.name}
-                                                <button
-                                                    type="button"
-                                                    className="btn-close btn-close-white"
-                                                    style={{ fontSize: "0.5rem" }}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setSelectedUserIds((prev) => prev.filter((x) => x !== id));
-                                                    }}
-                                                ></button>
-                                            </span>
-                                        );
-                                    })}
-                                    <input
-                                        id="user-search-input"
-                                        type="text"
-                                        className="border-0 flex-grow-1"
-                                        style={{ outline: "none", minWidth: "140px", background: "transparent" }}
-                                        placeholder={selectedUserIds.length === 0 ? "Ketik nama/NIP untuk mencari user..." : "Tambah user..."}
-                                        value={userSearch}
-                                        onChange={(e) => {
-                                            setUserSearch(e.target.value);
-                                            setUserDropdownOpen(true);
-                                        }}
-                                        onFocus={() => setUserDropdownOpen(true)}
-                                    />
-                                    {(selectedUserIds.length > 0 || userSearch) && (
-                                        <button
-                                            type="button"
-                                            className="btn btn-link p-0 ms-auto text-muted"
-                                            style={{ fontSize: "0.85rem" }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedUserIds([]);
-                                                setUserSearch("");
-                                                setUserDropdownOpen(false);
-                                            }}
-                                        >
-                                            <i className="bi bi-x-circle"></i>
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Dropdown list */}
-                                {userDropdownOpen && (
-                                    <div
-                                        className="position-absolute w-100 bg-white border rounded shadow-sm"
-                                        style={{ zIndex: 1050, maxHeight: "220px", overflowY: "auto", top: "100%", left: 0 }}
-                                    >
-                                        {(() => {
-                                            const term = userSearch.toLowerCase().trim();
-                                            // Filter berdasarkan search term DAN filter aktif lainnya
-                                            const filtered = users.filter((u) => {
-                                                const matchSearch = !term ||
-                                                    u.name?.toLowerCase().includes(term) ||
-                                                    u.nip?.toLowerCase().includes(term) ||
-                                                    u.email?.toLowerCase().includes(term);
-                                                const notSelected = !selectedUserIds.includes(u.id);
-                                                // Sinkronkan dengan filter divisi / periode / sumber_magang
-                                                const matchDivision = !filters.division_id ||
-                                                    u.division_id === parseInt(filters.division_id);
-                                                const matchPeriode = !filters.periode ||
-                                                    u.periode === filters.periode;
-                                                const matchSumber = !filters.sumber_magang ||
-                                                    u.sumber_magang === filters.sumber_magang;
-                                                return matchSearch && notSelected && matchDivision && matchPeriode && matchSumber;
-                                            });
-
-                                            if (filtered.length === 0) {
-                                                return (
-                                                    <div className="px-3 py-2 text-muted small">
-                                                        <i className="bi bi-search me-2"></i>
-                                                        {userSearch ? `Tidak ada user "${userSearch}"` : "Semua user sudah dipilih"}
-                                                    </div>
-                                                );
-                                            }
-
-                                            return filtered.slice(0, 50).map((u) => (
-                                                <div
-                                                    key={u.id}
-                                                    className="px-3 py-2 d-flex align-items-center gap-2"
-                                                    style={{ cursor: "pointer" }}
-                                                    onMouseDown={(e) => e.preventDefault()}
-                                                    onClick={() => {
-                                                        setSelectedUserIds((prev) => [...prev, u.id]);
-                                                        setUserSearch("");
-                                                        document.getElementById("user-search-input").focus();
-                                                    }}
-                                                    onMouseEnter={(e) => e.currentTarget.style.background = "#f0f4ff"}
-                                                    onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                                                >
-                                                    <div
-                                                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                        style={{ width: 32, height: 32 }}
-                                                    >
-                                                        <i className="bi bi-person-fill text-primary" style={{ fontSize: "0.85rem" }}></i>
-                                                    </div>
-                                                    <div>
-                                                        <div className="fw-semibold" style={{ fontSize: "0.875rem" }}>{u.name}</div>
-                                                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
-                                                            {u.nip && <span className="me-2"><i className="bi bi-card-text me-1"></i>{u.nip}</span>}
-                                                            {u.division?.name && <span><i className="bi bi-diagram-3 me-1"></i>{u.division.name}</span>}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ));
-                                        })()}
-                                    </div>
-                                )}
-                            </div>
-                            {selectedUserIds.length > 0 && (
-                                <div className="mt-1">
-                                    <small className="text-muted">
-                                        <i className="bi bi-info-circle me-1"></i>
-                                        Laporan akan difilter untuk {selectedUserIds.length} user yang dipilih. Kosongkan untuk semua user.
-                                    </small>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Comprehensive Filters */}
-                    <div className="row g-3 mb-3">
-                        <div className="col-md-3">
-                            <label className="form-label fw-bold">
-                                <i className="bi bi-building me-2"></i>
-                                Sumber Magang
-                            </label>
-                            <select
-                                className="form-select"
-                                value={filters.sumber_magang}
-                                onChange={(e) =>
-                                    setFilters({
-                                        ...filters,
-                                        sumber_magang: e.target.value,
-                                    })
-                                }
-                            >
-                                <option value="">Semua Sumber</option>
-                                <option value="kampus">Kampus</option>
-                                <option value="pemerintah">Pemerintah</option>
-                                <option value="swasta">Swasta</option>
-                                <option value="internal">Internal</option>
-                                <option value="umum">Umum</option>
-                            </select>
-                        </div>
-                        <div className="col-md-3">
-                            <label className="form-label fw-bold">
-                                <i className="bi bi-calendar3 me-2"></i>
-                                Periode/Batch
-                                {filters.periode && (
-                                    <span className="badge bg-primary ms-2">1 dipilih</span>
-                                )}
-                            </label>
-                            {/* Searchable single-select combobox periode */}
-                            <div
-                                className="position-relative"
-                                onBlur={(e) => {
-                                    if (!e.currentTarget.contains(e.relatedTarget)) {
-                                        setPeriodeDropdownOpen(false);
-                                        if (!filters.periode) setPeriodeSearch("");
-                                    }
-                                }}
-                                tabIndex={-1}
-                            >
-                                <div
-                                    className="form-control d-flex align-items-center gap-1"
-                                    style={{ minHeight: "42px", cursor: "text", height: "auto" }}
-                                    onClick={() => {
-                                        setPeriodeDropdownOpen(true);
-                                        document.getElementById("periode-search-input").focus();
-                                    }}
-                                >
-                                    {filters.periode ? (
-                                        <span
-                                            className="badge bg-primary d-inline-flex align-items-center gap-1 py-1 px-2"
-                                            style={{ fontSize: "0.8rem", fontWeight: 500 }}
-                                        >
-                                            <i className="bi bi-calendar3" style={{ fontSize: "0.7rem" }}></i>
-                                            Periode {filters.periode}
-                                            <button
-                                                type="button"
-                                                className="btn-close btn-close-white"
-                                                style={{ fontSize: "0.5rem" }}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setPeriodeSearch("");
-                                                    setFilters((f) => ({ ...f, periode: "" }));
-                                                }}
-                                            ></button>
-                                        </span>
-                                    ) : null}
-                                    <input
-                                        id="periode-search-input"
-                                        type="text"
-                                        className="border-0 flex-grow-1"
-                                        style={{ outline: "none", minWidth: "120px", background: "transparent" }}
-                                        placeholder={filters.periode ? "" : "Ketik periode..."}
-                                        value={periodeSearch}
-                                        onChange={(e) => {
-                                            setPeriodeSearch(e.target.value);
-                                            setPeriodeDropdownOpen(true);
-                                            if (filters.periode) {
-                                                setFilters((f) => ({ ...f, periode: "" }));
-                                            }
-                                        }}
-                                        onFocus={() => setPeriodeDropdownOpen(true)}
-                                    />
-                                    {(filters.periode || periodeSearch) && (
-                                        <button
-                                            type="button"
-                                            className="btn btn-link p-0 ms-auto text-muted"
-                                            style={{ fontSize: "0.85rem" }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setPeriodeSearch("");
-                                                setPeriodeDropdownOpen(false);
-                                                setFilters((f) => ({ ...f, periode: "" }));
-                                            }}
-                                        >
-                                            <i className="bi bi-x-circle"></i>
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Dropdown list periode */}
-                                {periodeDropdownOpen && (
-                                    <div
-                                        className="position-absolute w-100 bg-white border rounded shadow-sm"
-                                        style={{ zIndex: 1050, maxHeight: "220px", overflowY: "auto", top: "100%", left: 0 }}
-                                    >
-                                        {/* Opsi Semua Periode */}
-                                        <div
-                                            className="px-3 py-2 d-flex align-items-center gap-2"
-                                            style={{ cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
-                                            onMouseDown={(e) => e.preventDefault()}
-                                            onClick={() => {
-                                                setPeriodeSearch("");
-                                                setPeriodeDropdownOpen(false);
-                                                setFilters((f) => ({ ...f, periode: "" }));
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.background = "#f0f4ff"}
-                                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                                        >
-                                            <i className="bi bi-calendar-event text-muted"></i>
-                                            <span className="text-muted" style={{ fontSize: "0.875rem" }}>Semua Periode</span>
-                                        </div>
-
-                                        {(() => {
-                                            const term = periodeSearch.toLowerCase().trim();
-                                            const allPeriods = [...new Set(users.map((u) => u.periode))].filter(Boolean).sort((a, b) => b - a);
-                                            const filtered = allPeriods.filter((p) => !term || p.toString().toLowerCase().includes(term));
-                                            
-                                            if (filtered.length === 0) {
-                                                return (
-                                                    <div className="px-3 py-2 text-muted small">
-                                                        <i className="bi bi-search me-2"></i>
-                                                        Tidak ada periode &quot;{periodeSearch}&quot;
-                                                    </div>
-                                                );
-                                            }
-                                            return filtered.map((period) => (
-                                                <div
-                                                    key={period}
-                                                    className="px-3 py-2 d-flex align-items-center gap-2"
-                                                    style={{
-                                                        cursor: "pointer",
-                                                        background: filters.periode === period ? "#e8f0fe" : "transparent"
-                                                    }}
-                                                    onMouseDown={(e) => e.preventDefault()}
-                                                    onClick={() => {
-                                                        setPeriodeSearch("");
-                                                        setPeriodeDropdownOpen(false);
-                                                        setFilters((f) => ({ ...f, periode: period }));
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        if (filters.periode !== period)
-                                                            e.currentTarget.style.background = "#f0f4ff";
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        if (filters.periode !== period)
-                                                            e.currentTarget.style.background = "transparent";
-                                                    }}
-                                                >
-                                                    <div
-                                                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                        style={{ width: 30, height: 30 }}
-                                                    >
-                                                        <i className="bi bi-calendar3 text-primary" style={{ fontSize: "0.8rem" }}></i>
-                                                    </div>
-                                                    <div>
-                                                        <div className="fw-medium" style={{ fontSize: "0.875rem" }}>Periode {period}</div>
-                                                    </div>
-                                                </div>
-                                            ));
-                                        })()}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div className="col-md-3">
-                            <label className="form-label fw-bold">
-                                <i className="bi bi-diagram-3 me-2"></i>
-                                Divisi
-                                {selectedDivision && (
-                                    <span className="badge bg-primary ms-2">1 dipilih</span>
-                                )}
-                            </label>
-                            {/* Searchable single-select combobox divisi */}
-                            <div
-                                className="position-relative"
-                                onBlur={(e) => {
-                                    if (!e.currentTarget.contains(e.relatedTarget)) {
-                                        setDivisionDropdownOpen(false);
-                                        if (!selectedDivision) setDivisionSearch("");
-                                    }
-                                }}
-                                tabIndex={-1}
-                            >
-                                <div
-                                    className="form-control d-flex align-items-center gap-1"
-                                    style={{ minHeight: "42px", cursor: "text", height: "auto" }}
-                                    onClick={() => {
-                                        setDivisionDropdownOpen(true);
-                                        document.getElementById("division-search-input").focus();
-                                    }}
-                                >
-                                    {selectedDivision ? (
-                                        <span
-                                            className="badge bg-primary d-inline-flex align-items-center gap-1 py-1 px-2"
-                                            style={{ fontSize: "0.8rem", fontWeight: 500 }}
-                                        >
-                                            <i className="bi bi-diagram-3-fill" style={{ fontSize: "0.7rem" }}></i>
-                                            {selectedDivision.name}
-                                            <button
-                                                type="button"
-                                                className="btn-close btn-close-white"
-                                                style={{ fontSize: "0.5rem" }}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedDivision(null);
-                                                    setDivisionSearch("");
-                                                    setFilters((f) => ({ ...f, division_id: "" }));
-                                                }}
-                                            ></button>
-                                        </span>
-                                    ) : null}
-                                    <input
-                                        id="division-search-input"
-                                        type="text"
-                                        className="border-0 flex-grow-1"
-                                        style={{ outline: "none", minWidth: "120px", background: "transparent" }}
-                                        placeholder={selectedDivision ? "" : "Ketik nama divisi..."}
-                                        value={divisionSearch}
-                                        onChange={(e) => {
-                                            setDivisionSearch(e.target.value);
-                                            setDivisionDropdownOpen(true);
-                                            if (selectedDivision) {
-                                                setSelectedDivision(null);
-                                                setFilters((f) => ({ ...f, division_id: "" }));
-                                            }
-                                        }}
-                                        onFocus={() => setDivisionDropdownOpen(true)}
-                                    />
-                                    {(selectedDivision || divisionSearch) && (
-                                        <button
-                                            type="button"
-                                            className="btn btn-link p-0 ms-auto text-muted"
-                                            style={{ fontSize: "0.85rem" }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedDivision(null);
-                                                setDivisionSearch("");
-                                                setDivisionDropdownOpen(false);
-                                                setFilters((f) => ({ ...f, division_id: "" }));
-                                            }}
-                                        >
-                                            <i className="bi bi-x-circle"></i>
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Dropdown list divisi */}
-                                {divisionDropdownOpen && (
-                                    <div
-                                        className="position-absolute w-100 bg-white border rounded shadow-sm"
-                                        style={{ zIndex: 1050, maxHeight: "220px", overflowY: "auto", top: "100%", left: 0 }}
-                                    >
-                                        {/* Opsi Semua Divisi */}
-                                        <div
-                                            className="px-3 py-2 d-flex align-items-center gap-2"
-                                            style={{ cursor: "pointer", borderBottom: "1px solid #f0f0f0" }}
-                                            onMouseDown={(e) => e.preventDefault()}
-                                            onClick={() => {
-                                                setSelectedDivision(null);
-                                                setDivisionSearch("");
-                                                setDivisionDropdownOpen(false);
-                                                setFilters((f) => ({ ...f, division_id: "" }));
-                                            }}
-                                            onMouseEnter={(e) => e.currentTarget.style.background = "#f0f4ff"}
-                                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                                        >
-                                            <i className="bi bi-grid-3x3-gap-fill text-muted"></i>
-                                            <span className="text-muted" style={{ fontSize: "0.875rem" }}>Semua Divisi</span>
-                                        </div>
-
-                                        {(() => {
-                                            const term = divisionSearch.toLowerCase().trim();
-                                            const filtered = divisions.filter((d) =>
-                                                !term || d.name?.toLowerCase().includes(term)
-                                            );
-                                            if (filtered.length === 0) {
-                                                return (
-                                                    <div className="px-3 py-2 text-muted small">
-                                                        <i className="bi bi-search me-2"></i>
-                                                        Tidak ada divisi &quot;{divisionSearch}&quot;
-                                                    </div>
-                                                );
-                                            }
-                                            return filtered.map((d) => (
-                                                <div
-                                                    key={d.id}
-                                                    className="px-3 py-2 d-flex align-items-center gap-2"
-                                                    style={{
-                                                        cursor: "pointer",
-                                                        background: selectedDivision?.id === d.id ? "#e8f0fe" : "transparent"
-                                                    }}
-                                                    onMouseDown={(e) => e.preventDefault()}
-                                                    onClick={() => {
-                                                        setSelectedDivision(d);
-                                                        setDivisionSearch("");
-                                                        setDivisionDropdownOpen(false);
-                                                        setFilters((f) => ({ ...f, division_id: d.id }));
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        if (selectedDivision?.id !== d.id)
-                                                            e.currentTarget.style.background = "#f0f4ff";
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        if (selectedDivision?.id !== d.id)
-                                                            e.currentTarget.style.background = "transparent";
-                                                    }}
-                                                >
-                                                    <div
-                                                        className="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center flex-shrink-0"
-                                                        style={{ width: 30, height: 30 }}
-                                                    >
-                                                        <i className="bi bi-diagram-3-fill text-primary" style={{ fontSize: "0.8rem" }}></i>
-                                                    </div>
-                                                    <div className="fw-semibold" style={{ fontSize: "0.875rem" }}>
-                                                        {d.name}
-                                                        {selectedDivision?.id === d.id && (
-                                                            <i className="bi bi-check-circle-fill text-primary ms-2" style={{ fontSize: "0.75rem" }}></i>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ));
-                                        })()}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div className="col-md-3">
-                            <label className="form-label fw-bold">
-                                <i className="bi bi-check-circle me-2"></i>
-                                {reportType === "attendance"
-                                    ? "Status Kehadiran"
-                                    : "Status Approval"}
-                            </label>
-                            <select
-                                className="form-select"
-                                value={
-                                    reportType === "attendance"
-                                        ? filters.status
-                                        : filters.approval_status
-                                }
-                                onChange={(e) =>
-                                    setFilters({
-                                        ...filters,
-                                        [reportType === "attendance"
-                                            ? "status"
-                                            : "approval_status"]:
-                                            e.target.value,
-                                    })
-                                }
-                            >
-                                <option value="">Semua Status</option>
-                                {reportType === "attendance" ? (
-                                    <>
-                                        <option value="present">Hadir</option>
-                                        <option value="late">Terlambat</option>
-                                        <option value="early">
-                                            Pulang Awal
-                                        </option>
-                                        <option value="absent">
-                                            Tidak Hadir
-                                        </option>
-                                        <option value="leave">Izin/Cuti</option>
-                                    </>
-                                ) : reportType === "logbook" ? (
-                                    <>
-                                        <option value="pending">Menunggu</option>
-                                        <option value="approved">Disetujui</option>
-                                        <option value="rejected">Ditolak</option>
-                                        <option value="not_filled">Tidak Mengisi</option>
-                                    </>
-                                ) : (
-                                    <>
-                                        <option value="approved">
-                                            Approved
-                                        </option>
-                                        <option value="pending">Pending</option>
-                                        <option value="rejected">
-                                            Rejected
-                                        </option>
-                                    </>
-                                )}
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Conditional Filter — Tipe Kerja khusus presensi */}
-                    {reportType === "attendance" && (
-                        <div className="row g-3 mb-3">
-                            <div className="col-md-4">
-                                <label className="form-label fw-bold">
-                                    <i className="bi bi-briefcase me-2"></i>
-                                    Tipe Kerja
-                                </label>
-                                <select
-                                    className="form-select"
-                                    value={filters.work_type}
-                                    onChange={(e) =>
-                                        setFilters({
-                                            ...filters,
-                                            work_type: e.target.value,
-                                        })
-                                    }
-                                >
-                                    <option value="">Semua Tipe</option>
-                                    <option value="onsite">Onsite</option>
-                                    <option value="offsite">Offsite</option>
-                                </select>
-                            </div>
-                            <div className="col-md-4">
-                                <label className="form-label fw-bold">
-                                    <i className="bi bi-patch-check me-2"></i>
-                                    Status Approval Presensi
-                                </label>
-                                <select
-                                    className="form-select"
-                                    value={filters.attendance_approval_status}
-                                    onChange={(e) =>
-                                        setFilters({
-                                            ...filters,
-                                            attendance_approval_status: e.target.value,
-                                        })
-                                    }
-                                >
-                                    <option value="">Semua Approval</option>
-                                    <option value="pending">Menunggu Approval</option>
-                                    <option value="approved">Disetujui</option>
-                                    <option value="rejected">Ditolak</option>
-                                </select>
-                            </div>
-                        </div>
+                    {reportType !== "summary" && (
+                        <AdvancedFilters
+                            filters={filters}
+                            setFilters={setFilters}
+                            selectedUserIds={selectedUserIds}
+                            setSelectedUserIds={setSelectedUserIds}
+                            showDivision={true}
+                            showPeriode={true}
+                            showUser={true}
+                            showSumberMagang={true}
+                            role="admin"
+                            externalUsers={users}
+                            externalDivisions={divisions}
+                        />
                     )}
 
-                    {reportType === "leave" && (
-                        <div className="row g-3 mb-3">
+                    {/* Status/Type Filters based on Report Type */}
+                    <div className="row g-3 mb-3">
+                        {reportType === "attendance" && (
+                            <>
+                                <div className="col-md-4">
+                                    <label className="form-label fw-bold">
+                                        <i className="bi bi-clock-history me-2"></i>
+                                        Status Kehadiran
+                                    </label>
+                                    <select
+                                        className="form-select"
+                                        value={filters.status}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                status: e.target.value,
+                                            })
+                                        }
+                                    >
+                                        <option value="">Semua Status</option>
+                                        <option value="present">Hadir Tepat Waktu</option>
+                                        <option value="late">Terlambat</option>
+                                        <option value="early">Pulang Cepat</option>
+                                        <option value="absent">Tidak Hadir</option>
+                                    </select>
+                                </div>
+                                <div className="col-md-4">
+                                    <label className="form-label fw-bold">
+                                        <i className="bi bi-building me-2"></i>
+                                        Tipe Kerja
+                                    </label>
+                                    <select
+                                        className="form-select"
+                                        value={filters.work_type}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                work_type: e.target.value,
+                                            })
+                                        }
+                                    >
+                                        <option value="">Semua Tipe</option>
+                                        <option value="onsite">ONSITE</option>
+                                        <option value="offsite">OFFSITE</option>
+                                    </select>
+                                </div>
+                                <div className="col-md-4">
+                                    <label className="form-label fw-bold">
+                                        <i className="bi bi-check2-circle me-2"></i>
+                                        Status Approval Presensi
+                                    </label>
+                                    <select
+                                        className="form-select"
+                                        value={filters.attendance_approval_status}
+                                        onChange={(e) =>
+                                            setFilters({
+                                                ...filters,
+                                                attendance_approval_status: e.target.value,
+                                            })
+                                        }
+                                    >
+                                        <option value="">Semua Status</option>
+                                        <option value="approved">Approved</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="rejected">Rejected</option>
+                                    </select>
+                                </div>
+                            </>
+                        )}
+                        {(reportType === "logbook" || reportType === "leave") && (
                             <div className="col-md-4">
                                 <label className="form-label fw-bold">
-                                    <i className="bi bi-clipboard-check me-2"></i>
-                                    Tipe Izin
+                                    <i className="bi bi-check2-circle me-2"></i>
+                                    Status Approval
+                                </label>
+                                <select
+                                    className="form-select"
+                                    value={filters.approval_status}
+                                    onChange={(e) =>
+                                        setFilters({
+                                            ...filters,
+                                            approval_status: e.target.value,
+                                        })
+                                    }
+                                >
+                                    <option value="">Semua Status</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                        )}
+                        {reportType === "leave" && (
+                            <div className="col-md-4">
+                                <label className="form-label fw-bold">
+                                    <i className="bi bi-tags me-2"></i>
+                                    Tipe Izin/Cuti
                                 </label>
                                 <select
                                     className="form-select"
@@ -1311,13 +796,15 @@ const AdminReports = () => {
                                         })
                                     }
                                 >
-                                    <option value="">Semua Tipe Izin</option>
-                                    <option value="izin_sakit">Izin Sakit</option>
-                                    <option value="izin_keperluan">Izin Keperluan</option>
+                                    <option value="">Semua Tipe</option>
+                                    <option value="izin">Izin</option>
+                                    <option value="sakit">Sakit</option>
+                                    <option value="cuti">Cuti</option>
                                 </select>
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
+
 
                     {/* Info: Summary report tidak support filter user spesifik */}
                     {reportType === "summary" && selectedUserIds.length > 0 && (
@@ -1415,7 +902,7 @@ const AdminReports = () => {
                                                             ? "bg-success"
                                                             : filters.status ===
                                                               "late"
-                                                            ? "bg-warning"
+                                                            ? "bg-warning text-dark"
                                                             : filters.status ===
                                                               "early"
                                                             ? "bg-info"
@@ -1445,7 +932,7 @@ const AdminReports = () => {
                                                             ? "bg-success"
                                                             : filters.approval_status ===
                                                               "pending"
-                                                            ? "bg-warning"
+                                                            ? "bg-warning text-dark"
                                                             : "bg-danger"
                                                     }`}
                                                 >
@@ -1570,7 +1057,7 @@ const AdminReports = () => {
                                             Izin/Cuti
                                             {reportData.data?.leaves?.length >
                                                 0 && (
-                                                <span className="badge bg-warning ms-2">
+                                                <span className="badge bg-warning text-dark ms-2">
                                                     {
                                                         reportData.data.leaves
                                                             .length
@@ -2280,7 +1767,7 @@ const AdminReports = () => {
                                                                                             item.type ===
                                                                                             "izin_sakit"
                                                                                                 ? "bg-danger"
-                                                                                                : "bg-warning"
+                                                                                                : "bg-warning text-dark"
                                                                                         } bg-opacity-10 text-${
                                                                                             item.type ===
                                                                                             "izin_sakit"

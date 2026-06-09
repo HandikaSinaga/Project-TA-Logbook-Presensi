@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { Container, Navbar, Nav, Dropdown, Badge } from "react-bootstrap";
+import { getStorageUser, clearStorage } from "../../../utils/storageHelper";
 import { logout } from "../../../services/authService";
 import toast from "react-hot-toast";
 
@@ -11,7 +12,7 @@ const SupervisorLayout = ({ children }) => {
     const [pendingCount, setPendingCount] = useState(0);
 
     useEffect(() => {
-        const userData = localStorage.getItem("user");
+        const userData = getStorageUser();
         if (userData) {
             try {
                 setUser(JSON.parse(userData));
@@ -28,8 +29,7 @@ const SupervisorLayout = ({ children }) => {
             navigate("/login", { replace: true });
         } catch (error) {
             console.error("Logout error:", error);
-            localStorage.removeItem("token");
-            localStorage.removeItem("user");
+            clearStorage();
             navigate("/login", { replace: true });
         }
     };

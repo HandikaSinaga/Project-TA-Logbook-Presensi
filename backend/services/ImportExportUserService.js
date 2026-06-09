@@ -13,8 +13,9 @@ class ImportExportUserService {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet("Template Import User");
 
-        // Define columns - 11 fields (Supervisor dipilih manual di form)
+        // Define columns - 20 fields (Supervisor dipilih manual di form)
         worksheet.columns = [
+            { header: "No", key: "no", width: 5 },
             { header: "Nama Lengkap*", key: "name", width: 25 },
             { header: "Email*", key: "email", width: 30 },
             { header: "Password*", key: "password", width: 15 },
@@ -42,56 +43,71 @@ class ImportExportUserService {
         headerRow.fill = {
             type: "pattern",
             pattern: "solid",
-            fgColor: { argb: "FF4472C4" },
+            fgColor: { argb: "FF2E75B6" },
+        };
+
+        // Add alternating row colors for example data
+        const addExampleRow = (data, rowIndex) => {
+            const row = worksheet.addRow(data);
+            if (rowIndex % 2 === 0) {
+                row.fill = {
+                    type: "pattern",
+                    pattern: "solid",
+                    fgColor: { argb: "FFF8F9FA" },
+                };
+            }
         };
         headerRow.alignment = { vertical: "middle", horizontal: "center" };
         headerRow.height = 25;
 
         // Add example rows with various format variations
-        worksheet.addRow({
+        addExampleRow({
+            no: 1,
             name: "Budi Santoso",
             email: "budi.santoso@example.com",
             password: "password123",
-            nip: "202401001",
-            position: "Frontend Developer",
+            nip: "198001012005011001",
+            position: "Senior Web Developer",
             phone: "081234567890",
-            address: "Jl. Merdeka No. 123, Jakarta Pusat",
+            address: "Jl. Sudirman No. 123, Jakarta",
             role: "user",
-            division: "IT",
+            division: "IT Development",
             periode: "2024-01",
             sumber_magang: "kampus",
             is_active: "aktif",
-        });
+        }, 2);
 
-        worksheet.addRow({
+        addExampleRow({
+            no: 2,
             name: "Siti Rahayu",
             email: "siti.rahayu@example.com",
             password: "secure456",
-            nip: "202401002",
-            position: "Manager",
-            phone: "081234567891",
-            address: "Jl. Sudirman No. 456, Bandung",
+            nip: "",
+            position: "Marketing Specialist",
+            phone: "+628987654321",
+            address: "Komp. Merdeka Blok A/5, Bandung",
             role: "Supervisor",
-            division: "HR",
-            periode: "2024-01",
+            division: "Marketing",
+            periode: "Angkatan 15",
             sumber_magang: "Pemerintah",
             is_active: "1",
-        });
+        }, 3);
 
-        worksheet.addRow({
+        addExampleRow({
+            no: 3,
             name: "Ahmad Wijaya",
             email: "ahmad.wijaya@example.com",
             password: "admin789",
-            nip: "",
-            position: "System Admin",
-            phone: "081234567892",
-            address: "Jl. Gatot Subroto No. 789, Surabaya",
-            role: "Admin",
+            nip: "199005152015041002",
+            position: "System Administrator",
+            phone: "085612349876",
+            address: "Jl. Diponegoro 45, Surabaya",
+            role: "ADMIN",
             division: "",
-            periode: "2024-01",
-            sumber_magang: "internal",
-            is_active: "nonaktif",
-        });
+            periode: "Q1-2024",
+            sumber_magang: "Swasta",
+            is_active: "true",
+        }, 4);
 
         // Add instruction sheet
         const instructionSheet = workbook.addWorksheet("Panduan");
@@ -102,6 +118,10 @@ class ImportExportUserService {
 
         const instructions = [
             {
+                field: "No",
+                description: "Nomor urut baris (opsional, hanya untuk referensi)",
+            },
+            {
                 field: "Nama Lengkap*",
                 description: "Nama lengkap user (wajib diisi)",
             },
@@ -111,13 +131,17 @@ class ImportExportUserService {
                     "Email user (wajib diisi, format email valid). PENTING: Jika email sudah ada di sistem = UPDATE data existing, jika email baru = INSERT user baru",
             },
             {
-                field: "Password*",
+                field: "Password",
                 description:
-                    "Password user (wajib diisi, min 6 karakter). TIPS: Untuk UPDATE user existing, isi 'password123' atau password apapun jika tidak ingin mengubah password lama. Password akan di-hash otomatis untuk user baru",
+                    "Password user (min 6 karakter). TIPS: Jika mengupdate user dan TIDAK INGIN mengubah password, KOSONGKAN kolom ini. Jika diisi, password akan diganti. Untuk user baru yang kosong, default-nya adalah 'password123'.",
             },
             {
                 field: "NIP",
                 description: "Nomor Induk Pegawai (opsional, bisa dikosongkan)",
+            },
+            {
+                field: "Jabatan",
+                description: "Jabatan atau posisi user (opsional)",
             },
             {
                 field: "Telepon",
@@ -130,7 +154,7 @@ class ImportExportUserService {
             {
                 field: "Role*",
                 description:
-                    "Role user: user, supervisor, atau admin. Fleksibel: bisa 'User', 'SPV', 'Administrator', 'Staff', 'Manager', dll (sistem auto-convert)",
+                    "Role user (wajib diisi). Hanya bisa diisi dengan: user, supervisor, atau admin.",
             },
             {
                 field: "Divisi",
@@ -153,6 +177,14 @@ class ImportExportUserService {
                     "Status user: aktif atau nonaktif (opsional, default: aktif). Fleksibel: bisa 'Aktif', '1', 'true', 'yes' untuk aktif | 'Nonaktif', '0', 'false', 'no' untuk nonaktif (sistem auto-convert)",
             },
             {
+                field: "Bio",
+                description: "Informasi profil atau biodata singkat user (opsional)",
+            },
+            {
+                field: "LinkedIn / Instagram / Telegram / GitHub / Twitter / Facebook",
+                description: "Tautan profil sosial media user (opsional). Anda dapat menyalin link URL atau meletakkan hyperlink secara langsung pada sel tersebut.",
+            },
+            {
                 field: "",
                 description: "",
             },
@@ -167,37 +199,42 @@ class ImportExportUserService {
             {
                 field: "📥 LANGKAH 1: Export Data",
                 description:
-                    "Di menu User Management, klik tombol 'Export Excel'. Pilih filter yang diinginkan (periode, role, divisi, dll) untuk mendapatkan data user yang ingin diedit. File Excel akan terdownload dengan data user existing.",
+                    "Di menu User Management, klik tombol 'Export Excel'.\n\nPilih filter yang diinginkan (periode, role, divisi, dll) untuk mendapatkan data user yang ingin diedit.\n\nFile Excel akan terdownload dengan data user existing.",
             },
             {
                 field: "📝 LANGKAH 2: Edit di Excel",
                 description:
-                    "Buka file Excel hasil export. Edit data yang ingin diubah LANGSUNG di file tersebut. PENTING: JANGAN ubah kolom Email karena Email adalah identifier untuk update data. Kolom yang bisa diedit: Nama Lengkap, NIP, Telepon, Alamat, Role, Divisi, Periode, Sumber Magang, Status. Simpan file setelah selesai edit.",
+                    "Buka file Excel hasil export. Edit data yang ingin diubah LANGSUNG di file tersebut.\n\nPENTING: JANGAN ubah kolom Email karena Email adalah identifier untuk update data.\n\nKolom yang bisa diedit: Nama Lengkap, NIP, Jabatan, Telepon, Alamat, Role, Divisi, Periode, Sumber Magang, Status, Bio, dan Tautan Sosial Media.\n\nSimpan file setelah selesai edit.",
             },
             {
                 field: "📤 LANGKAH 3: Import Kembali",
                 description:
-                    "Kembali ke menu User Management, klik tombol 'Import Excel'. Pilih file Excel yang sudah diedit. Sistem akan otomatis mendeteksi email yang sudah ada dan melakukan UPDATE data (bukan INSERT data baru). Tunggu proses selesai dan cek hasilnya.",
+                    "Kembali ke menu User Management, klik tombol 'Import Excel'.\n\nPilih file Excel yang sudah diedit. Sistem akan otomatis mendeteksi email yang sudah ada dan melakukan UPDATE data (bukan INSERT data baru).\n\nTunggu proses selesai dan cek hasilnya.",
+            },
+            {
+                field: "🔥 FITUR SMART IMPORT (BARU)",
+                description:
+                    "Sistem kini mengenali otomatis file hasil Export Excel!\n\nAnda tidak perlu menggunakan template khusus. Anda bisa langsung meng-export data, edit di dalam file export tersebut, lalu upload ulang file export tersebut tanpa memodifikasi nama kolom.\n\nSistem akan membaca judul kolom dengan cerdas.",
             },
             {
                 field: "✅ CONTOH KASUS EDIT MASSAL",
                 description:
-                    "KASUS 1 - Ubah divisi 50 user: Export user periode tertentu → Edit kolom 'Divisi' untuk 50 user sekaligus di Excel → Import kembali. KASUS 2 - Update periode batch: Export user tertentu → Edit kolom 'Periode' ke nilai baru → Import kembali. KASUS 3 - Ubah role beberapa user: Export user → Edit kolom 'Role' dari 'user' ke 'supervisor' → Import kembali. KASUS 4 - Update info kontak: Export user → Edit kolom 'Telepon' dan 'Alamat' → Import kembali.",
+                    "KASUS 1 - Ubah divisi 50 user:\nExport user periode tertentu → Edit kolom 'Divisi' untuk 50 user sekaligus di Excel → Import kembali.\n\nKASUS 2 - Update periode batch:\nExport user tertentu → Edit kolom 'Periode' ke nilai baru → Import kembali.\n\nKASUS 3 - Ubah role beberapa user:\nExport user → Edit kolom 'Role' dari 'user' ke 'supervisor' → Import kembali.\n\nKASUS 4 - Update info kontak:\nExport user → Edit kolom 'Telepon' dan 'Alamat' → Import kembali.",
             },
             {
                 field: "⚠️ HAL PENTING SAAT EDIT",
                 description:
-                    "1. JANGAN UBAH EMAIL - Email digunakan sebagai unique identifier untuk update. 2. Pastikan format data tetap sama (tidak ada karakter aneh). 3. Nama divisi harus PERSIS dengan yang ada di sistem (case-sensitive). 4. Untuk tidak ubah password existing, isi dengan 'password123' atau password dummy apapun. 5. Field bertanda * tetap WAJIB diisi meski ini adalah update. 6. Backup data sebelum import jika edit dalam jumlah besar.",
+                    "1. JANGAN UBAH EMAIL - Email digunakan sebagai unique identifier untuk update.\n2. Pastikan format data tetap sama (tidak ada karakter aneh).\n3. Nama divisi harus PERSIS dengan yang ada di sistem (case-sensitive).\n4. Untuk tidak mengubah password existing, KOSONGKAN saja kolom Password.\n5. Field bertanda * tetap WAJIB diisi meski ini adalah update.\n6. Backup data sebelum import jika edit dalam jumlah besar.",
             },
             {
                 field: "💡 TIPS EFISIENSI",
                 description:
-                    "1. Gunakan filter Excel untuk mengelompokkan data yang akan diedit. 2. Gunakan Fill Down (Ctrl+D) untuk mengisi nilai yang sama ke banyak cell sekaligus. 3. Gunakan Find & Replace (Ctrl+H) untuk mengganti nilai secara massal. 4. Copy-paste dari Excel lain juga bisa dilakukan (format tetap terjaga). 5. Bisa edit sebagian user saja, tidak harus semua data dalam file export. 6. Hapus baris user yang tidak ingin diedit untuk mempercepat proses import.",
+                    "1. Gunakan filter Excel untuk mengelompokkan data yang akan diedit.\n2. Gunakan Fill Down (Ctrl+D) untuk mengisi nilai yang sama ke banyak cell sekaligus.\n3. Gunakan Find & Replace (Ctrl+H) untuk mengganti nilai secara massal.\n4. Copy-paste dari Excel lain juga bisa dilakukan (format tetap terjaga).\n5. Bisa edit sebagian user saja, tidak harus semua data dalam file export.\n6. Hapus baris user yang tidak ingin diedit untuk mempercepat proses import.",
             },
             {
                 field: "🔄 ALUR LENGKAP",
                 description:
-                    "Export (filter periode/divisi) → Buka file Excel → Edit data yang diperlukan (jangan ubah email) → Save file → Import Excel → Sistem deteksi email existing → Update data otomatis → Selesai! Lebih cepat dari edit satu-satu di form.",
+                    "Export (filter periode/divisi) → Buka file Excel → Edit data yang diperlukan (jangan ubah email) → Save file → Import Excel → Sistem deteksi email existing → Update data otomatis → Selesai!\n\nLebih cepat dari edit satu-satu di form.",
             },
             {
                 field: "",
@@ -206,7 +243,7 @@ class ImportExportUserService {
             {
                 field: "═══ TIPS & CATATAN UMUM ═══",
                 description:
-                    "✓ Field bertanda * WAJIB diisi | ✓ Email sama = UPDATE data existing | ✓ Email baru = INSERT user baru | ✓ Role, Sumber Magang & Status: case-insensitive & typo-tolerant | ✓ Nama Divisi: exact match atau kosongkan | ✓ Password: untuk update user, isi 'password123' jika tidak ingin ubah password | ✓ NIP, Phone, Address: optional | ✓ Supervisor: set manual di Edit User | ✓ Edit massal: Export → Edit Excel → Import kembali",
+                    "✓ Field bertanda * WAJIB diisi\n✓ Email sama = UPDATE data existing\n✓ Email baru = INSERT user baru\n✓ Role, Sumber Magang & Status: case-insensitive & typo-tolerant\n✓ Nama Divisi: exact match atau kosongkan\n✓ Password: Kosongkan jika tidak ingin update password user lama\n✓ NIP, Phone, Address: optional\n✓ Supervisor: set manual di Edit User\n✓ Edit massal: Export → Edit Excel → Import kembali",
             },
         ];
 
@@ -218,19 +255,29 @@ class ImportExportUserService {
         instHeaderRow.fill = {
             type: "pattern",
             pattern: "solid",
-            fgColor: { argb: "FFD9E1F2" },
+            fgColor: { argb: "FF2E75B6" },
         };
 
-        // Style section headers with different colors
-        const sectionRows = [13, 15, 16, 17, 18, 19, 20, 21, 23];
-        sectionRows.forEach((rowNum) => {
-            const row = instructionSheet.getRow(rowNum);
-            row.font = { bold: true, color: { argb: "FF000000" } };
-            row.fill = {
-                type: "pattern",
-                pattern: "solid",
-                fgColor: { argb: "FFFFD966" }, // Light orange for section headers
-            };
+        // Style section headers dynamically
+        instructionSheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return; // skip main header
+            
+            const cellValue = row.getCell(1).value;
+            if (cellValue && typeof cellValue === 'string') {
+                const text = cellValue.trim();
+                const isSectionHeader = [
+                    "═══", "📥", "📝", "📤", "🔥", "✅", "⚠️", "💡", "🔄"
+                ].some(prefix => text.startsWith(prefix));
+
+                if (isSectionHeader) {
+                    row.font = { bold: true, color: { argb: "FF000000" } };
+                    row.fill = {
+                        type: "pattern",
+                        pattern: "solid",
+                        fgColor: { argb: "FFFFD966" }, // Light orange for section headers
+                    };
+                }
+            }
         });
 
         // Make description column wrap text
@@ -299,6 +346,7 @@ class ImportExportUserService {
                     "name",
                     "email",
                     "nip",
+                    "position",
                     "phone",
                     "address",
                     "role",
@@ -310,6 +358,13 @@ class ImportExportUserService {
                     "is_active",
                     "created_at",
                     "updated_at",
+                    "bio",
+                    "linkedin",
+                    "instagram",
+                    "telegram",
+                    "github",
+                    "twitter",
+                    "facebook",
                 ],
                 order: [["name", "ASC"]],
             });
@@ -504,12 +559,11 @@ class ImportExportUserService {
             const workbook = new ExcelJS.Workbook();
             await workbook.xlsx.load(fileBuffer);
 
-            const worksheet = workbook.getWorksheet("Template Import User");
+            const worksheet = workbook.getWorksheet(1); // Read first sheet
             if (!worksheet) {
                 return {
                     success: false,
-                    message:
-                        "Sheet 'Template Import User' tidak ditemukan dalam file Excel",
+                    message: "Sheet tidak ditemukan dalam file Excel",
                 };
             }
 
@@ -630,55 +684,99 @@ class ImportExportUserService {
                 return true;
             };
 
-            // Skip header row and example rows
+            // Helper function to extract cell value safely
+            const getCellValue = (cell) => {
+                if (!cell || cell.value == null) return null;
+                if (typeof cell.value === 'object') {
+                    if (cell.value.hyperlink) return cell.value.hyperlink.toString().trim();
+                    if (cell.value.text) return cell.value.text.toString().trim();
+                    if (cell.value.richText) return cell.value.richText.map(rt => rt.text).join('').trim();
+                    return JSON.stringify(cell.value);
+                }
+                return cell.value.toString().trim();
+            };
+
+            // Map headers dynamically so users can upload Exported table directly
+            const headerMap = {};
+            const headerRow = worksheet.getRow(1);
+            headerRow.eachCell((cell, colNumber) => {
+                if (cell.value) {
+                    let text = cell.value.toString().toLowerCase().trim();
+                    text = text.replace(/\*/g, '').replace(/\(opsional\)/g, '').trim();
+                    headerMap[text] = colNumber;
+                }
+            });
+
+            // Helper to get column index by possible header names, with fallback to default template index
+            const getCol = (possibleNames, defaultCol) => {
+                for (const name of possibleNames) {
+                    if (headerMap[name]) return headerMap[name];
+                }
+                return defaultCol;
+            };
+
+            const colName = getCol(['nama lengkap', 'nama'], 2);
+            const colEmail = getCol(['email'], 3);
+            const colPassword = getCol(['password'], 4);
+            const colNip = getCol(['nip'], 5);
+            const colPosition = getCol(['jabatan', 'posisi'], 6);
+            const colPhone = getCol(['telepon', 'no. hp', 'no telepon'], 7);
+            const colAddress = getCol(['alamat'], 8);
+            const colRole = getCol(['role', 'peran'], 9);
+            const colDivision = getCol(['divisi', 'bagian'], 10);
+            const colPeriode = getCol(['periode', 'batch'], 11);
+            const colSumberMagang = getCol(['sumber magang', 'sumber'], 12);
+            const colStatus = getCol(['status', 'status aktif', 'status user'], 13);
+            const colBio = getCol(['bio', 'biografi'], 14);
+            const colLinkedin = getCol(['linkedin'], 15);
+            const colInstagram = getCol(['instagram', 'ig'], 16);
+            const colTelegram = getCol(['telegram', 'tg'], 17);
+            const colGithub = getCol(['github'], 18);
+            const colTwitter = getCol(['twitter', 'x'], 19);
+            const colFacebook = getCol(['facebook', 'fb'], 20);
+
+            // Skip header row
             let rowNumber = 1;
             worksheet.eachRow((row, rowIndex) => {
                 if (rowIndex <= 1) return; // Skip header
 
                 rowNumber = rowIndex;
 
-                const rawSumberMagang = row
-                    .getCell(11)
-                    .value?.toString()
-                    .trim();
-                const normalizedSumberMagang =
-                    normalizeSumberMagang(rawSumberMagang);
+                const rawSumberMagang = getCellValue(row.getCell(colSumberMagang));
+                const normalizedSumberMagang = normalizeSumberMagang(rawSumberMagang);
 
-                const rawRole = row.getCell(8).value?.toString().trim();
+                const rawRole = getCellValue(row.getCell(colRole));
                 const normalizedRole = normalizeRole(rawRole);
 
-                const rawStatus = row.getCell(12).value?.toString().trim();
+                const rawStatus = getCellValue(row.getCell(colStatus));
                 const normalizedStatus = normalizeStatus(rawStatus);
 
                 const rowData = {
-                    name: row.getCell(1).value?.toString().trim(),
-                    email: row.getCell(2).value?.toString().trim(),
-                    password: row.getCell(3).value?.toString().trim(),
-                    nip: row.getCell(4).value?.toString().trim(),
-                    position: row.getCell(5).value?.toString().trim() || null,
-                    phone: row.getCell(6).value?.toString().trim(),
-                    address: row.getCell(7).value?.toString().trim(),
+                    name: getCellValue(row.getCell(colName)),
+                    email: getCellValue(row.getCell(colEmail)),
+                    password: getCellValue(row.getCell(colPassword)),
+                    nip: getCellValue(row.getCell(colNip)),
+                    position: getCellValue(row.getCell(colPosition)),
+                    phone: getCellValue(row.getCell(colPhone)),
+                    address: getCellValue(row.getCell(colAddress)),
                     role: normalizedRole,
-                    raw_role: rawRole, // Keep original for error messages
-                    division: row.getCell(9).value?.toString().trim(),
-                    periode: row.getCell(10).value?.toString().trim(),
+                    division: getCellValue(row.getCell(colDivision)),
+                    periode: getCellValue(row.getCell(colPeriode)),
                     sumber_magang: normalizedSumberMagang,
-                    raw_sumber_magang: rawSumberMagang, // Keep original for error messages
                     is_active: normalizedStatus,
-                    bio: row.getCell(13).value?.toString().trim() || null,
-                    linkedin: row.getCell(14).value?.toString().trim() || null,
-                    instagram: row.getCell(15).value?.toString().trim() || null,
-                    telegram: row.getCell(16).value?.toString().trim() || null,
-                    github: row.getCell(17).value?.toString().trim() || null,
-                    twitter: row.getCell(18).value?.toString().trim() || null,
-                    facebook: row.getCell(19).value?.toString().trim() || null,
+                    bio: getCellValue(row.getCell(colBio)),
+                    linkedin: getCellValue(row.getCell(colLinkedin)),
+                    instagram: getCellValue(row.getCell(colInstagram)),
+                    telegram: getCellValue(row.getCell(colTelegram)),
+                    github: getCellValue(row.getCell(colGithub)),
+                    twitter: getCellValue(row.getCell(colTwitter)),
+                    facebook: getCellValue(row.getCell(colFacebook)),
                 };
 
                 // Skip empty rows
                 if (
                     !rowData.name &&
                     !rowData.email &&
-                    !rowData.password &&
                     !rowData.role
                 ) {
                     return;
@@ -697,36 +795,27 @@ class ImportExportUserService {
                     rowErrors.push("Format email tidak valid");
                 }
 
-                if (!rowData.password) {
-                    rowErrors.push("Password wajib diisi");
-                } else if (rowData.password.length < 6) {
+                // Password check ONLY if provided
+                if (rowData.password && rowData.password.length < 6) {
                     rowErrors.push("Password minimal 6 karakter");
                 }
 
-                if (!rawRole || !rowData.role) {
-                    if (!rawRole) {
-                        rowErrors.push("Role wajib diisi");
-                    } else {
-                        rowErrors.push(
-                            `Role '${rawRole}' tidak valid. Gunakan: user, supervisor, admin (atau variasi seperti Staff, SPV, Administrator)`
-                        );
-                    }
+                if (!rowData.role) {
+                    rowErrors.push(
+                        `Role '${rawRole}' tidak valid. Gunakan: user, supervisor, admin`
+                    );
                 }
 
                 if (!rowData.periode) {
                     rowErrors.push(
-                        "Periode/Batch wajib diisi (contoh: 2024-01, Angkatan 15)"
+                        "Periode/Batch wajib diisi"
                     );
                 }
 
-                if (!rawSumberMagang || !rowData.sumber_magang) {
-                    if (!rawSumberMagang) {
-                        rowErrors.push("Sumber magang wajib diisi");
-                    } else {
-                        rowErrors.push(
-                            `Sumber magang '${rawSumberMagang}' tidak valid. Gunakan: kampus, pemerintah, swasta, internal, umum (atau variasi seperti Campus, Government, Private)`
-                        );
-                    }
+                if (!rowData.sumber_magang) {
+                    rowErrors.push(
+                        `Sumber magang '${rawSumberMagang}' tidak valid.`
+                    );
                 }
 
                 // Validate division if provided
@@ -736,11 +825,8 @@ class ImportExportUserService {
                         rowData.division.toLowerCase()
                     );
                     if (!divisionId) {
-                        const availableDivisions = Array.from(
-                            divisionMap.keys()
-                        ).join(", ");
                         rowErrors.push(
-                            `Divisi '${rowData.division}' tidak ditemukan. Divisi tersedia: ${availableDivisions}`
+                            `Divisi '${rowData.division}' tidak ditemukan.`
                         );
                     }
                 }
@@ -753,29 +839,7 @@ class ImportExportUserService {
                         errors: rowErrors,
                     });
                 } else {
-                    users.push({
-                        name: rowData.name,
-                        email: rowData.email,
-                        password: rowData.password,
-                        nip: rowData.nip || null,
-                        phone: rowData.phone || null,
-                        address: rowData.address || null,
-                        role: rowData.role,
-                        division_id: divisionId,
-                        periode: rowData.periode,
-                        sumber_magang: rowData.sumber_magang,
-                        supervisor_id: null,
-                        is_active_periode: true,
-                        is_active: rowData.is_active,
-                        position: rowData.position,
-                        bio: rowData.bio,
-                        linkedin: rowData.linkedin,
-                        instagram: rowData.instagram,
-                        telegram: rowData.telegram,
-                        github: rowData.github,
-                        twitter: rowData.twitter,
-                        facebook: rowData.facebook,
-                    });
+                    users.push({ ...rowData, division_id: divisionId });
                 }
             });
 
@@ -824,8 +888,8 @@ class ImportExportUserService {
                     // UPDATE logic
                     const updateData = { ...userData };
                     
-                    // If password is dummy/placeholder, don't update it
-                    if (updateData.password === "password123" || !updateData.password) {
+                    // If password is blank or a placeholder, don't update it
+                    if (!updateData.password || updateData.password === "password123" || updateData.password === "********") {
                         delete updateData.password;
                     } else {
                         updateData.password = await bcrypt.hash(updateData.password, 10);

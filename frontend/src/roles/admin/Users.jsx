@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import { API_URL, getAvatarUrl } from "../../utils/Constant";
 import toast from "react-hot-toast";
+import AdvancedFilters from "../../components/common/AdvancedFilters";
 
 const AdminUsers = () => {
     const [loading, setLoading] = useState(true);
@@ -712,14 +713,40 @@ const AdminUsers = () => {
                         <i className="bi bi-funnel me-2"></i>
                         Filter Data
                     </h6>
+                    {/* Advanced Filters */}
+                    <AdvancedFilters
+                        filters={filters}
+                        setFilters={(newFilters) => {
+                            if (typeof newFilters === "function") {
+                                setFilters((prev) => {
+                                    const next = newFilters(prev);
+                                    return { ...prev, ...next };
+                                });
+                            } else {
+                                setFilters((prev) => ({ ...prev, ...newFilters }));
+                            }
+                            setCurrentPage(1);
+                        }}
+                        selectedUserIds={[]}
+                        setSelectedUserIds={() => {}}
+                        showDivision={true}
+                        showPeriode={true}
+                        showUser={false}
+                        showSumberMagang={true}
+                        role="admin"
+                        externalUsers={users}
+                        externalDivisions={divisions}
+                    />
+
+                    {/* Additional Filters */}
                     <div className="row g-3">
-                        <div className="col-md-3">
+                        <div className="col-md-4">
                             <label className="form-label small fw-semibold">
                                 Pencarian
                             </label>
                             <input
                                 type="text"
-                                className="form-control form-control-sm"
+                                className="form-control"
                                 placeholder="Cari nama, email, NIP..."
                                 value={filters.search}
                                 onChange={(e) =>
@@ -727,78 +754,12 @@ const AdminUsers = () => {
                                 }
                             />
                         </div>
-                        <div className="col-md-2">
-                            <label className="form-label small fw-semibold">
-                                Sumber Magang
-                            </label>
-                            <select
-                                className="form-select form-select-sm"
-                                value={filters.sumber_magang}
-                                onChange={(e) =>
-                                    handleFilterChange(
-                                        "sumber_magang",
-                                        e.target.value,
-                                    )
-                                }
-                            >
-                                <option value="">Semua Sumber</option>
-                                <option value="kampus">Kampus</option>
-                                <option value="pemerintah">Pemerintah</option>
-                                <option value="swasta">Swasta</option>
-                                <option value="internal">Internal</option>
-                                <option value="umum">Umum</option>
-                            </select>
-                        </div>
-                        <div className="col-md-2">
-                            <label className="form-label small fw-semibold">
-                                Periode/Batch
-                            </label>
-                            <select
-                                className="form-select form-select-sm"
-                                value={filters.periode}
-                                onChange={(e) =>
-                                    handleFilterChange(
-                                        "periode",
-                                        e.target.value,
-                                    )
-                                }
-                            >
-                                <option value="">Semua Periode</option>
-                                {uniquePeriodes.map((periode) => (
-                                    <option key={periode} value={periode}>
-                                        {periode}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="col-md-2">
-                            <label className="form-label small fw-semibold">
-                                Divisi
-                            </label>
-                            <select
-                                className="form-select form-select-sm"
-                                value={filters.division_id}
-                                onChange={(e) =>
-                                    handleFilterChange(
-                                        "division_id",
-                                        e.target.value,
-                                    )
-                                }
-                            >
-                                <option value="">Semua Divisi</option>
-                                {divisions.map((div) => (
-                                    <option key={div.id} value={div.id}>
-                                        {div.name}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="col-md-2">
+                        <div className="col-md-4">
                             <label className="form-label small fw-semibold">
                                 Role
                             </label>
                             <select
-                                className="form-select form-select-sm"
+                                className="form-select"
                                 value={filters.role}
                                 onChange={(e) =>
                                     handleFilterChange("role", e.target.value)
@@ -810,12 +771,12 @@ const AdminUsers = () => {
                                 <option value="admin">Admin</option>
                             </select>
                         </div>
-                        <div className="col-md-1">
+                        <div className="col-md-4">
                             <label className="form-label small fw-semibold">
                                 Status
                             </label>
                             <select
-                                className="form-select form-select-sm"
+                                className="form-select"
                                 value={filters.is_active}
                                 onChange={(e) =>
                                     handleFilterChange(
@@ -933,7 +894,7 @@ const AdminUsers = () => {
                                                                     ? "bg-danger"
                                                                     : user.role ===
                                                                         "supervisor"
-                                                                      ? "bg-warning"
+                                                                      ? "bg-warning text-dark"
                                                                       : "bg-primary"
                                                             }`}
                                                         >
@@ -2016,27 +1977,27 @@ const AdminUsers = () => {
                                         Panduan Import
                                     </h6>
                                     <ul className="mb-0">
-                                        <li className="mb-2">
+                                        <li className="mb-3">
                                             <i className="bi bi-1-circle me-2 text-info"></i>
                                             Download template Excel terlebih
                                             dahulu
                                         </li>
-                                        <li className="mb-2">
+                                        <li className="mb-3">
                                             <i className="bi bi-2-circle me-2 text-info"></i>
                                             Isi data sesuai format template
                                         </li>
-                                        <li className="mb-2">
+                                        <li className="mb-3">
                                             <i className="bi bi-3-circle me-2 text-info"></i>
                                             <strong>Field Wajib:</strong> Nama,
                                             Email, Password, Role
                                         </li>
-                                        <li className="mb-2">
+                                        <li className="mb-3">
                                             <i className="bi bi-4-circle me-2 text-info"></i>
                                             <strong>Field Opsional:</strong>{" "}
                                             NIP, Phone, Division, Periode,
                                             Sumber Magang, Jenis Izin
                                         </li>
-                                        <li>
+                                        <li className="mb-3">
                                             <i className="bi bi-5-circle me-2 text-info"></i>
                                             Format file: <strong>.xlsx</strong>{" "}
                                             atau <strong>.xls</strong>
@@ -2505,7 +2466,7 @@ const AdminUsers = () => {
                                                     userToDelete.role === "admin"
                                                         ? "bg-danger"
                                                         : userToDelete.role === "supervisor"
-                                                        ? "bg-warning"
+                                                        ? "bg-warning text-dark"
                                                         : "bg-primary"
                                                 }`}>
                                                     {userToDelete.role}

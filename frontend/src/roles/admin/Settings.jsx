@@ -397,7 +397,7 @@ const AdminSettings = () => {
                                             <strong className="d-block mb-2">
                                                 Apa itu Window Check-in?
                                             </strong>
-                                            <p className="mb-2">
+                                            <p className="mb-3">
                                                 Window check-in adalah rentang
                                                 waktu dimana karyawan{" "}
                                                 <strong>diizinkan</strong>{" "}
@@ -408,7 +408,7 @@ const AdminSettings = () => {
                                                 error.
                                             </p>
                                             <ul className="mb-0 ps-3">
-                                                <li>
+                                                <li className="mb-3">
                                                     Sebelum{" "}
                                                     <strong>
                                                         {
@@ -421,7 +421,7 @@ const AdminSettings = () => {
                                                     </span>{" "}
                                                     - "Check-in belum dibuka"
                                                 </li>
-                                                <li>
+                                                <li className="mb-3">
                                                     Antara{" "}
                                                     <strong>
                                                         {
@@ -438,7 +438,7 @@ const AdminSettings = () => {
                                                     </span>{" "}
                                                     (bisa on-time atau late)
                                                 </li>
-                                                <li>
+                                                <li className="mb-2">
                                                     Setelah{" "}
                                                     <strong>
                                                         {
@@ -515,7 +515,7 @@ const AdminSettings = () => {
                                             <strong className="d-block mb-2">
                                                 Apa itu Window Check-out?
                                             </strong>
-                                            <p className="mb-2">
+                                            <p className="mb-3">
                                                 Window check-out adalah rentang
                                                 waktu dimana karyawan{" "}
                                                 <strong>diizinkan</strong>{" "}
@@ -524,7 +524,7 @@ const AdminSettings = () => {
                                                 memiliki validasi lebih ketat:
                                             </p>
                                             <ul className="mb-0 ps-3">
-                                                <li>
+                                                <li className="mb-3">
                                                     Sebelum{" "}
                                                     <strong>
                                                         {
@@ -538,7 +538,7 @@ const AdminSettings = () => {
                                                     - "Belum waktunya, bisa
                                                     dalam X menit lagi"
                                                 </li>
-                                                <li>
+                                                <li className="mb-3">
                                                     Antara{" "}
                                                     <strong>
                                                         {
@@ -556,7 +556,7 @@ const AdminSettings = () => {
                                                     (bisa on-time atau early
                                                     dengan warning)
                                                 </li>
-                                                <li>
+                                                <li className="mb-2">
                                                     Setelah{" "}
                                                     <strong>
                                                         {
@@ -564,7 +564,7 @@ const AdminSettings = () => {
                                                         }
                                                     </strong>
                                                     : Check-out{" "}
-                                                    <span className="badge bg-warning">
+                                                    <span className="badge bg-warning text-dark">
                                                         DIIZINKAN
                                                     </span>{" "}
                                                     tapi dengan warning

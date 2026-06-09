@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
+import { getStorageToken, getStorageUserString, updateStorageUser, clearStorage, setAuthData } from "../utils/storageHelper";
 
 const AuthContext = createContext(null);
 
@@ -14,8 +15,8 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuth = () => {
         try {
-            const token = localStorage.getItem("token");
-            const userData = localStorage.getItem("user");
+            const token = getStorageToken();
+            const userData = getStorageUserString();
 
             if (token && userData) {
                 const decoded = jwtDecode(token);
@@ -35,20 +36,18 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const login = (token, userData) => {
-        localStorage.setItem("token", token);
-        localStorage.setItem("user", JSON.stringify(userData));
+    const login = (token, userData, remember = true) => {
+        setAuthData(token, userData, remember);
         setUser(userData);
     };
 
     const logout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        clearStorage();
         setUser(null);
     };
 
     const updateUser = (userData) => {
-        localStorage.setItem("user", JSON.stringify(userData));
+        updateStorageUser(userData);
         setUser(userData);
     };
 

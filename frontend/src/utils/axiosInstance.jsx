@@ -1,5 +1,6 @@
 import axios from "axios";
 import { API_URL } from "./Constant";
+import { getStorageToken, updateStorageToken, clearStorage } from "./storageHelper";
 
 const axiosInstance = axios.create({
     baseURL: API_URL,
@@ -7,7 +8,7 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem("token");
+        const token = getStorageToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -20,7 +21,7 @@ axiosInstance.interceptors.request.use(
 
 const refreshAccessToken = async () => {
     try {
-        const oldToken = localStorage.getItem("token");
+        const oldToken = getStorageToken();
         const response = await axios.post(
             `${API_URL}/refresh`,
             { token: oldToken },
@@ -28,12 +29,12 @@ const refreshAccessToken = async () => {
         );
         const token = response.data.token;
 
-        localStorage.setItem("token", token);
+        updateStorageToken(token);
         console.log("token refreshed");
         return token;
     } catch (error) {
         console.error("Failed to refresh token", error);
-        localStorage.removeItem("token");
+        clearStorage();
         window.location.href = "/login";
         throw error;
     }
@@ -79,8 +80,7 @@ axiosInstance.interceptors.response.use(
                 originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
                 return axiosInstance(originalRequest);
             } catch (err) {
-                localStorage.removeItem("token");
-                localStorage.removeItem("user");
+                clearStorage();
                 window.location.href = "/login";
                 return Promise.reject(err);
             }
