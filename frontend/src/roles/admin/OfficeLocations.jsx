@@ -384,7 +384,10 @@ const OfficeLocations = () => {
         <div className="office-locations p-4">
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h2 className="mb-1">Manajemen Lokasi Kantor</h2>
+                    <h2 className="mb-1">
+                        <i className="bi bi-geo-alt-fill text-info me-2"></i>
+                        Manajemen Lokasi Kantor
+                    </h2>
                     <p className="text-muted mb-0">
                         Kelola WiFi dan GPS untuk deteksi ONSITE/OFFSITE
                     </p>
@@ -1133,7 +1136,7 @@ const OfficeLocations = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="modal-footer bg-light border-top">
+                                <div className="modal-footer border-top">
                                     <button
                                         type="button"
                                         className="btn btn-secondary px-4"
@@ -1216,7 +1219,7 @@ const OfficeLocations = () => {
                                     terdeteksi ONSITE di lokasi ini.
                                 </div>
                             </div>
-                            <div className="modal-footer bg-light border-top">
+                            <div className="modal-footer border-top">
                                 <button
                                     type="button"
                                     className="btn btn-secondary px-4"

@@ -63,7 +63,12 @@ class AttendanceController {
                 order: [["date", "DESC"]],
                 limit: limitNum,
                 offset: offset,
+                raw: true // Get raw data to easily modify it
             });
+
+            // Note: Holiday records are now properly generated and saved in the DB
+            // by AttendanceService and autoCheckoutScheduler, so we don't need to
+            // dynamically override them here anymore.
 
             const totalPages = Math.ceil(count / limitNum);
 
@@ -687,7 +692,35 @@ class AttendanceController {
 
             // Filter by status
             if (status && status !== "all") {
-                whereClause.status = status;
+                if (status === "holiday") {
+                    const holidayQuery = { is_active: true };
+                    if (whereClause.date) holidayQuery.date = whereClause.date;
+                    const holidays = await Holiday.findAll({ where: holidayQuery, raw: true });
+                    const holidayDates = holidays.map(h => h.date);
+                    
+                    if (holidayDates.length > 0) {
+                        whereClause.status = "absent";
+                        whereClause.date = whereClause.date 
+                            ? { [Op.and]: [whereClause.date, { [Op.in]: holidayDates }] }
+                            : { [Op.in]: holidayDates };
+                    } else {
+                        whereClause.status = "impossible_status_no_holiday_found";
+                    }
+                } else if (status === "absent") {
+                    const holidayQuery = { is_active: true };
+                    if (whereClause.date) holidayQuery.date = whereClause.date;
+                    const holidays = await Holiday.findAll({ where: holidayQuery, raw: true });
+                    const holidayDates = holidays.map(h => h.date);
+                    
+                    whereClause.status = "absent";
+                    if (holidayDates.length > 0) {
+                        whereClause.date = whereClause.date 
+                            ? { [Op.and]: [whereClause.date, { [Op.notIn]: holidayDates }] }
+                            : { [Op.notIn]: holidayDates };
+                    }
+                } else {
+                    whereClause.status = status;
+                }
             }
 
             // Filter by approval status if provided
@@ -709,7 +742,7 @@ class AttendanceController {
             });
 
             // Get paginated data
-            const attendances = await Attendance.findAll({
+            const attendancesRaw = await Attendance.findAll({
                 where: whereClause,
                 include: [
                     {
@@ -754,6 +787,11 @@ class AttendanceController {
                 limit: limitNum,
                 offset: offset,
             });
+
+            const attendances = attendancesRaw.map(a => a.toJSON());
+
+            // Note: Holiday records are now properly generated and saved in the DB
+            // by AttendanceService and autoCheckoutScheduler.
 
             const totalPages = Math.ceil(totalRecords / limitNum);
 
@@ -936,7 +974,35 @@ class AttendanceController {
             }
 
             if (status && status !== "all") {
-                whereClause.status = status;
+                if (status === "holiday") {
+                    const holidayQuery = { is_active: true };
+                    if (whereClause.date) holidayQuery.date = whereClause.date;
+                    const holidays = await Holiday.findAll({ where: holidayQuery, raw: true });
+                    const holidayDates = holidays.map(h => h.date);
+                    
+                    if (holidayDates.length > 0) {
+                        whereClause.status = "absent";
+                        whereClause.date = whereClause.date 
+                            ? { [Op.and]: [whereClause.date, { [Op.in]: holidayDates }] }
+                            : { [Op.in]: holidayDates };
+                    } else {
+                        whereClause.status = "impossible_status_no_holiday_found";
+                    }
+                } else if (status === "absent") {
+                    const holidayQuery = { is_active: true };
+                    if (whereClause.date) holidayQuery.date = whereClause.date;
+                    const holidays = await Holiday.findAll({ where: holidayQuery, raw: true });
+                    const holidayDates = holidays.map(h => h.date);
+                    
+                    whereClause.status = "absent";
+                    if (holidayDates.length > 0) {
+                        whereClause.date = whereClause.date 
+                            ? { [Op.and]: [whereClause.date, { [Op.notIn]: holidayDates }] }
+                            : { [Op.notIn]: holidayDates };
+                    }
+                } else {
+                    whereClause.status = status;
+                }
             }
 
             if (work_type && work_type !== "all") {
@@ -984,7 +1050,7 @@ class AttendanceController {
             });
 
             // Get paginated data
-            const attendances = await Attendance.findAll({
+            const attendancesRaw = await Attendance.findAll({
                 where: whereClause,
                 include: includeClause,
                 order: [
@@ -994,6 +1060,11 @@ class AttendanceController {
                 limit: limitNum,
                 offset: offset,
             });
+
+            const attendances = attendancesRaw.map(a => a.toJSON());
+
+            // Note: Holiday records are now properly generated and saved in the DB
+            // by AttendanceService and autoCheckoutScheduler.
 
             const totalPages = Math.ceil(totalRecords / limitNum);
 

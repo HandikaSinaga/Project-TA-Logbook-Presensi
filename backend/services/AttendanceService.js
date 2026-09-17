@@ -68,15 +68,15 @@ class AttendanceService {
                 
                 // If no record exists for this date
                 if (!existingDates.has(dateStr)) {
-                    // Check if it's a workday
-                    const { isWorkday } = await WorkCalendarService.isWorkday(current.toDate());
+                    // Check if it's a workday or holiday
+                    const { isWorkday, reason, holiday } = await WorkCalendarService.isWorkday(current.toDate());
                     
                     // Check if it's after user joined division
                     const isAfterJoin = user.division_assigned_at 
                         ? current.isSameOrAfter(moment(user.division_assigned_at).tz(TIMEZONE).startOf("day"))
                         : current.isSameOrAfter(moment(user.created_at).tz(TIMEZONE).startOf("day"));
 
-                    if (isWorkday && isAfterJoin) {
+                    if (isAfterJoin) {
                         // Check if user was on leave
                         const leave = await Leave.findOne({
                             where: {
@@ -88,14 +88,27 @@ class AttendanceService {
                         });
 
                         if (!leave) {
-                            absentRecords.push({
-                                user_id: userId,
-                                division_id: user.division_id,
-                                date: dateStr,
-                                status: "absent",
-                                notes: "Tanpa keterangan (Sistem Backfill)",
-                                approval_status: "approved"
-                            });
+                            if (isWorkday) {
+                                // Missing attendance on a normal workday
+                                absentRecords.push({
+                                    user_id: userId,
+                                    division_id: user.division_id,
+                                    date: dateStr,
+                                    status: "absent",
+                                    notes: "Tanpa keterangan (Sistem Backfill)",
+                                    approval_status: "approved"
+                                });
+                            } else if (reason === "holiday" && holiday) {
+                                // Missing attendance on a holiday, record it as holiday
+                                absentRecords.push({
+                                    user_id: userId,
+                                    division_id: user.division_id,
+                                    date: dateStr,
+                                    status: "holiday",
+                                    notes: `Hari Libur: ${holiday.name}`,
+                                    approval_status: "approved"
+                                });
+                            }
                         }
                     }
                 }

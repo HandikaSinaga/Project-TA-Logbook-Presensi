@@ -650,7 +650,7 @@ const ManageDivision = () => {
                                     Pastikan Anda yakin sebelum melanjutkan
                                 </p>
                             </div>
-                            <div className="modal-footer border-0 bg-light">
+                            <div className="modal-footer border-0">
                                 <Button
                                     variant="secondary"
                                     onClick={() => setShowRemoveModal(false)}
@@ -786,7 +786,7 @@ const ManageDivision = () => {
                                     setelah konfirmasi
                                 </p>
                             </div>
-                            <div className="modal-footer border-0 bg-light">
+                            <div className="modal-footer border-0">
                                 <Button
                                     variant="secondary"
                                     onClick={() => setShowAddModal(false)}
@@ -1125,7 +1125,7 @@ const ManageDivision = () => {
                                     </div>
                                 )}
                             </div>
-                            <div className="modal-footer border-0 bg-light">
+                            <div className="modal-footer border-0">
                                 <Button
                                     variant="secondary"
                                     onClick={() => setShowDetailModal(false)}

@@ -361,6 +361,10 @@ body {
 [data-theme="dark"] .landing-page .lead {
     color: #94a3b8 !important;
 }
+[data-theme="dark"] .landing-page .bg-gd .text-secondary,
+[data-theme="dark"] .landing-page .bg-gd .lead {
+    color: #ffffff !important;
+}
 
 [data-theme="dark"] footer.bg-dark {
     background-color: #020617 !important;

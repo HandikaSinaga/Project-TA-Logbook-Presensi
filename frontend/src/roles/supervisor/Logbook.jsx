@@ -814,7 +814,7 @@ const SupervisorLogbook = () => {
                         </Form.Text>
                     </Form.Group>
                 </Modal.Body>
-                <Modal.Footer className="border-0 bg-light">
+                <Modal.Footer className="border-0">
                     <Button
                         variant="secondary"
                         onClick={() => setShowRejectModal(false)}

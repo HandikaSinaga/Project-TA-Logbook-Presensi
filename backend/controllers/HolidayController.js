@@ -1,5 +1,6 @@
 import models from "../models/index.js";
 import { Op } from "sequelize";
+import HolidaySyncService from "../services/HolidaySyncService.js";
 
 const { Holiday, User } = models;
 
@@ -52,12 +53,9 @@ class HolidayController {
                 where.is_national = is_national === "true";
             }
 
-            // Filter by is_active
-            if (is_active !== undefined) {
-                where.is_active = is_active === "true";
-            } else {
-                // Default only show active holidays
-                where.is_active = true;
+            // Filter by is_national
+            if (is_national !== undefined) {
+                where.is_national = is_national === "true";
             }
 
             const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -393,12 +391,12 @@ class HolidayController {
                 });
             }
 
-            // Don't allow deleting national holidays (optional protection)
-            if (holiday.is_national) {
+            // Don't allow deleting national holidays UNLESS they were created manually
+            if (holiday.is_national && holiday.created_by === null) {
                 return res.status(403).json({
                     success: false,
                     message:
-                        "Hari libur nasional tidak dapat dihapus. Gunakan toggle active/inactive.",
+                        "Hari libur nasional hasil sinkronisasi otomatis tidak dapat dihapus.",
                 });
             }
 
@@ -532,6 +530,30 @@ class HolidayController {
                 success: false,
                 message: "Gagal import hari libur",
                 error: error.message,
+            });
+        }
+    }
+
+    // Manual sync trigger
+    static async syncHolidays(req, res) {
+        try {
+            const year = parseInt(req.body.year) || new Date().getFullYear();
+            
+            const createdCount = await HolidaySyncService.syncForYear(year);
+
+            return res.status(200).json({
+                success: true,
+                message: "Sinkronisasi hari libur berhasil.",
+                data: {
+                    year,
+                    created_count: createdCount
+                },
+            });
+        } catch (error) {
+            console.error("Error syncing holidays:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Terjadi kesalahan pada server saat sinkronisasi.",
             });
         }
     }

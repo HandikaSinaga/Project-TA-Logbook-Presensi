@@ -2,6 +2,7 @@ import models from "../models/index.js";
 import { Op } from "sequelize";
 import { getJakartaDate, getTodayJakarta } from "../utils/dateHelper.js";
 import LogbookService from "../services/LogbookService.js";
+import NotificationService from "../services/NotificationService.js";
 
 const { Logbook, User, Division } = models;
 
@@ -255,6 +256,10 @@ class LogbookController {
                 attachments: attachments || [],
                 status: "pending",
             });
+
+            // NOTE: No per-submit notification here.
+            // Supervisor will receive a daily digest email (every morning at 08:00)
+            // summarizing ALL pending logbooks at once — to avoid email spam.
 
             res.status(201).json({
                 success: true,
@@ -808,6 +813,13 @@ class LogbookController {
                 reviewed_at: new Date(),
             });
 
+            // Notify user (non-blocking)
+            try {
+                NotificationService.notifyLogbookProcessed(logbook, logbook.user, supervisor, "approved");
+            } catch (notifyErr) {
+                console.error("[LogbookController] Failed to notify user:", notifyErr);
+            }
+
             res.json({
                 success: true,
                 message: "Logbook approved successfully",
@@ -868,6 +880,13 @@ class LogbookController {
                 reviewed_at: new Date(),
                 review_notes: feedback,
             });
+
+            // Notify user (non-blocking)
+            try {
+                NotificationService.notifyLogbookProcessed(logbook, logbook.user, supervisor, "rejected");
+            } catch (notifyErr) {
+                console.error("[LogbookController] Failed to notify user:", notifyErr);
+            }
 
             res.json({
                 success: true,

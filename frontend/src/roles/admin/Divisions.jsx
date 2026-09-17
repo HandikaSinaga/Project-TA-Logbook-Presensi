@@ -801,12 +801,12 @@ const AdminDivisions = () => {
                             </div>
 
                             {/* Tabs Navigation */}
-                            <div className="bg-light border-bottom px-4 pt-3">
-                                <ul className="nav nav-tabs border-0" style={{ gap: '5px' }}>
+                            <div className="px-4 pt-3">
+                                <ul className="nav nav-tabs" style={{ gap: '5px' }}>
                                     <li className="nav-item">
                                         <button
                                             type="button"
-                                            className={`nav-link border-0 rounded-top ${activeTab === 'info' ? 'active bg-white fw-bold text-primary shadow-sm' : 'text-muted'}`}
+                                            className={`nav-link rounded-top ${activeTab === 'info' ? 'active fw-bold text-primary' : 'text-muted'}`}
                                             onClick={(e) => { e.preventDefault(); setActiveTab('info'); }}
                                             style={{ padding: '10px 20px', transition: 'all 0.2s' }}
                                         >
@@ -817,7 +817,7 @@ const AdminDivisions = () => {
                                     <li className="nav-item">
                                         <button
                                             type="button"
-                                            className={`nav-link border-0 rounded-top ${activeTab === 'supervisor' ? 'active bg-white fw-bold text-primary shadow-sm' : 'text-muted'}`}
+                                            className={`nav-link rounded-top ${activeTab === 'supervisor' ? 'active fw-bold text-primary' : 'text-muted'}`}
                                             onClick={(e) => { e.preventDefault(); setActiveTab('supervisor'); }}
                                             style={{ padding: '10px 20px', transition: 'all 0.2s' }}
                                         >
@@ -828,7 +828,7 @@ const AdminDivisions = () => {
                                     <li className="nav-item">
                                         <button
                                             type="button"
-                                            className={`nav-link border-0 rounded-top ${activeTab === 'members' ? 'active bg-white fw-bold text-primary shadow-sm' : 'text-muted'}`}
+                                            className={`nav-link rounded-top ${activeTab === 'members' ? 'active fw-bold text-primary' : 'text-muted'}`}
                                             onClick={(e) => { e.preventDefault(); setActiveTab('members'); }}
                                             style={{ padding: '10px 20px', transition: 'all 0.2s' }}
                                         >
@@ -845,7 +845,7 @@ const AdminDivisions = () => {
                             </div>
 
                             <div
-                                className="modal-body p-4 bg-white"
+                                className="modal-body p-4"
                                     ref={modalBodyRef}
                                 >
                                     {/* Tab Content: Info */}
@@ -857,7 +857,7 @@ const AdminDivisions = () => {
                                                 </label>
                                                 <input
                                                     type="text"
-                                                    className="form-control form-control-lg bg-light border-0 focus-ring focus-ring-primary"
+                                                    className="form-control form-control-lg focus-ring focus-ring-primary"
                                                     placeholder="Contoh: IT Department, HR"
                                                     value={formData.name}
                                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -871,7 +871,7 @@ const AdminDivisions = () => {
                                                 </label>
                                                 <input
                                                     type="text"
-                                                    className="form-control form-control-lg bg-light border-0 focus-ring focus-ring-primary"
+                                                    className="form-control form-control-lg focus-ring focus-ring-primary"
                                                     placeholder="Contoh: 2024-01"
                                                     value={formData.periode}
                                                     onChange={(e) => setFormData({ ...formData, periode: e.target.value })}
@@ -883,7 +883,7 @@ const AdminDivisions = () => {
                                                     Deskripsi
                                                 </label>
                                                 <textarea
-                                                    className="form-control bg-light border-0 focus-ring focus-ring-primary"
+                                                    className="form-control focus-ring focus-ring-primary"
                                                     rows="4"
                                                     placeholder="Jelaskan peran dan tanggung jawab divisi ini..."
                                                     value={formData.description}
@@ -928,7 +928,7 @@ const AdminDivisions = () => {
                                                 <i className="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
                                                 <input
                                                     type="text"
-                                                    className="form-control form-control-lg bg-light border-0 ps-5 focus-ring focus-ring-primary"
+                                                    className="form-control form-control-lg ps-5 focus-ring focus-ring-primary"
                                                     placeholder="Cari nama atau email supervisor..."
                                                     value={supervisorSearch}
                                                     onChange={(e) => setSupervisorSearch(e.target.value)}
@@ -1084,7 +1084,7 @@ const AdminDivisions = () => {
                                                     <i className="bi bi-search position-absolute text-muted" style={{ left: '15px', top: '50%', transform: 'translateY(-50%)' }}></i>
                                                     <input
                                                         type="text"
-                                                        className="form-control form-control-lg bg-light border-0 focus-ring focus-ring-primary ps-5"
+                                                        className="form-control form-control-lg focus-ring focus-ring-primary ps-5"
                                                         placeholder="Cari user yang belum memiliki divisi..."
                                                         value={userSearch}
                                                         onChange={(e) => setUserSearch(e.target.value)}
@@ -1139,7 +1139,7 @@ const AdminDivisions = () => {
                                         </div>
                                     )}
                                 </div>
-                                <div className="modal-footer bg-light border-top p-3 px-4 d-flex justify-content-end align-items-center">
+                                <div className="modal-footer border-top p-3 px-4 d-flex justify-content-end align-items-center">
                                     <button
                                         type="button"
                                         className="btn btn-light rounded-pill px-4 border me-2"
@@ -1238,7 +1238,7 @@ const AdminDivisions = () => {
                                         )}
                                 </div>
                             </div>
-                            <div className="modal-footer bg-light border-top">
+                            <div className="modal-footer border-top">
                                 <button
                                     type="button"
                                     className="btn btn-secondary px-4"

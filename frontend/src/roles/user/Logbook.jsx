@@ -1146,7 +1146,7 @@ const Logbook = () => {
                                         </label>
                                         <input
                                             type="date"
-                                            className="form-control form-control-lg bg-light"
+                                            className="form-control form-control-lg"
                                             value={formData.date}
                                             disabled={true}
                                             required
@@ -1250,7 +1250,7 @@ const Logbook = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="modal-footer bg-light border-0 flex-shrink-0">
+                                <div className="modal-footer border-0 flex-shrink-0">
                                     <button
                                         type="button"
                                         className="btn btn-secondary btn-lg"
@@ -1399,7 +1399,7 @@ const Logbook = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="modal-footer bg-light border-0">
+                            <div className="modal-footer border-0">
                                 <button
                                     type="button"
                                     className="btn btn-secondary"

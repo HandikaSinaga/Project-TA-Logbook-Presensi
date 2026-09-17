@@ -121,6 +121,12 @@ const defaultSettings = [
         description:
             "Izinkan karyawan check-in di akhir pekan (Sabtu/Minggu) jika bukan hari kerja",
     },
+    {
+        key: "allow_holiday_work",
+        value: "false",
+        type: "boolean",
+        description: "Izinkan presensi pada hari libur",
+    },
 ];
 
 async function seedSystemSettings() {

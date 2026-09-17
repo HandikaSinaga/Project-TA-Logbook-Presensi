@@ -2,6 +2,7 @@ import cron from "node-cron";
 import models from "../models/index.js";
 import { Op } from "sequelize";
 import { getJakartaDate, getTodayJakarta, formatDateToString } from "./dateHelper.js";
+import NotificationService from "../services/NotificationService.js";
 
 const { Attendance, AppSetting, User, Division, Leave, Holiday, Logbook } = models;
 
@@ -10,6 +11,7 @@ let cronJob = null;
 let midnightCronJob = null;
 let absenceCronJob = null;
 let logbookScheduler = null;
+let digestCronJob = null;
 
 
 /**
@@ -93,6 +95,9 @@ export const startAutoCheckoutScheduler = async () => {
 
         // Setup end-of-day logbook missing marker
         startLogbookMissingScheduler();
+
+        // Setup daily logbook digest email for supervisors
+        startLogbookDigestScheduler();
     } catch (error) {
         console.error("[AutoCheckout] Failed to start scheduler:", error);
     }
@@ -298,9 +303,14 @@ const markAbsences = async () => {
         const holiday = await Holiday.findOne({
             where: { date: dateString }
         });
+        
+        let isHoliday = false;
+        let holidayName = "";
+        
         if (holiday) {
-            console.log(`[AbsenceTracker] Today is a holiday: ${holiday.name}. Skipping.`);
-            return;
+            console.log(`[AbsenceTracker] Today is a holiday: ${holiday.name}. Will mark missing attendances as holiday.`);
+            isHoliday = true;
+            holidayName = holiday.name;
         }
 
         // Check if today is weekend
@@ -351,16 +361,29 @@ const markAbsences = async () => {
                 });
 
                 if (!leave) {
-                    // Create absent record
-                    await Attendance.create({
-                        user_id: user.id,
-                        division_id: user.division_id,
-                        date: today,
-                        status: 'absent',
-                        notes: 'Tidak melakukan presensi (Sistem)',
-                        approval_status: 'approved' // Automatically approved as absent
-                    });
-                    console.log(`[AbsenceTracker] Marked user ${user.name} as absent`);
+                    if (isHoliday) {
+                        // Create holiday record
+                        await Attendance.create({
+                            user_id: user.id,
+                            division_id: user.division_id,
+                            date: today,
+                            status: 'holiday',
+                            notes: `Hari Libur: ${holidayName}`,
+                            approval_status: 'approved' 
+                        });
+                        console.log(`[AbsenceTracker] Marked user ${user.name} as holiday`);
+                    } else {
+                        // Create absent record
+                        await Attendance.create({
+                            user_id: user.id,
+                            division_id: user.division_id,
+                            date: today,
+                            status: 'absent',
+                            notes: 'Tidak melakukan presensi (Sistem)',
+                            approval_status: 'approved' 
+                        });
+                        console.log(`[AbsenceTracker] Marked user ${user.name} as absent`);
+                    }
                 } else {
                     console.log(`[AbsenceTracker] User ${user.name} is on leave. Skipping.`);
                 }
@@ -484,6 +507,39 @@ const markMissingLogbooks = async () => {
 };
 
 /**
+ * Start daily logbook digest email scheduler.
+ * Runs every morning at 08:00 WIB.
+ * Sends ONE email per supervisor summarizing all pending logbooks in their division.
+ * This prevents email spam when there are many users in a division.
+ */
+const startLogbookDigestScheduler = () => {
+    try {
+        if (digestCronJob) {
+            digestCronJob.stop();
+        }
+
+        // Run at 08:00 every day
+        const cronExpression = "0 8 * * *";
+
+        digestCronJob = cron.schedule(
+            cronExpression,
+            async () => {
+                console.log("[DigestEmail] Starting daily logbook digest...");
+                await NotificationService.sendLogbookDigest();
+            },
+            {
+                scheduled: true,
+                timezone: "Asia/Jakarta",
+            }
+        );
+
+        console.log("[DigestEmail] Logbook digest scheduler started (08:00 WIB daily)");
+    } catch (error) {
+        console.error("[DigestEmail] Failed to start digest scheduler:", error);
+    }
+};
+
+/**
  * Stop the auto checkout scheduler
  */
 export const stopAutoCheckoutScheduler = () => {
@@ -506,6 +562,11 @@ export const stopAutoCheckoutScheduler = () => {
         logbookScheduler.stop();
         console.log("[LogbookTracker] Logbook scheduler stopped");
         logbookScheduler = null;
+    }
+    if (digestCronJob) {
+        digestCronJob.stop();
+        console.log("[DigestEmail] Digest scheduler stopped");
+        digestCronJob = null;
     }
 };
 

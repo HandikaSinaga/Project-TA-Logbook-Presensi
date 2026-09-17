@@ -168,8 +168,10 @@ const SupervisorWorkCalendar = () => {
                     );
                 });
 
-                // 2. Attendance (Present, Late, Absent)
+                // 2. Attendance (Present, Late, Absent, Holiday)
                 data.attendances?.forEach((att) => {
+                    if (att.status === 'holiday') return; // Handled by global holidays
+
                     const date = att.date;
                     let title = "Hadir";
                     let type = "present";
@@ -892,8 +894,8 @@ const SupervisorWorkCalendar = () => {
                                 onChange={(e) => setSelectedYear(e.target.value)}
                                 size="sm"
                             >
-                                {Array.from({ length: 5 }, (_, i) => {
-                                    const y = new Date().getFullYear() - 2 + i;
+                                {[...Array(4)].map((_, i) => {
+                                    const y = new Date().getFullYear() - i;
                                     return <option key={y} value={String(y)}>{y}</option>;
                                 })}
                             </Form.Select>

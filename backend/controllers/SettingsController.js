@@ -52,6 +52,7 @@ class SettingsController {
                 working_days: [1, 2, 3, 4, 5], // Monday-Friday default
                 check_holiday_enabled: true,
                 allow_weekend_work: false,
+                allow_holiday_work: false,
             };
 
             // Merge defaults with database settings

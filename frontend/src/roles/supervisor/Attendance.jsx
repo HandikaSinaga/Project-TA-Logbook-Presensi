@@ -199,6 +199,7 @@ const Attendance = () => {
             late: { bg: "warning", icon: "clock", text: "Terlambat" },
             absent: { bg: "danger", icon: "x-circle", text: "Tidak Hadir" },
             excused: { bg: "info", icon: "info-circle", text: "Izin" },
+            holiday: { bg: "danger", icon: "calendar-event", text: "Hari Libur" },
         };
         return (
             badges[status] || {
@@ -639,6 +640,10 @@ const Attendance = () => {
                                                                     </div>
                                                                 )}
                                                             </div>
+                                                        ) : attendance.status === "holiday" ? (
+                                                            <span className="text-danger small fw-semibold">
+                                                                {attendance.notes || "Hari Libur Nasional"}
+                                                            </span>
                                                         ) : (
                                                             <span className="text-muted">-</span>
                                                         )}

@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import { testConnection } from "./database/db.js";
 import router from "./routes/index.js";
 import { startAutoCheckoutScheduler } from "./utils/autoCheckoutScheduler.js";
+import HolidaySyncService from "./services/HolidaySyncService.js";
 import { sanitizeBody } from "./middlewares/inputValidator.js";
 
 dotenv.config();
@@ -72,5 +73,6 @@ app.use((err, req, res, next) => {
 app.listen(PORT, async () => {
     testConnection();
     await startAutoCheckoutScheduler(); // Initialize auto checkout scheduler
+    HolidaySyncService.startCron(); // Initialize auto holiday sync
     console.log(`Server running on port ${PORT}`);
 });

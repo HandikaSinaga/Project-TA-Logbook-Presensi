@@ -25,6 +25,7 @@ const DEFAULT_SETTINGS = {
     working_days: [1, 2, 3, 4, 5], // 0=Minggu, 1=Senin, ..., 6=Sabtu
     check_holiday_enabled: true,
     allow_weekend_work: false,
+    allow_holiday_work: false,
 };
 
 const CONSTRAINTS = {
@@ -1187,6 +1188,22 @@ const AdminSettings = () => {
                                                             settings.allow_weekend_work
                                                         }
                                                         settingKey="allow_weekend_work"
+                                                        size="large"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="col-12">
+                                            <div className="card bg-info bg-opacity-10 border-0">
+                                                <div className="card-body">
+                                                    <SwitchInput
+                                                        label="Izinkan Kerja di Hari Libur"
+                                                        description="Jika diaktifkan, user tetap dapat check-in (sebagai lembur) di Hari Libur yang terdaftar"
+                                                        value={
+                                                            settings.allow_holiday_work
+                                                        }
+                                                        settingKey="allow_holiday_work"
                                                         size="large"
                                                     />
                                                 </div>

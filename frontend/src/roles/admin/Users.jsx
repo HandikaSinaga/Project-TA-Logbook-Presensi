@@ -1843,7 +1843,7 @@ const AdminUsers = () => {
                                         </div>
                                     )}
                                 </div>
-                                <div className="modal-footer bg-light border-top">
+                                <div className="modal-footer border-top">
                                     <button
                                         type="button"
                                         className="btn btn-secondary px-4"
@@ -2014,7 +2014,7 @@ const AdminUsers = () => {
                                     Download Template Excel
                                 </button>
                             </div>
-                            <div className="modal-footer bg-light border-top">
+                            <div className="modal-footer border-top">
                                 <button
                                     type="button"
                                     className="btn btn-secondary px-4"
@@ -2216,7 +2216,7 @@ const AdminUsers = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="modal-footer bg-light border-top">
+                                <div className="modal-footer border-top">
                                     <button
                                         type="button"
                                         className="btn btn-secondary px-4"
@@ -2393,7 +2393,7 @@ const AdminUsers = () => {
                                     </span>
                                 </div>
                             </div>
-                            <div className="modal-footer bg-light border-top">
+                            <div className="modal-footer border-top">
                                 <button
                                     type="button"
                                     className="btn btn-secondary px-4"

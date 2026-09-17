@@ -198,8 +198,15 @@ const AdminSideNav = ({ isOpen, onClose }) => {
                                         className="rounded rounded-35"
                                         onClick={handleNavClick}
                                     >
-                                        <i className="bi bi-building me-2"></i>
                                         Lokasi Kantor
+                                    </Nav.Link>
+                                    <Nav.Link
+                                        as={NavLink}
+                                        to="/admin/holidays"
+                                        className="rounded rounded-35"
+                                        onClick={handleNavClick}
+                                    >
+                                        Hari Libur
                                     </Nav.Link>
                                 </div>
                             </Collapse>

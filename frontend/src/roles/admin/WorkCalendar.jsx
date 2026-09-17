@@ -280,6 +280,8 @@ const AdminWorkCalendar = () => {
 
             // 2. Attendance (Present, Late, Absent)
             data.attendances?.forEach((att) => {
+                if (att.status === 'holiday') return; // Handled by global holidays
+
                 const date = att.date;
                 let title = "Hadir";
                 let type = "present";
@@ -821,6 +823,34 @@ const AdminWorkCalendar = () => {
                         </Link>
                     </div>
                 </div>
+
+                {/* Calendar Legend */}
+                <div className="d-flex flex-wrap gap-3 mt-3 px-2 py-2 bg-light rounded-3 small">
+                    <div className="d-flex align-items-center">
+                        <div style={{ width: "12px", height: "12px", backgroundColor: COLORS.holiday, borderRadius: "2px", marginRight: "6px" }}></div>
+                        <span className="text-muted fw-medium">Libur Nasional</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                        <div style={{ width: "12px", height: "12px", backgroundColor: COLORS.holidayCustom, borderRadius: "2px", marginRight: "6px" }}></div>
+                        <span className="text-muted fw-medium">Libur Perusahaan/Kustom</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                        <div style={{ width: "12px", height: "12px", backgroundColor: COLORS.present, borderRadius: "2px", marginRight: "6px" }}></div>
+                        <span className="text-muted fw-medium">Hadir Tepat Waktu</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                        <div style={{ width: "12px", height: "12px", backgroundColor: COLORS.late, borderRadius: "2px", marginRight: "6px" }}></div>
+                        <span className="text-muted fw-medium">Terlambat</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                        <div style={{ width: "12px", height: "12px", backgroundColor: COLORS.absent, borderRadius: "2px", marginRight: "6px" }}></div>
+                        <span className="text-muted fw-medium">Alpha/Absen</span>
+                    </div>
+                    <div className="d-flex align-items-center">
+                        <div style={{ width: "12px", height: "12px", backgroundColor: COLORS.leave, borderRadius: "2px", marginRight: "6px" }}></div>
+                        <span className="text-muted fw-medium">Izin/Cuti</span>
+                    </div>
+                </div>
             </div>
 
             {/* Filter Panel - Full Featured with Search */}
@@ -895,7 +925,7 @@ const AdminWorkCalendar = () => {
                         <Col xs={6} md={2}>
                             <Form.Label className="small fw-medium mb-1">Tahun</Form.Label>
                             <Form.Select size="sm" value={selectedYear} onChange={handleYearChange}>
-                                {Array.from({length: 5}, (_, i) => new Date().getFullYear() - i).map(y => (
+                                {Array.from({length: 4}, (_, i) => new Date().getFullYear() - i).map(y => (
                                     <option key={y} value={y}>{y}</option>
                                 ))}
                             </Form.Select>
@@ -1555,8 +1585,8 @@ const AdminWorkCalendar = () => {
                                                     )
                                                 ) : (
                                                     <Alert
-                                                        variant="secondary"
-                                                        className="py-2 small mb-0"
+                                                        variant="light"
+                                                        className="py-2 small mb-0 text-muted border"
                                                     >
                                                         <i className="bi bi-info-circle me-1"></i>
                                                         Tidak ada presensi
@@ -1625,8 +1655,8 @@ const AdminWorkCalendar = () => {
                                                     )
                                                 ) : (
                                                     <Alert
-                                                        variant="secondary"
-                                                        className="py-2 small mb-0"
+                                                        variant="light"
+                                                        className="py-2 small mb-0 text-muted border"
                                                     >
                                                         <i className="bi bi-info-circle me-1"></i>
                                                         Tidak ada izin/cuti

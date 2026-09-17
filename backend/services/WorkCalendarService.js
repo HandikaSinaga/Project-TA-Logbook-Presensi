@@ -411,24 +411,46 @@ class WorkCalendarService {
                 await this.isWorkday(checkDate);
 
             if (!isWorkday) {
-                let message = "";
-
-                if (reason === "weekend") {
-                    message =
-                        "Hari ini adalah akhir pekan, presensi tidak tersedia.";
-                } else if (reason === "holiday") {
-                    message = `Hari ini adalah hari libur (${holiday.name}), presensi tidak tersedia.`;
-                } else {
-                    message =
-                        "Hari ini bukan hari kerja, presensi tidak tersedia.";
+                // Check if weekend/holiday work is allowed
+                let isAllowedOverride = false;
+                
+                try {
+                    const AppSetting = models.AppSetting;
+                    if (reason === "weekend") {
+                        const weekendSetting = await AppSetting.findOne({ where: { key: 'allow_weekend_work' } });
+                        if (weekendSetting && weekendSetting.value === 'true') {
+                            isAllowedOverride = true;
+                        }
+                    } else if (reason === "holiday") {
+                        const holidaySetting = await AppSetting.findOne({ where: { key: 'allow_holiday_work' } });
+                        if (holidaySetting && holidaySetting.value === 'true') {
+                            isAllowedOverride = true;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error checking weekend/holiday work settings:", e);
                 }
 
-                return {
-                    canCheckIn: false,
-                    reason: reason,
-                    message: message,
-                    holiday: holiday,
-                };
+                if (!isAllowedOverride) {
+                    let message = "";
+
+                    if (reason === "weekend") {
+                        message =
+                            "Hari ini adalah akhir pekan, presensi tidak tersedia.";
+                    } else if (reason === "holiday") {
+                        message = `Hari ini adalah hari libur (${holiday.name}), presensi tidak tersedia.`;
+                    } else {
+                        message =
+                            "Hari ini bukan hari kerja, presensi tidak tersedia.";
+                    }
+
+                    return {
+                        canCheckIn: false,
+                        reason: reason,
+                        message: message,
+                        holiday: holiday,
+                    };
+                }
             }
 
             // All validations passed

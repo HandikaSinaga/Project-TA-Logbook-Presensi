@@ -12,6 +12,7 @@ import Monitoring from "./Monitoring"; // Real-time attendance monitoring
 import Attendance from "./Attendance";
 import Logbook from "./Logbook";
 import Leave from "./Leave";
+import Holidays from "./Holidays";
 import Reports from "./Reports";
 import Settings from "./Settings"; // Modern settings with Tabs and enhanced UI/UX
 import Profile from "./Profile";
@@ -37,6 +38,7 @@ const AdminRoutes = () => {
                     <Route path="attendance" element={<Attendance />} />
                     <Route path="logbook" element={<Logbook />} />
                     <Route path="leave" element={<Leave />} />
+                    <Route path="holidays" element={<Holidays />} />
                     <Route path="work-calendar" element={<WorkCalendar />} />
                     <Route path="reports" element={<Reports />} />
                     <Route path="system-settings" element={<Settings />} />

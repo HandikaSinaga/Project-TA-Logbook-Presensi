@@ -181,8 +181,10 @@ const UserWorkCalendar = () => {
             );
         });
 
-        // 2. Attendance (Present, Late, Absent)
+        // 2. Attendance (Present, Late, Absent, Holiday)
         data.attendances?.forEach((att) => {
+            if (att.status === 'holiday') return; // Handled by global holidays
+
             const date = att.date;
             let title = "Hadir";
             let type = "present";
@@ -993,7 +995,7 @@ const UserWorkCalendar = () => {
                                             }}
                                         >
                                             {Array.from(
-                                                { length: 5 },
+                                                { length: 4 },
                                                 (_, i) => {
                                                     const year =
                                                         new Date().getFullYear() -
@@ -1197,17 +1199,27 @@ const UserWorkCalendar = () => {
                                                             </Col>
                                                         </Row>
                                                         <div>
-                                                            {dateDetail
-                                                                .attendance
-                                                                .status ===
-                                                                "late" && (
-                                                                <Badge
-                                                                    bg="warning"
-                                                                    text="dark"
-                                                                    className="me-1"
-                                                                >
-                                                                    ⏰ Terlambat
+                                                            {dateDetail.holiday && (!dateDetail.attendance || dateDetail.attendance.status === "absent") ? (
+                                                                <Badge bg="danger" className="me-1">
+                                                                    🎉 Hari Libur
                                                                 </Badge>
+                                                            ) : (
+                                                                <>
+                                                                    {dateDetail.attendance?.status === "late" && (
+                                                                        <Badge
+                                                                            bg="warning"
+                                                                            text="dark"
+                                                                            className="me-1"
+                                                                        >
+                                                                            ⏰ Terlambat
+                                                                        </Badge>
+                                                                    )}
+                                                                    {dateDetail.attendance?.status === "absent" && (
+                                                                        <Badge bg="danger" className="me-1">
+                                                                            ❌ Alpha
+                                                                        </Badge>
+                                                                    )}
+                                                                </>
                                                             )}
                                                             {dateDetail
                                                                 .attendance
@@ -1235,10 +1247,20 @@ const UserWorkCalendar = () => {
                                                         )}
                                                     </Card.Body>
                                                 </Card>
+                                            ) : dateDetail.holiday ? (
+                                                <Alert variant="danger" className="py-2 small mb-0 border-0 shadow-sm" style={{ backgroundColor: '#fff5f5' }}>
+                                                    <div className="d-flex align-items-center">
+                                                        <i className="bi bi-calendar-event text-danger me-2 fs-5"></i>
+                                                        <div>
+                                                            <strong className="text-danger d-block">Hari Libur</strong>
+                                                            <span className="text-muted">Tidak ada jadwal presensi</span>
+                                                        </div>
+                                                    </div>
+                                                </Alert>
                                             ) : (
                                                 <Alert
-                                                    variant="secondary"
-                                                    className="py-2 small mb-0"
+                                                    variant="light"
+                                                    className="py-2 small mb-0 text-muted border"
                                                 >
                                                     <i className="bi bi-info-circle me-1"></i>
                                                     Tidak ada presensi
@@ -1273,8 +1295,8 @@ const UserWorkCalendar = () => {
                                                 </Card>
                                             ) : (
                                                 <Alert
-                                                    variant="secondary"
-                                                    className="py-2 small mb-0"
+                                                    variant="light"
+                                                    className="py-2 small mb-0 text-muted border"
                                                 >
                                                     <i className="bi bi-info-circle me-1"></i>
                                                     Tidak ada logbook

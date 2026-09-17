@@ -645,6 +645,35 @@ const AdminSystemSettings = () => {
                     <Form.Text className="text-muted">
                         Kirim email reminder jika user lupa checkout
                     </Form.Text>
+
+                    {settings.notification_enabled && (
+                        <>
+                            <hr />
+                            <h6 className="mt-3 mb-2">
+                                <i className="bi bi-gear me-2"></i>
+                                Konfigurasi Email (via file <code>.env</code>)
+                            </h6>
+                            <p className="text-muted small mb-2">
+                                Notifikasi email akan berjalan setelah Anda mengisi konfigurasi berikut di file <code>.env</code> pada server backend:
+                            </p>
+                            <pre className="bg-light p-3 rounded small" style={{fontSize: '12px', overflowX: 'auto'}}>
+{`EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=465
+EMAIL_USER=email_anda@gmail.com
+EMAIL_PASS=your_app_password_here`}
+                            </pre>
+                            <p className="text-muted small">
+                                <i className="bi bi-info-circle me-1 text-info"></i>
+                                Jika menggunakan <strong>Gmail</strong>, aktifkan 2FA di akun Google Anda, lalu buat <em>App Password</em> di{" "}
+                                <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noreferrer">myaccount.google.com/apppasswords</a>.
+                                Gunakan password tersebut (bukan password Gmail biasa) sebagai <code>EMAIL_PASS</code>.
+                            </p>
+                            <p className="text-muted small">
+                                <i className="bi bi-exclamation-triangle me-1 text-warning"></i>
+                                Setelah mengedit file <code>.env</code>, <strong>restart server backend</strong> agar perubahan konfigurasi aktif.
+                            </p>
+                        </>
+                    )}
                 </Card.Body>
             </Card>
 

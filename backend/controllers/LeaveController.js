@@ -2,6 +2,7 @@ import models from "../models/index.js";
 import { Op } from "sequelize";
 import { getPublicPath } from "../utils/uploadHelper.js";
 import { getJakartaDate } from "../utils/dateHelper.js";
+import NotificationService from "../services/NotificationService.js";
 
 const { Leave, User, AppSetting, Division } = models;
 
@@ -190,6 +191,23 @@ class LeaveController {
                 attachment: attachmentPath,
                 status: "pending",
             });
+
+            // Notify supervisor in the background (non-blocking)
+            try {
+                const supervisor = await User.findOne({
+                    where: { 
+                        division_id: user.division_id,
+                        role: 'supervisor'
+                    },
+                    attributes: ["id", "name", "email"]
+                });
+
+                if (supervisor) {
+                    NotificationService.notifyLeaveSubmitted(leave, user, supervisor);
+                }
+            } catch (notifyErr) {
+                console.error("[LeaveController] Failed to notify supervisor:", notifyErr);
+            }
 
             res.status(201).json({
                 success: true,
@@ -575,7 +593,7 @@ class LeaveController {
                     {
                         model: User,
                         as: "user",
-                        attributes: ["division_id"],
+                        attributes: ["id", "name", "email", "division_id"],
                     },
                 ],
             });
@@ -609,6 +627,18 @@ class LeaveController {
                 reviewed_at: getJakartaDate(),
             });
 
+            // Notify user
+            try {
+                NotificationService.notifyLeaveProcessed(
+                    leave, 
+                    leave.user, 
+                    supervisor, 
+                    "approved"
+                );
+            } catch (notifyErr) {
+                console.error("[LeaveController] Failed to notify user:", notifyErr);
+            }
+
             res.json({
                 success: true,
                 message: "Leave request approved",
@@ -635,7 +665,7 @@ class LeaveController {
                     {
                         model: User,
                         as: "user",
-                        attributes: ["division_id"],
+                        attributes: ["id", "name", "email", "division_id"],
                     },
                 ],
             });
@@ -668,6 +698,18 @@ class LeaveController {
                 reviewed_at: getJakartaDate(),
                 review_notes: rejection_reason || "No reason provided",
             });
+
+            // Notify user
+            try {
+                NotificationService.notifyLeaveProcessed(
+                    leave, 
+                    leave.user, 
+                    supervisor, 
+                    "rejected"
+                );
+            } catch (notifyErr) {
+                console.error("[LeaveController] Failed to notify user:", notifyErr);
+            }
 
             res.json({
                 success: true,

@@ -183,6 +183,7 @@ router.get("/holidays/check", HolidayController.checkIsHoliday);
 router.get("/holidays/upcoming", HolidayController.getUpcomingHolidays);
 router.post("/holidays", HolidayController.createHoliday);
 router.post("/holidays/bulk-import", HolidayController.bulkImportHolidays);
+router.post("/holidays/sync-now", HolidayController.syncHolidays);
 router.get("/holidays/:id", HolidayController.getHolidayById);
 router.put("/holidays/:id", HolidayController.updateHoliday);
 router.delete("/holidays/:id", HolidayController.deleteHoliday);

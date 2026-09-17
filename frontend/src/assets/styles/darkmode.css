@@ -16,6 +16,14 @@
     color-scheme: dark;
 }
 
+/* ---- Fix for elements with bright gradients in dark mode ---- */
+[data-theme="dark"] .bg-gd p,
+[data-theme="dark"] .bg-gd span:not(.badge):not(.nav-link):not(.btn),
+[data-theme="dark"] .bg-gd h1, [data-theme="dark"] .bg-gd h2, [data-theme="dark"] .bg-gd h3,
+[data-theme="dark"] .bg-gd h4, [data-theme="dark"] .bg-gd h5, [data-theme="dark"] .bg-gd h6 {
+    color: #ffffff !important;
+}
+
 /* ---- Page backgrounds ---- */
 [data-theme="dark"] .admin-page,
 [data-theme="dark"] .user-page {
@@ -65,14 +73,14 @@
 /* ---- Form controls ---- */
 [data-theme="dark"] .form-control,
 [data-theme="dark"] .form-select {
-    background-color: var(--dm-bg-input) !important;
+    background-color: #1a1d23 !important; /* Darker background for inset effect */
     color: var(--dm-text) !important;
-    border-color: var(--dm-border) !important;
+    border-color: #4a5568 !important; /* Brighter border for better visibility */
 }
 
 [data-theme="dark"] .form-control:focus,
 [data-theme="dark"] .form-select:focus {
-    background-color: var(--dm-bg-input) !important;
+    background-color: #1a1d23 !important;
     color: var(--dm-text) !important;
     border-color: #4a90e2 !important;
     box-shadow: 0 0 0 0.2rem rgba(74, 144, 226, 0.25) !important;
@@ -85,14 +93,14 @@
 
 [data-theme="dark"] .form-control option,
 [data-theme="dark"] .form-select option {
-    background-color: var(--dm-bg-input) !important;
+    background-color: #1a1d23 !important;
     color: var(--dm-text) !important;
 }
 
 /* Filter: custom multi-select input box */
 [data-theme="dark"] .form-control.d-flex {
-    background-color: var(--dm-bg-input) !important;
-    border-color: var(--dm-border) !important;
+    background-color: #1a1d23 !important;
+    border-color: #4a5568 !important;
     color: var(--dm-text) !important;
 }
 
@@ -110,8 +118,8 @@
 
 /* ---- Input group ---- */
 [data-theme="dark"] .input-group-text {
-    background-color: var(--dm-bg-input) !important;
-    border-color: var(--dm-border) !important;
+    background-color: #22262f !important; /* Match card bg for contrast with input */
+    border-color: #4a5568 !important;
     color: var(--dm-text-muted) !important;
 }
 
@@ -151,6 +159,26 @@
 
 [data-theme="dark"] .text-body {
     color: var(--dm-text) !important;
+}
+
+[data-theme="dark"] .text-primary {
+    color: #60a5fa !important;
+}
+
+[data-theme="dark"] .text-success {
+    color: #4ade80 !important;
+}
+
+[data-theme="dark"] .text-danger {
+    color: #f87171 !important;
+}
+
+[data-theme="dark"] .text-warning {
+    color: #fbbf24 !important;
+}
+
+[data-theme="dark"] .text-info {
+    color: #38bdf8 !important;
 }
 
 /* small & .small: muted tapi tidak override badge/alert/pill yang punya warna */
@@ -279,9 +307,7 @@
     border-color: var(--dm-border) !important;
 }
 [data-theme="dark"] .modal-header {
-    background-color: var(--dm-bg-card) !important;
     border-color: var(--dm-border) !important;
-    color: var(--dm-text) !important;
 }
 [data-theme="dark"] .modal-header .btn-close:not(.btn-close-white) {
     filter: invert(1) grayscale(100%) brightness(200%) !important;
@@ -303,16 +329,30 @@
 }
 
 /* ---- Alerts ---- */
+[data-theme="dark"] .alert-primary {
+    background-color: #1a237e !important;
+    border-color: #283593 !important;
+    color: #c5cae9 !important;
+}
+[data-theme="dark"] .alert-primary .alert-link {
+    color: #e8eaf6 !important;
+}
 [data-theme="dark"] .alert-info {
     background-color: #1e3a5f !important;
     border-color: #2a5298 !important;
     color: #90caf9 !important;
+}
+[data-theme="dark"] .alert-info .alert-link {
+    color: #e3f2fd !important;
 }
 [data-theme="dark"] .alert-warning,
 [data-theme="dark"] .bg-warning {
     background-color: #3d2e00 !important;
     border-color: #5c4300 !important;
     color: #ffd54f !important;
+}
+[data-theme="dark"] .alert-warning .alert-link {
+    color: #fff8e1 !important;
 }
 
 [data-theme="dark"] .alert-warning .text-dark,
@@ -339,10 +379,16 @@
     border-color: #5c2020 !important;
     color: #ef9a9a !important;
 }
+[data-theme="dark"] .alert-danger .alert-link {
+    color: #ffebee !important;
+}
 [data-theme="dark"] .alert-success {
     background-color: #1a3d2e !important;
     border-color: #1e5c3a !important;
     color: #a5d6a7 !important;
+}
+[data-theme="dark"] .alert-success .alert-link {
+    color: #e8f5e9 !important;
 }
 
 /* ---- Badges ---- */
@@ -552,13 +598,17 @@
     border-color: var(--dm-border) !important;
 }
 [data-theme="dark"] .nav-tabs .nav-link {
-    color: var(--dm-text-muted) !important;
     border-color: transparent !important;
+}
+[data-theme="dark"] .nav-tabs .nav-link:not([class*="text-"]) {
+    color: var(--dm-text-muted) !important;
 }
 [data-theme="dark"] .nav-tabs .nav-link.active {
     background-color: var(--dm-bg-card) !important;
     border-color: var(--dm-border) var(--dm-border) var(--dm-bg-card) !important;
-    color: var(--dm-text) !important;
+}
+[data-theme="dark"] .nav-tabs .nav-link.active:not([class*="text-"]) {
+    color: #4a90e2 !important;
 }
 [data-theme="dark"] .nav-pills .nav-link {
     color: var(--dm-text-muted) !important;
