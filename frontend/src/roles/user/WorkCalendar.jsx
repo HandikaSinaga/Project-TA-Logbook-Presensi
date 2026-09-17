@@ -22,7 +22,7 @@ import {
     formatDateToString,
 } from "../../utils/dateHelper";
 import { useSearchParams } from "react-router-dom";
-import "./WorkCalendar.css";
+import "../../assets/styles/WorkCalendar.css";
 
 moment.locale("id");
 const localizer = momentLocalizer(moment);

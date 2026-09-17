@@ -23,7 +23,7 @@ import {
     formatDateToString,
 } from "../../utils/dateHelper";
 import DateDetailStats from "./components/DateDetailStats";
-import "./WorkCalendar.css";
+import "../../assets/styles/WorkCalendar.css";
 
 moment.locale("id");
 const localizer = momentLocalizer(moment);

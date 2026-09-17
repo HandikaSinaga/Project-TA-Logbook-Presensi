@@ -22,7 +22,7 @@ import {
     isToday as checkIsToday,
     formatDateToString,
 } from "../../utils/dateHelper";
-import "./WorkCalendar.css";
+import "../../assets/styles/WorkCalendar.css";
 
 moment.locale("id");
 const localizer = momentLocalizer(moment);
