@@ -215,6 +215,12 @@ const UserSideNav = ({ isOpen, onClose }) => {
 
             {/* Logout Modal */}
             <Modal show={show} onHide={handleClose} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        <i className="bi bi-box-arrow-right me-2"></i>
+                        Konfirmasi Logout
+                    </Modal.Title>
+                </Modal.Header>
                 <Modal.Body className="p-4 d-flex flex-column items-center">
                     <h4 className="mb-4 fw-bold text-dark">
                         Time to <span className="text-red">logout</span>?

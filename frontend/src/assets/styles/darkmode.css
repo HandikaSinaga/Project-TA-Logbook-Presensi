@@ -345,8 +345,7 @@
 [data-theme="dark"] .alert-info .alert-link {
     color: #e3f2fd !important;
 }
-[data-theme="dark"] .alert-warning,
-[data-theme="dark"] .bg-warning {
+[data-theme="dark"] .alert-warning {
     background-color: #3d2e00 !important;
     border-color: #5c4300 !important;
     color: #ffd54f !important;
@@ -355,23 +354,17 @@
     color: #fff8e1 !important;
 }
 
-[data-theme="dark"] .alert-warning .text-dark,
-[data-theme="dark"] .bg-warning .text-dark,
-[data-theme="dark"] .bg-warning.text-dark {
+[data-theme="dark"] .alert-warning .text-dark {
     color: #ffd54f !important;
 }
 
-[data-theme="dark"] .alert-warning .text-muted,
-[data-theme="dark"] .bg-warning .text-muted {
+[data-theme="dark"] .alert-warning .text-muted {
     color: #cca425 !important; /* A slightly darker yellow for muted text inside warning */
 }
 
 [data-theme="dark"] .alert-warning h1, [data-theme="dark"] .alert-warning h2,
 [data-theme="dark"] .alert-warning h3, [data-theme="dark"] .alert-warning h4,
-[data-theme="dark"] .alert-warning h5, [data-theme="dark"] .alert-warning h6,
-[data-theme="dark"] .bg-warning h1, [data-theme="dark"] .bg-warning h2,
-[data-theme="dark"] .bg-warning h3, [data-theme="dark"] .bg-warning h4,
-[data-theme="dark"] .bg-warning h5, [data-theme="dark"] .bg-warning h6 {
+[data-theme="dark"] .alert-warning h5, [data-theme="dark"] .alert-warning h6 {
     color: #ffd54f !important;
 }
 [data-theme="dark"] .alert-danger {
@@ -424,8 +417,8 @@
 }
 [data-theme="dark"] .badge.bg-warning-subtle,
 [data-theme="dark"] .badge.text-bg-warning {
-    background-color: #3d2e00 !important;
-    color: #fde68a !important;
+    background-color: #ffd54f !important;
+    color: #212529 !important;
 }
 [data-theme="dark"] .badge.bg-info-subtle,
 [data-theme="dark"] .badge.text-bg-info {
