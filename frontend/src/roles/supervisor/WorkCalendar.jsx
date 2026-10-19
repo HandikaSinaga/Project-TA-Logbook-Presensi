@@ -671,7 +671,6 @@ const SupervisorWorkCalendar = () => {
             const isFuture = isFutureDate(dateStr);
             const isWorkingDay = calendarData?.workingDays?.includes(dayOfWeek);
 
-            let style = {};
             let className = "";
 
             // USER-SPECIFIC VIEW styling
@@ -680,26 +679,18 @@ const SupervisorWorkCalendar = () => {
                 const isBeforeJoin = moment(date).isBefore(userJoinDate);
 
                 if (isBeforeJoin) {
-                    style = { backgroundColor: "#e9ecef", color: "#adb5bd", opacity: 0.4, cursor: "not-allowed", pointerEvents: "none", textDecoration: "line-through" };
                     className = "pre-join-date-disabled";
                 } else if (isFuture) {
-                    style = { backgroundColor: "#f8f9fa", color: "#adb5bd", opacity: 0.5, cursor: "not-allowed", pointerEvents: "none" };
                     className = "future-date-disabled";
                 } else if (isTodayDate) {
-                    style = { backgroundColor: "#e3f2fd", fontWeight: "bold", border: "2px solid #2196f3", borderRadius: "4px" };
                     className = "today-date";
                 } else if (!isWorkingDay) {
-                    style = { backgroundColor: COLORS.weekend, color: "#6c757d" };
+                    className = "weekend-date";
                 }
 
                 // Check for holidays in user view (Overrides weekend)
                 const holiday = calendarData?.holidays?.find(h => h.date === dateStr);
                 if (holiday) {
-                    style = {
-                        ...style,
-                        backgroundColor: holiday.is_national ? "#fff5f5" : "#fff9db",
-                        borderBottom: `2px solid ${holiday.is_national ? COLORS.holiday : COLORS.holidayCustom}`,
-                    };
                     className = `${className} ${holiday.is_national ? 'holiday-national' : 'holiday-custom'}`.trim();
                 }
             } else {
@@ -714,16 +705,12 @@ const SupervisorWorkCalendar = () => {
                 }
 
                 if (isFuture) {
-                    style = { backgroundColor: "#f8f9fa", color: "#adb5bd", opacity: 0.6, cursor: "not-allowed" };
                     className = "future-date-disabled";
                 } else if (isBeforeAssigned) {
-                    style = { backgroundColor: "#fff3cd", color: "#856404", opacity: 0.5, cursor: "not-allowed" };
                     className = "before-assigned-disabled";
                 } else if (!isWorkingDay) {
-                    style = { backgroundColor: "#f0f0f0", color: "#adb5bd" };
                     className = "weekend";
                 } else if (isTodayDate) {
-                    style = { backgroundColor: "#e3f2fd", fontWeight: "bold", border: "2px solid #2196f3" };
                     className = "today-highlight";
                 } else {
                     // Heatmap: color based on attendance rate
@@ -732,40 +719,26 @@ const SupervisorWorkCalendar = () => {
                     if (dayStats && teamSize > 0) {
                         const rate = dayStats.present / teamSize;
                         const hasLate = dayStats.late > 0;
-                        if (rate >= 0.9) {
-                            // 90%+ present — light green
-                            style = { backgroundColor: hasLate ? "#fff9c4" : "#e8f5e9" };
-                        } else if (rate >= 0.7) {
-                            // 70-89% present — light yellow-green
-                            style = { backgroundColor: "#fff9c4" };
-                        } else if (rate >= 0.5) {
-                            // 50-69% present — light orange
-                            style = { backgroundColor: "#fff3e0" };
-                        } else {
-                            // <50% present — light red (attendance concern)
-                            style = { backgroundColor: "#ffebee" };
-                        }
-                        className = `heatmap-day attendance-rate-${Math.round(rate * 100)}`;
+                        let bandClass = "attendance-critical";
+                        if (rate >= 0.9) bandClass = hasLate ? "attendance-mid" : "attendance-high";
+                        else if (rate >= 0.7) bandClass = "attendance-mid";
+                        else if (rate >= 0.5) bandClass = "attendance-low";
+
+                        className = `heatmap-day ${bandClass}`;
                     } else {
                         // Working day but no data
-                        style = { backgroundColor: "#fff3e0", opacity: 0.8 };
                         className = "heatmap-day no-data";
                     }
 
                     // Check for holidays in team view (Override heatmap if holiday)
                     const holiday = calendarData?.holidays?.find(h => h.date === dateStr);
                     if (holiday) {
-                        style = {
-                            backgroundColor: holiday.is_national ? "#fff5f5" : "#fff9db",
-                            borderBottom: `2px solid ${holiday.is_national ? COLORS.holiday : COLORS.holidayCustom}`,
-                            opacity: 1
-                        };
                         className = `${className} ${holiday.is_national ? 'holiday-national' : 'holiday-custom'}`.trim();
                     }
                 }
             }
 
-            return { style, className };
+            return { className };
         },
         [calendarData, supervisorAssignedAt, selectedUserId, teamDateStats],
     );
@@ -991,8 +964,8 @@ const SupervisorWorkCalendar = () => {
                                         style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white" }}>
                                         <Card.Body className="p-3">
                                             <i className="bi bi-people" style={{ fontSize: "1.8rem" }}></i>
-                                            <h3 className="mb-0 mt-1 fw-bold">{teamSize}</h3>
-                                            <small className="text-white-50">Anggota Tim</small>
+                                            <h3 className="mb-0 mt-1 fw-bold text-white">{teamSize}</h3>
+                                            <small className="text-white">Anggota Tim</small>
                                         </Card.Body>
                                     </Card>
                                 </Col>
@@ -1002,8 +975,8 @@ const SupervisorWorkCalendar = () => {
                                         style={{ background: attendanceRate >= 80 ? "linear-gradient(135deg, #28a745 0%, #20c997 100%)" : attendanceRate >= 60 ? "linear-gradient(135deg, #ffc107 0%, #fd7e14 100%)" : "linear-gradient(135deg, #dc3545 0%, #c82333 100%)", color: "white" }}>
                                         <Card.Body className="p-3">
                                             <i className="bi bi-graph-up" style={{ fontSize: "1.8rem" }}></i>
-                                            <h3 className="mb-0 mt-1 fw-bold">{attendanceRate}%</h3>
-                                            <small className="text-white-50">Rate Hadir</small>
+                                            <h3 className="mb-0 mt-1 fw-bold text-white">{attendanceRate}%</h3>
+                                            <small className="text-white">Rate Hadir</small>
                                         </Card.Body>
                                     </Card>
                                 </Col>
@@ -1013,8 +986,8 @@ const SupervisorWorkCalendar = () => {
                                         style={{ background: "linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)", color: "white" }}>
                                         <Card.Body className="p-3">
                                             <i className="bi bi-check-circle" style={{ fontSize: "1.8rem" }}></i>
-                                            <h3 className="mb-0 mt-1 fw-bold">{totalAttendances}</h3>
-                                            <small className="text-white-50">Presensi</small>
+                                            <h3 className="mb-0 mt-1 fw-bold text-white">{totalAttendances}</h3>
+                                            <small className="text-white">Presensi</small>
                                         </Card.Body>
                                     </Card>
                                 </Col>
@@ -1024,8 +997,8 @@ const SupervisorWorkCalendar = () => {
                                         style={{ background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", color: "white" }}>
                                         <Card.Body className="p-3">
                                             <i className="bi bi-clock-history" style={{ fontSize: "1.8rem" }}></i>
-                                            <h3 className="mb-0 mt-1 fw-bold">{lateCount}</h3>
-                                            <small className="text-white-50">Terlambat</small>
+                                            <h3 className="mb-0 mt-1 fw-bold text-white">{lateCount}</h3>
+                                            <small className="text-white">Terlambat</small>
                                         </Card.Body>
                                     </Card>
                                 </Col>
@@ -1035,8 +1008,8 @@ const SupervisorWorkCalendar = () => {
                                         style={{ background: "linear-gradient(135deg, #6c757d 0%, #495057 100%)", color: "white" }}>
                                         <Card.Body className="p-3">
                                             <i className="bi bi-x-circle" style={{ fontSize: "1.8rem" }}></i>
-                                            <h3 className="mb-0 mt-1 fw-bold">{absentTotal}</h3>
-                                            <small className="text-white-50">Alpha</small>
+                                            <h3 className="mb-0 mt-1 fw-bold text-white">{absentTotal}</h3>
+                                            <small className="text-white">Alpha</small>
                                         </Card.Body>
                                     </Card>
                                 </Col>
@@ -1046,8 +1019,8 @@ const SupervisorWorkCalendar = () => {
                                         style={{ background: "linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%)", color: "white" }}>
                                         <Card.Body className="p-3">
                                             <i className="bi bi-calendar-x" style={{ fontSize: "1.8rem" }}></i>
-                                            <h3 className="mb-0 mt-1 fw-bold">{calendarData.summary.leave?.approved || 0}</h3>
-                                            <small className="text-white-50">Izin Disetujui</small>
+                                            <h3 className="mb-0 mt-1 fw-bold text-white">{calendarData.summary.leave?.approved || 0}</h3>
+                                            <small className="text-white">Izin Disetujui</small>
                                         </Card.Body>
                                     </Card>
                                 </Col>
@@ -1229,7 +1202,7 @@ const SupervisorWorkCalendar = () => {
                                             {calendarData.summary
                                                 .totalAttendances || 0}
                                         </h3>
-                                        <small className="text-white-50 fw-medium">
+                                        <small className="text-white fw-medium">
                                             Hadir
                                         </small>
                                     </Card.Body>
@@ -1255,7 +1228,7 @@ const SupervisorWorkCalendar = () => {
                                             {calendarData.summary.lateCount ||
                                                 0}
                                         </h3>
-                                        <small className="text-white-50 fw-medium">
+                                        <small className="text-white fw-medium">
                                             Telat
                                         </small>
                                     </Card.Body>
@@ -1281,7 +1254,7 @@ const SupervisorWorkCalendar = () => {
                                             {calendarData.summary.absentCount ||
                                                 0}
                                         </h3>
-                                        <small className="text-white-50 fw-medium">
+                                        <small className="text-white fw-medium">
                                             Alpha (Hari)
                                         </small>
                                     </Card.Body>
@@ -1307,7 +1280,7 @@ const SupervisorWorkCalendar = () => {
                                             {calendarData.summary.leaveCount ||
                                                 0}
                                         </h3>
-                                        <small className="text-white-50 fw-medium">
+                                        <small className="text-white fw-medium">
                                             Cuti (Hari)
                                         </small>
                                     </Card.Body>
@@ -1528,7 +1501,7 @@ const SupervisorWorkCalendar = () => {
                                     <h5 className="mb-0 fw-bold">
                                         Tampilan Kalender
                                     </h5>
-                                    <small className="text-white-50">
+                                    <small className="text-white">
                                         Pilih periode untuk melihat aktivitas
                                         tim
                                     </small>

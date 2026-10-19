@@ -51,8 +51,8 @@
 
 [data-theme="dark"] .card-body,
 [data-theme="dark"] .card-footer {
-    background-color: var(--dm-bg-card) !important;
-    color: var(--dm-text) !important;
+    background-color: transparent !important;
+    /* color diwariskan dari .card agar tidak menimpa warna teks spesifik di dalam body */
 }
 
 [data-theme="dark"] .admin-page .cards:not(.combine),
@@ -385,6 +385,43 @@
 }
 
 /* ---- Badges ---- */
+/* Standard Bootstrap Badges - Force colors to prevent them from disappearing */
+[data-theme="dark"] .badge.bg-primary,
+[data-theme="dark"] .badge.text-bg-primary {
+    background-color: #0d6efd !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .badge.bg-success,
+[data-theme="dark"] .badge.text-bg-success {
+    background-color: #198754 !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .badge.bg-danger,
+[data-theme="dark"] .badge.text-bg-danger {
+    background-color: #dc3545 !important;
+    color: #ffffff !important;
+}
+
+[data-theme="dark"] .badge.bg-warning,
+[data-theme="dark"] .badge.text-bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+[data-theme="dark"] .badge.bg-info,
+[data-theme="dark"] .badge.text-bg-info {
+    background-color: #0dcaf0 !important;
+    color: #212529 !important;
+}
+
+[data-theme="dark"] .badge.bg-dark,
+[data-theme="dark"] .badge.text-bg-dark {
+    background-color: #343a40 !important;
+    color: #ffffff !important;
+}
+
 /* bg-light badge: latar gelap, teks terang */
 [data-theme="dark"] .badge.bg-light,
 [data-theme="dark"] .badge.text-bg-light {
@@ -401,42 +438,44 @@
 
 /* Bootstrap 5 bg-*-subtle badges: override agar teks cukup terang */
 [data-theme="dark"] .badge.bg-primary-subtle,
-[data-theme="dark"] .badge.text-bg-primary {
+[data-theme="dark"] .badge[class*="bg-primary-subtle"] {
     background-color: #1e3a5f !important;
     color: #90c4ff !important;
 }
 [data-theme="dark"] .badge.bg-success-subtle,
-[data-theme="dark"] .badge.text-bg-success {
+[data-theme="dark"] .badge[class*="bg-success-subtle"] {
     background-color: #1a3d2e !important;
     color: #86efac !important;
 }
 [data-theme="dark"] .badge.bg-danger-subtle,
-[data-theme="dark"] .badge.text-bg-danger {
+[data-theme="dark"] .badge[class*="bg-danger-subtle"] {
     background-color: #3d1a1a !important;
     color: #fca5a5 !important;
 }
 [data-theme="dark"] .badge.bg-warning-subtle,
-[data-theme="dark"] .badge.text-bg-warning {
-    background-color: #ffd54f !important;
-    color: #212529 !important;
+[data-theme="dark"] .badge[class*="bg-warning-subtle"] {
+    background-color: #5c4300 !important;
+    color: #ffd54f !important;
 }
 [data-theme="dark"] .badge.bg-info-subtle,
-[data-theme="dark"] .badge.text-bg-info {
+[data-theme="dark"] .badge[class*="bg-info-subtle"] {
     background-color: #1a2f3d !important;
     color: #7dd3fc !important;
 }
 [data-theme="dark"] .badge.bg-secondary-subtle,
-[data-theme="dark"] .badge.text-bg-secondary {
+[data-theme="dark"] .badge[class*="bg-secondary-subtle"] {
     background-color: #2a2f3a !important;
     color: #cbd5e1 !important;
 }
 
 /* Span/div badge yang memakai kelas bg-* langsung (non-.badge Bootstrap class) */
-[data-theme="dark"] span.badge.bg-danger-subtle.text-danger {
+[data-theme="dark"] span.badge.bg-danger-subtle.text-danger,
+[data-theme="dark"] span.bg-danger-subtle.text-danger {
     background-color: #3d1a1a !important;
     color: #fca5a5 !important;
 }
-[data-theme="dark"] span.badge.bg-secondary.bg-opacity-10 {
+[data-theme="dark"] span.badge.bg-secondary.bg-opacity-10,
+[data-theme="dark"] span.bg-secondary.bg-opacity-10 {
     background-color: rgba(90, 100, 120, 0.35) !important;
     color: var(--dm-text) !important;
 }
@@ -444,6 +483,9 @@
 /* Teks di dalam badge dengan text-dark (supaya tidak hitam di dark mode) */
 [data-theme="dark"] .badge.text-dark {
     color: var(--dm-text) !important;
+}
+[data-theme="dark"] .badge.bg-warning.text-dark {
+    color: #212529 !important; /* Terkecuali untuk warning, teks harus gelap agar kontras */
 }
 [data-theme="dark"] .badge[class*="text-muted"] {
     color: var(--dm-text-muted) !important;
@@ -622,4 +664,22 @@
 }
 [data-theme="dark"] .shadow {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ---- Fix text colors inside pastel cards in dark mode ---- */
+[data-theme="dark"] [style*="linear-gradient"] .text-primary { color: #0d6efd !important; }
+[data-theme="dark"] [style*="linear-gradient"] .text-success { color: #198754 !important; }
+[data-theme="dark"] [style*="linear-gradient"] .text-danger { color: #dc3545 !important; }
+[data-theme="dark"] [style*="linear-gradient"] .text-warning { color: #d39e00 !important; }
+[data-theme="dark"] [style*="linear-gradient"] .text-info { color: #0dcaf0 !important; }
+[data-theme="dark"] [style*="linear-gradient"] .text-dark { color: #212529 !important; }
+[data-theme="dark"] [style*="linear-gradient"] .text-muted,
+[data-theme="dark"] [style*="linear-gradient"] .text-secondary { color: #6c757d !important; }
+
+/* Ensure small text inside explicitly white containers remains white instead of turning gray */
+[data-theme="dark"] .text-white small:not(.badge),
+[data-theme="dark"] .text-white .small:not(.badge),
+[data-theme="dark"] .text-white p,
+[data-theme="dark"] .text-white span {
+    color: inherit !important;
 }

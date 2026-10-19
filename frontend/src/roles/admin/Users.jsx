@@ -1513,7 +1513,7 @@ const AdminUsers = () => {
                                                                             <div className="flex-grow-1">
                                                                                 <div>{div.name}</div>
                                                                                 {div.supervisor?.name && (
-                                                                                    <small className={parseInt(formData.division_id) === div.id ? "text-white-50" : "text-muted"}>
+                                                                                    <small className={parseInt(formData.division_id) === div.id ? "text-white opacity-75" : "text-muted"}>
                                                                                         Supervisor: {div.supervisor.name}
                                                                                     </small>
                                                                                 )}

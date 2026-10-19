@@ -1,13 +1,17 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
 import { getAvatarUrl } from "../../utils/Constant";
 import toast from "react-hot-toast";
+import MemberDetailModal from "../../components/MemberDetailModal";
 
 const SupervisorDivision = () => {
     const [loading, setLoading] = useState(true);
     const [division, setDivision] = useState(null);
     const [members, setMembers] = useState([]);
     const [searchQuery, setSearchQuery] = useState("");
+    const [roleFilter, setRoleFilter] = useState("all"); // 'all' | 'supervisor' | 'member'
+    const [sortBy, setSortBy] = useState("name_asc"); // 'name_asc' | 'name_desc' | 'position'
     const [selectedMember, setSelectedMember] = useState(null);
     const [showModal, setShowModal] = useState(false);
 
@@ -29,17 +33,46 @@ const SupervisorDivision = () => {
         }
     };
 
-    const filteredMembers = members.filter(
-        (member) =>
-            member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (member.position &&
-                member.position
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase())) ||
-            (member.nip &&
-                member.nip.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    // Filter and sort members
+    const filteredMembers = useMemo(() => {
+        let result = [...members];
+
+        // Role filter
+        if (roleFilter === "supervisor") {
+            result = result.filter((m) => m.role === "supervisor");
+        } else if (roleFilter === "member") {
+            result = result.filter((m) => m.role !== "supervisor");
+        }
+
+        // Search filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            result = result.filter(
+                (m) =>
+                    m.name?.toLowerCase().includes(query) ||
+                    m.email?.toLowerCase().includes(query) ||
+                    m.position?.toLowerCase().includes(query) ||
+                    m.nip?.toLowerCase().includes(query) ||
+                    m.sumber_magang?.toLowerCase().includes(query)
+            );
+        }
+
+        // Sorting
+        result.sort((a, b) => {
+            if (sortBy === "name_asc") {
+                return (a.name || "").localeCompare(b.name || "");
+            }
+            if (sortBy === "name_desc") {
+                return (b.name || "").localeCompare(a.name || "");
+            }
+            if (sortBy === "position") {
+                return (a.position || "").localeCompare(b.position || "");
+            }
+            return 0;
+        });
+
+        return result;
+    }, [members, searchQuery, roleFilter, sortBy]);
 
     const handleViewMember = (member) => {
         setSelectedMember(member);
@@ -51,618 +84,706 @@ const SupervisorDivision = () => {
         const cleanPhone = phone.replace(/\D/g, "");
         const phoneWithCode = cleanPhone.startsWith("62")
             ? cleanPhone
-            : `62${
-                  cleanPhone.startsWith("0") ? cleanPhone.slice(1) : cleanPhone
-              }`;
+            : `62${cleanPhone.startsWith("0") ? cleanPhone.slice(1) : cleanPhone}`;
         return `https://wa.me/${phoneWithCode}`;
     };
 
+    const supervisorCount = useMemo(
+        () => members.filter((m) => m.role === "supervisor").length,
+        [members]
+    );
+    const regularMemberCount = useMemo(
+        () => members.filter((m) => m.role !== "supervisor").length,
+        [members]
+    );
+
+    // Identify supervisor: from division.supervisor or find supervisor in members
+    const supervisorUser = useMemo(() => {
+        if (division?.supervisor) return division.supervisor;
+        return members.find((m) => m.role === "supervisor") || null;
+    }, [division, members]);
+
     if (loading) {
         return (
-            <div
-                className="d-flex justify-content-center align-items-center"
-                style={{ minHeight: "400px" }}
-            >
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+            <div className="supervisor-division p-4">
+                <div
+                    className="d-flex flex-column justify-content-center align-items-center"
+                    style={{ minHeight: "450px" }}
+                >
+                    <div
+                        className="spinner-border text-primary mb-3"
+                        role="status"
+                        style={{ width: "3rem", height: "3rem" }}
+                    >
+                        <span className="visually-hidden">Memuat data divisi...</span>
+                    </div>
+                    <h6 className="text-muted fw-normal">Memuat informasi divisi supervisor...</h6>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="supervisor-division p-4">
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="supervisor-division p-3 p-md-4">
+            {/* ─── PAGE HEADER ─── */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
                 <div>
-                    <h2 className="mb-1">
-                        <i className="bi bi-diagram-3-fill text-primary me-2"></i>
-                        Divisi Saya
+                    <h2 className="fw-bold mb-1 d-flex align-items-center gap-2">
+                        <span
+                            className="rounded-3 d-inline-flex align-items-center justify-content-center"
+                            style={{
+                                width: "42px",
+                                height: "42px",
+                                backgroundColor: "rgba(99, 102, 241, 0.12)",
+                                color: "#6366f1",
+                            }}
+                        >
+                            <i className="bi bi-diagram-3-fill fs-5"></i>
+                        </span>
+                        Kelompok Divisi
                     </h2>
                     <p className="text-muted mb-0">
-                        Kelola dan monitoring anggota divisi Anda
+                        Monitoring anggota tim, direktori kontak, dan keanggotaan divisi Anda
                     </p>
                 </div>
+
+                <div className="d-flex flex-wrap align-items-center gap-2">
+                    <Link
+                        to="/supervisor/manage-division"
+                        className="btn btn-primary rounded-pill px-3 py-2 d-flex align-items-center gap-2 shadow-sm"
+                        style={{ fontWeight: 500 }}
+                    >
+                        <i className="bi bi-people-fill"></i>
+                        Kelola Keanggotaan
+                    </Link>
+                </div>
             </div>
 
-            {/* Division Info Card */}
-            {division && (
+            {/* ─── NO DIVISION STATE ─── */}
+            {!division ? (
                 <div
-                    className="card border-0 shadow-sm mb-4"
-                    style={{
-                        background:
-                            "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    }}
+                    className="card border-0 shadow-sm text-center p-5 rounded-4"
+                    style={{ backgroundColor: "var(--bg-card, #ffffff)" }}
                 >
-                    <div className="card-body p-4 text-white">
-                        <div className="row align-items-center">
-                            <div className="col-md-8">
-                                <h3 className="mb-2 text-white">
-                                    <i className="bi bi-building me-2"></i>
-                                    {division.name}
-                                </h3>
-                                <p className="mb-0 opacity-75">
-                                    {division.description ||
-                                        "Tidak ada deskripsi"}
-                                </p>
-                            </div>
-                            <div className="col-md-4 text-md-end mt-3 mt-md-0">
-                                <div className="display-3 fw-bold">
-                                    {members.length}
-                                </div>
-                                <div className="opacity-75">Anggota Tim</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Search Bar */}
-            <div className="card border-0 shadow-sm mb-4">
-                <div className="card-body">
-                    <div className="input-group">
-                        <span className="input-group-text bg-white border-end-0">
-                            <i className="bi bi-search text-muted"></i>
-                        </span>
-                        <input
-                            type="text"
-                            className="form-control border-start-0 ps-0"
-                            placeholder="Cari anggota berdasarkan nama, email, posisi, atau NIP..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        {searchQuery && (
-                            <button
-                                className="btn btn-outline-secondary"
-                                onClick={() => setSearchQuery("")}
-                            >
-                                <i className="bi bi-x-lg"></i>
-                            </button>
-                        )}
-                    </div>
-                    {searchQuery && (
-                        <small className="text-muted mt-2 d-block">
-                            Ditemukan {filteredMembers.length} dari{" "}
-                            {members.length} anggota
-                        </small>
-                    )}
-                </div>
-            </div>
-
-            {/* Members Grid */}
-            <div className="row g-4">
-                {filteredMembers.length > 0 ? (
-                    filteredMembers.map((member) => (
+                    <div className="card-body py-5">
                         <div
-                            key={member.id}
-                            className="col-12 col-md-6 col-lg-4"
+                            className="rounded-circle d-inline-flex align-items-center justify-content-center mb-4"
+                            style={{
+                                width: "90px",
+                                height: "90px",
+                                backgroundColor: "rgba(99, 102, 241, 0.1)",
+                                color: "#6366f1",
+                            }}
                         >
-                            <div
-                                className="card border-0 shadow-sm h-100 hover-card"
-                                style={{
-                                    transition: "all 0.3s ease",
-                                    cursor: "pointer",
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform =
-                                        "translateY(-5px)";
-                                    e.currentTarget.style.boxShadow =
-                                        "0 8px 20px rgba(0,0,0,0.15)";
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform =
-                                        "translateY(0)";
-                                    e.currentTarget.style.boxShadow = "";
-                                }}
-                                onClick={() => handleViewMember(member)}
-                            >
-                                <div className="card-body text-center p-4">
-                                    <div className="position-relative d-inline-block mb-3">
-                                        <img
-                                            src={getAvatarUrl(member)}
-                                            alt={member.name}
-                                            className="rounded-circle border border-3 border-primary"
-                                            width="100"
-                                            height="100"
-                                            style={{ objectFit: "cover" }}
-                                            onError={(e) => {
-                                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                    member.name
-                                                )}&background=random&color=fff&size=128`;
-                                            }}
-                                        />
-                                        <span className="position-absolute bottom-0 end-0 badge rounded-pill bg-success">
-                                            <i className="bi bi-check-lg"></i>
-                                        </span>
-                                    </div>
-                                    <h5 className="mb-2">{member.name}</h5>
-                                    <span
-                                        className="badge bg-gradient-primary mb-3"
-                                        style={{
-                                            background:
-                                                "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                                        }}
-                                    >
-                                        <i
-                                            className={`bi ${
-                                                member.role === "supervisor"
-                                                    ? "bi-star-fill"
-                                                    : "bi-person-fill"
-                                            } me-1`}
-                                        ></i>
-                                        {member.role === "supervisor"
-                                            ? "Supervisor"
-                                            : "Member"}
-                                    </span>
-                                    {member.position && (
-                                        <div className="text-muted small mb-3">
-                                            <i className="bi bi-briefcase-fill me-1"></i>
-                                            {member.position}
-                                        </div>
-                                    )}
-
-                                    <div className="text-start mt-3">
-                                        <div className="d-flex align-items-center mb-2 p-2 rounded border">
-                                            <i className="bi bi-envelope-fill text-primary me-2"></i>
-                                            <small className="text-truncate">
-                                                {member.email}
-                                            </small>
-                                        </div>
-                                        {member.phone && (
-                                            <div className="d-flex align-items-center mb-2 p-2 rounded border">
-                                                <i className="bi bi-telephone-fill text-success me-2"></i>
-                                                <small>{member.phone}</small>
-                                            </div>
-                                        )}
-                                        {member.nip && (
-                                            <div className="d-flex align-items-center p-2 rounded border">
-                                                <i className="bi bi-credit-card-fill text-info me-2"></i>
-                                                <small>{member.nip}</small>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Stats */}
-                                    <div className="mt-3 pt-3 border-top">
-                                        <div className="row text-center">
-                                            <div className="col-6">
-                                                <small className="text-muted d-block">
-                                                    Hadir
-                                                </small>
-                                                <strong className="text-success fs-5">
-                                                    {member.attendance_count ||
-                                                        0}
-                                                </strong>
-                                            </div>
-                                            <div className="col-6">
-                                                <small className="text-muted d-block">
-                                                    Logbook
-                                                </small>
-                                                <strong className="text-primary fs-5">
-                                                    {member.logbook_count || 0}
-                                                </strong>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <button className="btn btn-sm btn-outline-primary mt-3 w-100">
-                                        <i className="bi bi-eye me-1"></i>
-                                        Lihat Detail
-                                    </button>
-                                </div>
-                            </div>
+                            <i className="bi bi-diagram-3 fs-1"></i>
                         </div>
-                    ))
-                ) : (
-                    <div className="col-12">
-                        <div className="alert alert-info text-center border-0 shadow-sm">
-                            <i className="bi bi-info-circle-fill fs-3 d-block mb-2"></i>
-                            {searchQuery
-                                ? `Tidak ditemukan anggota dengan kata kunci "${searchQuery}"`
-                                : "Belum ada anggota tim"}
-                        </div>
+                        <h4 className="fw-bold mb-2">Belum Ditugaskan ke Divisi</h4>
+                        <p
+                            className="text-muted mx-auto mb-4"
+                            style={{ maxWidth: "520px", lineHeight: 1.6 }}
+                        >
+                            Akun supervisor Anda belum ditugaskan untuk memimpin sebuah divisi.
+                            Silakan hubungi Administrator untuk penempatan dan pengelolaan anggota divisi.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={fetchDivisionData}
+                            className="btn btn-outline-primary rounded-pill px-4"
+                        >
+                            <i className="bi bi-arrow-clockwise me-1"></i> Muat Ulang
+                        </button>
                     </div>
-                )}
-            </div>
+                </div>
+            ) : (
+                <>
+                    {/* ─── MODERN DIVISION HERO BANNER ─── */}
+                    <div className="division-hero-card p-4 p-lg-5 mb-4 shadow">
+                        {/* Decorative background shapes */}
+                        <div
+                            className="hero-accent-circle"
+                            style={{
+                                top: "-40px",
+                                right: "-40px",
+                                width: "220px",
+                                height: "220px",
+                                background: "radial-gradient(circle, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 70%)",
+                            }}
+                        />
+                        <div
+                            className="hero-accent-circle"
+                            style={{
+                                bottom: "-60px",
+                                left: "20%",
+                                width: "180px",
+                                height: "180px",
+                                background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)",
+                            }}
+                        />
 
-            {/* Member Detail Modal - Same as User Division */}
-            {selectedMember && (
-                <div
-                    className={`modal fade ${showModal ? "show d-block" : ""}`}
-                    style={{
-                        backgroundColor: showModal
-                            ? "rgba(0,0,0,0.5)"
-                            : "transparent",
-                    }}
-                >
-                    <div className="modal-dialog modal-dialog-centered modal-lg">
-                        <div className="modal-content border-0 shadow-lg">
-                            <div
-                                className="modal-header border-0 bg-gradient"
-                                style={{
-                                    background:
-                                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                                }}
-                            >
-                                <h5 className="modal-title text-white">
-                                    <i className="bi bi-person-circle me-2"></i>
-                                    Detail Anggota
-                                </h5>
-                                <button
-                                    type="button"
-                                    className="btn-close btn-close-white"
-                                    onClick={() => setShowModal(false)}
-                                ></button>
-                            </div>
-                            <div className="modal-body p-4">
-                                <div className="text-center mb-4">
-                                    <img
-                                        src={getAvatarUrl(selectedMember)}
-                                        alt={selectedMember.name}
-                                        className="rounded-circle border border-4 border-primary mb-3"
-                                        width="120"
-                                        height="120"
-                                        style={{ objectFit: "cover" }}
-                                        onError={(e) => {
-                                            e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                                                selectedMember.name
-                                            )}&background=random&color=fff&size=128`;
-                                        }}
-                                    />
-                                    <h4 className="mb-2">
-                                        {selectedMember.name}
-                                    </h4>
+                        <div className="row align-items-center g-4 position-relative">
+                            {/* Left: Division Info */}
+                            <div className="col-lg-7">
+                                <div className="d-flex flex-wrap gap-2 align-items-center mb-2">
                                     <span
-                                        className="badge bg-gradient-primary"
+                                        className="badge rounded-pill"
                                         style={{
-                                            background:
-                                                "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                                            backgroundColor: "rgba(255,255,255,0.2)",
+                                            backdropFilter: "blur(8px)",
+                                            border: "1px solid rgba(255,255,255,0.3)",
+                                            fontSize: "0.78rem",
+                                            padding: "0.4rem 0.85rem",
+                                            fontWeight: 600,
                                         }}
                                     >
-                                        <i
-                                            className={`bi ${
-                                                selectedMember.role ===
-                                                "supervisor"
-                                                    ? "bi-star-fill"
-                                                    : "bi-person-fill"
-                                            } me-1`}
-                                        ></i>
-                                        {selectedMember.role === "supervisor"
-                                            ? "Supervisor"
-                                            : "Member"}
+                                        <i className="bi bi-shield-check me-1"></i>
+                                        Divisi Supervisor Aktif
                                     </span>
-                                    {selectedMember.position && (
-                                        <div className="text-muted mt-2">
-                                            <i className="bi bi-briefcase-fill me-2"></i>
-                                            {selectedMember.position}
-                                        </div>
+                                    {division.periode && (
+                                        <span
+                                            className="badge rounded-pill"
+                                            style={{
+                                                backgroundColor: "rgba(255,255,255,0.15)",
+                                                border: "1px solid rgba(255,255,255,0.25)",
+                                                fontSize: "0.78rem",
+                                                padding: "0.4rem 0.85rem",
+                                            }}
+                                        >
+                                            <i className="bi bi-calendar3 me-1"></i>
+                                            Periode: {division.periode}
+                                        </span>
                                     )}
                                 </div>
 
-                                {selectedMember.bio && (
-                                    <div className="alert border mb-4">
-                                        <h6 className="mb-2">
-                                            <i className="bi bi-chat-quote-fill text-primary me-2"></i>
-                                            Bio
-                                        </h6>
-                                        <p className="mb-0 text-muted">
-                                            {selectedMember.bio}
-                                        </p>
+                                <h2 className="fw-bold mb-2 text-white display-6">
+                                    {division.name}
+                                </h2>
+
+                                <p
+                                    className="mb-4 text-white"
+                                    style={{
+                                        opacity: 0.9,
+                                        lineHeight: 1.6,
+                                        maxWidth: "600px",
+                                        fontSize: "0.98rem",
+                                    }}
+                                >
+                                    {division.description ||
+                                        "Monitoring dan evaluasi seluruh aktivitas keikutsertaan mahasiswa magang dalam divisi ini."}
+                                </p>
+
+                                {/* Quick Division Metrics */}
+                                <div className="d-flex flex-wrap gap-4 pt-2">
+                                    <div>
+                                        <div className="display-6 fw-bold text-white mb-0">
+                                            {members.length}
+                                        </div>
+                                        <small className="text-white-50 text-uppercase fw-semibold" style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}>
+                                            Total Anggota
+                                        </small>
+                                    </div>
+                                    <div className="border-start border-white border-opacity-25 ps-4">
+                                        <div className="display-6 fw-bold text-white mb-0">
+                                            {regularMemberCount}
+                                        </div>
+                                        <small className="text-white-50 text-uppercase fw-semibold" style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}>
+                                            Mahasiswa Magang
+                                        </small>
+                                    </div>
+                                    <div className="border-start border-white border-opacity-25 ps-4">
+                                        <div className="display-6 fw-bold text-white mb-0">
+                                            {supervisorCount}
+                                        </div>
+                                        <small className="text-white-50 text-uppercase fw-semibold" style={{ fontSize: "0.75rem", letterSpacing: "0.05em" }}>
+                                            Supervisor
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right: Supervisor Spotlight Card */}
+                            <div className="col-lg-5">
+                                {supervisorUser ? (
+                                    <div className="supervisor-spotlight-card p-3 p-md-4">
+                                        <div className="d-flex justify-content-between align-items-center mb-3">
+                                            <span
+                                                className="badge rounded-pill"
+                                                style={{
+                                                    backgroundColor: "rgba(245, 158, 11, 0.3)",
+                                                    color: "#fde68a",
+                                                    border: "1px solid rgba(245, 158, 11, 0.5)",
+                                                    fontSize: "0.75rem",
+                                                    padding: "0.35rem 0.75rem",
+                                                    fontWeight: 600,
+                                                }}
+                                            >
+                                                <i className="bi bi-star-fill text-warning me-1"></i>
+                                                Supervisor Pembimbing
+                                            </span>
+                                            <span className="small text-white opacity-75">
+                                                Penanggung Jawab
+                                            </span>
+                                        </div>
+
+                                        <div className="d-flex align-items-center gap-3 mb-3">
+                                            <img
+                                                src={getAvatarUrl(supervisorUser)}
+                                                alt={supervisorUser.name}
+                                                className="rounded-circle shadow flex-shrink-0"
+                                                style={{
+                                                    width: "58px",
+                                                    height: "58px",
+                                                    objectFit: "cover",
+                                                    border: "2.5px solid #ffffff",
+                                                    backgroundColor: "#ffffff",
+                                                }}
+                                                onError={(e) => {
+                                                    e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                        supervisorUser.name
+                                                    )}&background=3b82f6&color=fff&size=120&bold=true`;
+                                                }}
+                                            />
+                                            <div className="overflow-hidden">
+                                                <h5 className="fw-bold mb-1 text-white text-truncate">
+                                                    {supervisorUser.name}
+                                                </h5>
+                                                <div className="small text-white opacity-90 text-truncate mb-1">
+                                                    <i className="bi bi-envelope me-1"></i>
+                                                    {supervisorUser.email}
+                                                </div>
+                                                {supervisorUser.position && (
+                                                    <div className="small text-white-50 text-truncate">
+                                                        <i className="bi bi-briefcase me-1"></i>
+                                                        {supervisorUser.position}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="d-flex gap-2 pt-2 border-top border-white border-opacity-20">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleViewMember(supervisorUser)}
+                                                className="btn btn-sm btn-supervisor-action rounded-pill flex-grow-1 fw-bold shadow-sm d-flex align-items-center justify-content-center"
+                                                style={{
+                                                    fontSize: "0.82rem",
+                                                    backgroundColor: "#ffffff",
+                                                    color: "#0f172a",
+                                                    border: "1px solid rgba(255, 255, 255, 0.9)",
+                                                }}
+                                            >
+                                                <i className="bi bi-eye me-1" style={{ color: "#0f172a" }}></i>
+                                                <span style={{ color: "#0f172a" }}>Lihat Profil</span>
+                                            </button>
+                                            {supervisorUser.phone && (
+                                                <a
+                                                    href={getWhatsAppLink(supervisorUser.phone)}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="btn btn-sm btn-success rounded-pill px-3 fw-medium d-flex align-items-center"
+                                                    title="Hubungi WhatsApp"
+                                                    style={{ fontSize: "0.82rem" }}
+                                                >
+                                                    <i className="bi bi-whatsapp"></i>
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="supervisor-spotlight-card p-4 text-center">
+                                        <i className="bi bi-person-x fs-1 text-white-50 mb-2 d-block"></i>
+                                        <h6 className="fw-bold text-white mb-1">Supervisor Belum Ditentukan</h6>
+                                        <small className="text-white-50">
+                                            Data supervisor untuk divisi ini belum tercatat lengkap.
+                                        </small>
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    </div>
 
-                                <div className="row g-3">
-                                    {/* Personal Info */}
-                                    <div className="col-12">
-                                        <div className="card border">
-                                            <div className="card-body">
-                                                <h6 className="mb-3">
-                                                    <i className="bi bi-person-lines-fill text-primary me-2"></i>
-                                                    Informasi Personal
-                                                </h6>
-                                                
-                                                <div className="row g-3">
-                                                    <div className="col-md-6">
-                                                        <label className="small text-muted mb-1">Periode</label>
-                                                        <div className="d-flex align-items-center">
-                                                            <i className="bi bi-calendar-event text-secondary me-2"></i>
-                                                            <span className="fw-medium">{selectedMember.periode || '-'}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-md-6">
-                                                        <label className="small text-muted mb-1">Sumber Magang</label>
-                                                        <div className="d-flex align-items-center">
-                                                            <i className="bi bi-building text-secondary me-2"></i>
-                                                            <span className="fw-medium text-capitalize">{selectedMember.sumber_magang || '-'}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-12 mt-3">
-                                                        <label className="small text-muted mb-1">Alamat</label>
-                                                        <div className="d-flex">
-                                                            <i className="bi bi-geo-alt-fill text-danger me-2 mt-1"></i>
-                                                            <span>{selectedMember.address || 'Alamat belum diatur'}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                    {/* ─── SEARCH & FILTER CONTROLS ─── */}
+                    <div
+                        className="card border-0 shadow-sm mb-4 rounded-4"
+                        style={{ backgroundColor: "var(--bg-card, #ffffff)" }}
+                    >
+                        <div className="card-body p-3 p-md-4">
+                            <div className="row g-3 align-items-center">
+                                {/* Search input */}
+                                <div className="col-12 col-md-6 col-lg-5">
+                                    <div className="input-group">
+                                        <span
+                                            className="input-group-text border-end-0 bg-transparent text-muted"
+                                            style={{ borderColor: "var(--border-color, #e2e8f0)" }}
+                                        >
+                                            <i className="bi bi-search"></i>
+                                        </span>
+                                        <input
+                                            type="text"
+                                            className="form-control border-start-0 ps-0 focus-ring"
+                                            placeholder="Cari nama, email, posisi, NIP, kampus..."
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            style={{
+                                                borderColor: "var(--border-color, #e2e8f0)",
+                                                backgroundColor: "var(--bg-card, #ffffff)",
+                                                color: "var(--text-primary)",
+                                            }}
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                type="button"
+                                                className="btn btn-outline-secondary border-start-0"
+                                                onClick={() => setSearchQuery("")}
+                                                style={{ borderColor: "var(--border-color, #e2e8f0)" }}
+                                                title="Hapus pencarian"
+                                            >
+                                                <i className="bi bi-x-lg"></i>
+                                            </button>
+                                        )}
                                     </div>
+                                </div>
 
-                                    <div className="col-12">
-                                        <div className="card border">
-                                            <div className="card-body">
-                                                <h6 className="mb-3">
-                                                    <i className="bi bi-info-circle-fill text-primary me-2"></i>
-                                                    Informasi Kontak
-                                                </h6>
-
-                                                <div className="mb-3">
-                                                    <label className="small text-muted mb-1">
-                                                        Email
-                                                    </label>
-                                                    <div className="d-flex align-items-center">
-                                                        <i className="bi bi-envelope-fill text-primary me-2"></i>
-                                                        <a
-                                                            href={`mailto:${selectedMember.email}`}
-                                                            className="text-decoration-none"
-                                                        >
-                                                            {
-                                                                selectedMember.email
-                                                            }
-                                                        </a>
-                                                    </div>
-                                                </div>
-
-                                                {selectedMember.phone && (
-                                                    <div className="mb-3">
-                                                        <label className="small text-muted mb-1">
-                                                            Nomor HP / WhatsApp
-                                                        </label>
-                                                        <div className="d-flex align-items-center justify-content-between">
-                                                            <div>
-                                                                <i className="bi bi-telephone-fill text-success me-2"></i>
-                                                                <span>
-                                                                    {
-                                                                        selectedMember.phone
-                                                                    }
-                                                                </span>
-                                                            </div>
-                                                            <a
-                                                                href={getWhatsAppLink(
-                                                                    selectedMember.phone
-                                                                )}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="btn btn-sm btn-success"
-                                                            >
-                                                                <i className="bi bi-whatsapp me-1"></i>
-                                                                Chat WhatsApp
-                                                            </a>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {selectedMember.nip && (
-                                                    <div>
-                                                        <label className="small text-muted mb-1">
-                                                            NIP
-                                                        </label>
-                                                        <div className="d-flex align-items-center">
-                                                            <i className="bi bi-credit-card-fill text-info me-2"></i>
-                                                            <span>
-                                                                {
-                                                                    selectedMember.nip
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
+                                {/* Role filter pills */}
+                                <div className="col-12 col-md-6 col-lg-4">
+                                    <div className="btn-group w-100" role="group">
+                                        <button
+                                            type="button"
+                                            className={`btn btn-sm ${
+                                                roleFilter === "all"
+                                                    ? "btn-primary"
+                                                    : "btn-outline-secondary"
+                                            }`}
+                                            onClick={() => setRoleFilter("all")}
+                                        >
+                                            Semua ({members.length})
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`btn btn-sm ${
+                                                roleFilter === "member"
+                                                    ? "btn-primary"
+                                                    : "btn-outline-secondary"
+                                            }`}
+                                            onClick={() => setRoleFilter("member")}
+                                        >
+                                            Anggota ({regularMemberCount})
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className={`btn btn-sm ${
+                                                roleFilter === "supervisor"
+                                                    ? "btn-primary"
+                                                    : "btn-outline-secondary"
+                                            }`}
+                                            onClick={() => setRoleFilter("supervisor")}
+                                        >
+                                            Supervisor ({supervisorCount})
+                                        </button>
                                     </div>
+                                </div>
 
-                                    {/* Social Media Links */}
-                                    {(selectedMember.instagram ||
-                                        selectedMember.linkedin ||
-                                        selectedMember.twitter ||
-                                        selectedMember.facebook ||
-                                        selectedMember.telegram ||
-                                        selectedMember.github) && (
-                                        <div className="col-12">
-                                            <div className="card border">
-                                                <div className="card-body">
-                                                    <h6 className="mb-3">
-                                                        <i className="bi bi-share-fill text-primary me-2"></i>
-                                                        Media Sosial
-                                                    </h6>
-                                                    <div className="d-flex flex-wrap gap-2">
-                                                        {selectedMember.instagram && (
-                                                            <a
-                                                                href={
-                                                                    selectedMember.instagram.startsWith(
-                                                                        "http"
-                                                                    )
-                                                                        ? selectedMember.instagram
-                                                                        : `https://instagram.com/${selectedMember.instagram}`
-                                                                }
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="btn btn-outline-danger btn-sm"
-                                                                title="Instagram"
-                                                            >
-                                                                <i className="bi bi-instagram me-1"></i>
-                                                                Instagram
-                                                            </a>
-                                                        )}
-                                                        {selectedMember.linkedin && (
-                                                            <a
-                                                                href={
-                                                                    selectedMember.linkedin.startsWith(
-                                                                        "http"
-                                                                    )
-                                                                        ? selectedMember.linkedin
-                                                                        : `https://linkedin.com/in/${selectedMember.linkedin}`
-                                                                }
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="btn btn-outline-primary btn-sm"
-                                                                title="LinkedIn"
-                                                            >
-                                                                <i className="bi bi-linkedin me-1"></i>
-                                                                LinkedIn
-                                                            </a>
-                                                        )}
-                                                        {selectedMember.twitter && (
-                                                            <a
-                                                                href={
-                                                                    selectedMember.twitter.startsWith(
-                                                                        "http"
-                                                                    )
-                                                                        ? selectedMember.twitter
-                                                                        : `https://twitter.com/${selectedMember.twitter}`
-                                                                }
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="btn btn-outline-info btn-sm"
-                                                                title="Twitter/X"
-                                                            >
-                                                                <i className="bi bi-twitter me-1"></i>
-                                                                Twitter
-                                                            </a>
-                                                        )}
-                                                        {selectedMember.facebook && (
-                                                            <a
-                                                                href={
-                                                                    selectedMember.facebook.startsWith(
-                                                                        "http"
-                                                                    )
-                                                                        ? selectedMember.facebook
-                                                                        : `https://facebook.com/${selectedMember.facebook}`
-                                                                }
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="btn btn-outline-primary btn-sm"
-                                                                title="Facebook"
-                                                            >
-                                                                <i className="bi bi-facebook me-1"></i>
-                                                                Facebook
-                                                            </a>
-                                                        )}
-                                                        {selectedMember.telegram && (
-                                                            <a
-                                                                href={
-                                                                    selectedMember.telegram.startsWith(
-                                                                        "http"
-                                                                    )
-                                                                        ? selectedMember.telegram
-                                                                        : `https://t.me/${selectedMember.telegram}`
-                                                                }
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="btn btn-outline-info btn-sm"
-                                                                title="Telegram"
-                                                            >
-                                                                <i className="bi bi-telegram me-1"></i>
-                                                                Telegram
-                                                            </a>
-                                                        )}
-                                                        {selectedMember.github && (
-                                                            <a
-                                                                href={
-                                                                    selectedMember.github.startsWith(
-                                                                        "http"
-                                                                    )
-                                                                        ? selectedMember.github
-                                                                        : `https://github.com/${selectedMember.github}`
-                                                                }
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="btn btn-outline-dark btn-sm"
-                                                                title="GitHub"
-                                                            >
-                                                                <i className="bi bi-github me-1"></i>
-                                                                GitHub
-                                                            </a>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Performance Stats */}
-                                    <div className="col-12">
-                                        <div className="card border">
-                                            <div className="card-body">
-                                                <h6 className="mb-3">
-                                                    <i className="bi bi-graph-up text-primary me-2"></i>
-                                                    Performa
-                                                </h6>
-                                                <div className="row text-center">
-                                                    <div className="col-6">
-                                                        <div className="p-3 border rounded">
-                                                            <i className="bi bi-calendar-check text-success fs-3 d-block mb-2"></i>
-                                                            <h4 className="mb-0 text-success">
-                                                                {selectedMember.attendance_count ||
-                                                                    0}
-                                                            </h4>
-                                                            <small className="text-muted">
-                                                                Total Kehadiran
-                                                            </small>
-                                                        </div>
-                                                    </div>
-                                                    <div className="col-6">
-                                                        <div className="p-3 border rounded">
-                                                            <i className="bi bi-journal-text text-primary fs-3 d-block mb-2"></i>
-                                                            <h4 className="mb-0 text-primary">
-                                                                {selectedMember.logbook_count ||
-                                                                    0}
-                                                            </h4>
-                                                            <small className="text-muted">
-                                                                Total Logbook
-                                                            </small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                {/* Sort options */}
+                                <div className="col-12 col-lg-3 ms-auto">
+                                    <div className="d-flex align-items-center gap-2">
+                                        <label className="small text-muted text-nowrap mb-0 d-none d-sm-inline">
+                                            Urutkan:
+                                        </label>
+                                        <select
+                                            className="form-select form-select-sm"
+                                            value={sortBy}
+                                            onChange={(e) => setSortBy(e.target.value)}
+                                            style={{
+                                                backgroundColor: "var(--bg-card, #ffffff)",
+                                                borderColor: "var(--border-color, #e2e8f0)",
+                                                color: "var(--text-primary)",
+                                            }}
+                                        >
+                                            <option value="name_asc">Nama (A - Z)</option>
+                                            <option value="name_desc">Nama (Z - A)</option>
+                                            <option value="position">Jabatan / Posisi</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
-                            <div className="modal-footer border-top">
+
+                            {/* Filter feedback */}
+                            {(searchQuery || roleFilter !== "all") && (
+                                <div className="d-flex justify-content-between align-items-center mt-3 pt-3 border-top small text-muted">
+                                    <span>
+                                        Ditemukan <strong>{filteredMembers.length}</strong> dari{" "}
+                                        {members.length} anggota tim
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSearchQuery("");
+                                            setRoleFilter("all");
+                                        }}
+                                        className="btn btn-sm btn-link p-0 text-decoration-none"
+                                    >
+                                        Reset Filter
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ─── MEMBERS GRID ─── */}
+                    {filteredMembers.length > 0 ? (
+                        <div className="row g-4">
+                            {filteredMembers.map((member) => {
+                                const isMemberSupervisor = member.role === "supervisor";
+                                const hasMemberStats =
+                                    member.attendance_count !== undefined ||
+                                    member.logbook_count !== undefined;
+
+                                return (
+                                    <div key={member.id} className="col-12 col-md-6 col-lg-4">
+                                        <div
+                                            className="member-grid-card h-100 shadow-sm"
+                                            onClick={() => handleViewMember(member)}
+                                            style={{ cursor: "pointer" }}
+                                        >
+                                            {/* Top Banner Accent */}
+                                            <div
+                                                style={{
+                                                    height: "6px",
+                                                    background: isMemberSupervisor
+                                                        ? "linear-gradient(90deg, #f59e0b, #d97706)"
+                                                        : "linear-gradient(90deg, #6366f1, #a855f7)",
+                                                    borderTopLeftRadius: "1rem",
+                                                    borderTopRightRadius: "1rem",
+                                                }}
+                                            />
+
+                                            <div className="p-4 d-flex flex-column h-100">
+                                                {/* Header Row: Avatar & Badges */}
+                                                <div className="d-flex align-items-start justify-content-between mb-3">
+                                                    <div className="position-relative">
+                                                        <img
+                                                            src={getAvatarUrl(member)}
+                                                            alt={member.name}
+                                                            className="rounded-circle shadow-sm"
+                                                            style={{
+                                                                width: "68px",
+                                                                height: "68px",
+                                                                objectFit: "cover",
+                                                                border: isMemberSupervisor
+                                                                    ? "3px solid #fbbf24"
+                                                                    : "3px solid #6366f1",
+                                                                backgroundColor: "var(--bg-card, #ffffff)",
+                                                            }}
+                                                            onError={(e) => {
+                                                                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                                                                    member.name
+                                                                )}&background=6366f1&color=fff&size=140&bold=true`;
+                                                            }}
+                                                        />
+                                                        <span
+                                                            className="position-absolute bottom-0 end-0 rounded-circle"
+                                                            style={{
+                                                                width: "14px",
+                                                                height: "14px",
+                                                                backgroundColor: "#10b981",
+                                                                border: "2px solid #ffffff",
+                                                            }}
+                                                            title="Aktif"
+                                                        />
+                                                    </div>
+
+                                                    <span
+                                                        className="badge rounded-pill"
+                                                        style={{
+                                                            backgroundColor: isMemberSupervisor
+                                                                ? "rgba(245, 158, 11, 0.15)"
+                                                                : "rgba(99, 102, 241, 0.12)",
+                                                            color: isMemberSupervisor ? "#d97706" : "#4f46e5",
+                                                            border: `1px solid ${
+                                                                isMemberSupervisor
+                                                                    ? "rgba(245, 158, 11, 0.3)"
+                                                                    : "rgba(99, 102, 241, 0.25)"
+                                                            }`,
+                                                            fontSize: "0.75rem",
+                                                            padding: "0.35rem 0.75rem",
+                                                            fontWeight: 600,
+                                                        }}
+                                                    >
+                                                        <i
+                                                            className={`bi ${
+                                                                isMemberSupervisor
+                                                                    ? "bi-star-fill text-warning me-1"
+                                                                    : "bi-person-fill me-1"
+                                                            }`}
+                                                        ></i>
+                                                        {isMemberSupervisor ? "Supervisor" : "Anggota Tim"}
+                                                    </span>
+                                                </div>
+
+                                                {/* Member Name & Position */}
+                                                <div className="mb-3">
+                                                    <h5
+                                                        className="fw-bold mb-1 text-truncate"
+                                                        title={member.name}
+                                                        style={{ color: "var(--text-primary)" }}
+                                                    >
+                                                        {member.name}
+                                                    </h5>
+                                                    <div className="small text-muted d-flex align-items-center text-truncate">
+                                                        <i className="bi bi-briefcase me-1 text-secondary"></i>
+                                                        <span>{member.position || "Mahasiswa Magang"}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Info Pills */}
+                                                <div className="d-flex flex-column gap-2 mb-3 flex-grow-1">
+                                                    {/* Email */}
+                                                    <div className="info-pill d-flex align-items-center text-truncate">
+                                                        <i className="bi bi-envelope-fill text-primary me-2 flex-shrink-0"></i>
+                                                        <span
+                                                            className="text-truncate"
+                                                            title={member.email}
+                                                            style={{ color: "var(--text-primary)" }}
+                                                        >
+                                                            {member.email}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Phone */}
+                                                    {member.phone && (
+                                                        <div className="info-pill d-flex align-items-center text-truncate">
+                                                            <i className="bi bi-telephone-fill text-success me-2 flex-shrink-0"></i>
+                                                            <span style={{ color: "var(--text-primary)" }}>
+                                                                {member.phone}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* NIP or Sumber Magang */}
+                                                    {member.nip ? (
+                                                        <div className="info-pill d-flex align-items-center text-truncate">
+                                                            <i className="bi bi-credit-card-2-front-fill text-info me-2 flex-shrink-0"></i>
+                                                            <span className="font-monospace small" style={{ color: "var(--text-primary)" }}>
+                                                                {member.nip}
+                                                            </span>
+                                                        </div>
+                                                    ) : member.sumber_magang ? (
+                                                        <div className="info-pill d-flex align-items-center text-truncate">
+                                                            <i className="bi bi-building text-secondary me-2 flex-shrink-0"></i>
+                                                            <span className="text-capitalize small" style={{ color: "var(--text-primary)" }}>
+                                                                {member.sumber_magang}
+                                                            </span>
+                                                        </div>
+                                                    ) : null}
+                                                </div>
+
+                                                {/* Member Stats (Presensi & Logbook for Supervisor View) */}
+                                                {hasMemberStats && (
+                                                    <div
+                                                        className="p-2 px-3 rounded-3 mb-3 d-flex justify-content-around text-center"
+                                                        style={{
+                                                            backgroundColor: "var(--bg-hover, #f8fafc)",
+                                                            border: "1px solid var(--border-color, rgba(0,0,0,0.06))",
+                                                        }}
+                                                    >
+                                                        <div>
+                                                            <small className="text-muted d-block" style={{ fontSize: "0.72rem" }}>
+                                                                Hadir
+                                                            </small>
+                                                            <strong className="text-success fs-6">
+                                                                {member.attendance_count || 0}
+                                                            </strong>
+                                                        </div>
+                                                        <div className="border-end"></div>
+                                                        <div>
+                                                            <small className="text-muted d-block" style={{ fontSize: "0.72rem" }}>
+                                                                Logbook
+                                                            </small>
+                                                            <strong className="text-primary fs-6">
+                                                                {member.logbook_count || 0}
+                                                            </strong>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Card Action Buttons */}
+                                                <div
+                                                    className="d-flex gap-2 pt-3 border-top mt-auto"
+                                                    style={{ borderColor: "var(--border-color, rgba(0,0,0,0.06))" }}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleViewMember(member)}
+                                                        className="btn btn-sm btn-outline-primary rounded-pill flex-grow-1 fw-medium d-flex align-items-center justify-content-center"
+                                                    >
+                                                        <i className="bi bi-eye me-1"></i>
+                                                        Lihat Detail
+                                                    </button>
+                                                    {member.phone && (
+                                                        <a
+                                                            href={getWhatsAppLink(member.phone)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="btn btn-sm btn-success rounded-pill px-3 d-flex align-items-center justify-content-center"
+                                                            title="Kirim pesan WhatsApp"
+                                                        >
+                                                            <i className="bi bi-whatsapp"></i>
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        /* Empty Search State */
+                        <div
+                            className="card border-0 shadow-sm text-center p-5 rounded-4"
+                            style={{ backgroundColor: "var(--bg-card, #ffffff)" }}
+                        >
+                            <div className="card-body py-4">
+                                <div
+                                    className="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                                    style={{
+                                        width: "70px",
+                                        height: "70px",
+                                        backgroundColor: "rgba(100, 116, 139, 0.1)",
+                                        color: "#64748b",
+                                    }}
+                                >
+                                    <i className="bi bi-search fs-2"></i>
+                                </div>
+                                <h5 className="fw-bold mb-1">Tidak Ditemukan Anggota Tim</h5>
+                                <p className="text-muted mx-auto mb-3" style={{ maxWidth: "420px" }}>
+                                    {searchQuery
+                                        ? `Tidak ada anggota divisi yang sesuai dengan kata kunci "${searchQuery}".`
+                                        : "Belum ada anggota yang terdaftar pada filter ini."}
+                                </p>
                                 <button
                                     type="button"
-                                    className="btn btn-secondary"
-                                    onClick={() => setShowModal(false)}
+                                    onClick={() => {
+                                        setSearchQuery("");
+                                        setRoleFilter("all");
+                                    }}
+                                    className="btn btn-sm btn-outline-secondary rounded-pill px-4"
                                 >
-                                    <i className="bi bi-x-lg me-1"></i>
-                                    Tutup
+                                    <i className="bi bi-arrow-repeat me-1"></i> Reset Pencarian
                                 </button>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    )}
+                </>
             )}
+
+            {/* ─── REUSABLE MEMBER DETAIL MODAL ─── */}
+            <MemberDetailModal
+                show={showModal}
+                onClose={() => setShowModal(false)}
+                member={selectedMember}
+                divisionName={division?.name}
+            />
         </div>
     );
 };

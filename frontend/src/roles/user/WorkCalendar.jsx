@@ -402,59 +402,25 @@ const UserWorkCalendar = () => {
             const isBeforeJoin =
                 userJoinDate && moment(date).isBefore(userJoinDate);
 
-            let style = {};
             let className = "";
 
             if (isBeforeJoin) {
-                // Before join date - disabled with gray style
-                style = {
-                    backgroundColor: "#e9ecef",
-                    color: "#adb5bd",
-                    opacity: 0.4,
-                    cursor: "not-allowed",
-                    pointerEvents: "none",
-                    textDecoration: "line-through",
-                };
                 className = "pre-join-date-disabled";
             } else if (isFuture) {
-                // Future dates - disabled style
-                style = {
-                    backgroundColor: "#f8f9fa",
-                    color: "#adb5bd",
-                    opacity: 0.5,
-                    cursor: "not-allowed",
-                    pointerEvents: "none",
-                };
                 className = "future-date-disabled";
             } else if (isTodayDate) {
-                // Today - highlighted
-                style = {
-                    backgroundColor: "#e3f2fd",
-                    fontWeight: "bold",
-                    border: "2px solid #2196f3",
-                    borderRadius: "4px",
-                };
                 className = "today-date";
             } else if (!isWorkingDay) {
-                // Weekend
-                style = {
-                    backgroundColor: COLORS.weekend,
-                    color: "#6c757d",
-                };
+                className = "weekend-date";
             }
 
             // Check for holidays (Background overrides weekend/workday)
             const holiday = calendarData?.holidays?.find(h => h.date === dateStr);
             if (holiday) {
-                style = {
-                    ...style,
-                    backgroundColor: holiday.is_national ? "#fff5f5" : "#fff9db",
-                    borderBottom: `2px solid ${holiday.is_national ? COLORS.holiday : COLORS.holidayCustom}`,
-                };
                 className = `${className} ${holiday.is_national ? 'holiday-national' : 'holiday-custom'}`.trim();
             }
 
-            return { style, className };
+            return { className };
         },
         [calendarData],
     );
@@ -632,10 +598,10 @@ const UserWorkCalendar = () => {
                                         style={{ fontSize: "2rem" }}
                                     ></i>
                                 </div>
-                                <h3 className="mb-1 fw-bold">
+                                <h3 className="mb-1 fw-bold text-white">
                                     {calendarData.summary.totalAttendances}
                                 </h3>
-                                <small className="text-white-50 fw-medium">
+                                <small className="text-white fw-medium">
                                     Hadir
                                 </small>
                             </Card.Body>
@@ -657,10 +623,10 @@ const UserWorkCalendar = () => {
                                         style={{ fontSize: "2rem" }}
                                     ></i>
                                 </div>
-                                <h3 className="mb-1 fw-bold">
+                                <h3 className="mb-1 fw-bold text-white">
                                     {calendarData.summary.lateCount}
                                 </h3>
-                                <small className="text-white-50 fw-medium">
+                                <small className="text-white fw-medium">
                                     Telat
                                 </small>
                             </Card.Body>
@@ -682,10 +648,10 @@ const UserWorkCalendar = () => {
                                         style={{ fontSize: "2rem" }}
                                     ></i>
                                 </div>
-                                <h3 className="mb-1 fw-bold">
+                                <h3 className="mb-1 fw-bold text-white">
                                     {calendarData.summary.absentCount || 0}
                                 </h3>
-                                <small className="text-white-50 fw-medium">
+                                <small className="text-white fw-medium">
                                     Alpha (Hari)
                                 </small>
                             </Card.Body>
@@ -707,10 +673,10 @@ const UserWorkCalendar = () => {
                                         style={{ fontSize: "2rem" }}
                                     ></i>
                                 </div>
-                                <h3 className="mb-1 fw-bold">
+                                <h3 className="mb-1 fw-bold text-white">
                                     {calendarData.summary.leaveCount || 0}
                                 </h3>
-                                <small className="text-white-50 fw-medium">
+                                <small className="text-white fw-medium">
                                     Cuti (Hari)
                                 </small>
                             </Card.Body>
@@ -919,7 +885,7 @@ const UserWorkCalendar = () => {
                                     <h5 className="mb-0 fw-bold">
                                         Tampilan Kalender
                                     </h5>
-                                    <small className="text-white-50">
+                                    <small className="text-white">
                                         Pilih periode untuk melihat aktivitas
                                     </small>
                                 </div>

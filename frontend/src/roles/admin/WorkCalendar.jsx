@@ -690,58 +690,42 @@ const AdminWorkCalendar = () => {
             const isFuture = isFutureDate(dateStr);
             const isWorkingDay = calendarData?.workingDays?.includes(dayOfWeek);
 
-            let style = {};
             let className = "";
 
             if (isFuture) {
-                style = { backgroundColor: "#f8f9fa", color: "#adb5bd", opacity: 0.6, cursor: "not-allowed" };
                 className = "future-date-disabled";
             } else if (selectedUserId && calendarData?.user?.created_at) {
                 // User-specific: check pre-join date
                 const userJoinDate = moment(calendarData.user.created_at).startOf("day");
                 if (moment(date).isBefore(userJoinDate)) {
-                    style = { backgroundColor: "#e9ecef", color: "#adb5bd", opacity: 0.4, cursor: "not-allowed", pointerEvents: "none" };
                     className = "pre-join-date-disabled";
                 } else if (isTodayDate) {
-                    style = { backgroundColor: "#e3f2fd", fontWeight: "bold", border: "2px solid #2196f3" };
                     className = "today-highlight";
                 } else if (!isWorkingDay) {
-                    style = { backgroundColor: COLORS.weekend, color: "#adb5bd" };
                     className = "weekend";
                 }
 
                 // Check for holidays in user view (Overrides weekend)
                 const holiday = calendarData?.holidays?.find(h => h.date === dateStr);
                 if (holiday) {
-                    style = {
-                        ...style,
-                        backgroundColor: holiday.is_national ? "#fff5f5" : "#fff9db",
-                        borderBottom: `2px solid ${holiday.is_national ? COLORS.holiday : COLORS.holidayCustom}`,
-                    };
                     className = `${className} ${holiday.is_national ? 'holiday-national' : 'holiday-custom'}`.trim();
                 }
             } else {
                 // Org/team view heatmap
                 if (isTodayDate) {
-                    style = { backgroundColor: "#e3f2fd", fontWeight: "bold", border: "2px solid #2196f3" };
                     className = "today-highlight";
                 } else if (!isWorkingDay) {
-                    style = { backgroundColor: "#f0f0f0", color: "#adb5bd" };
                     className = "weekend";
                 }
 
                 // Check for holidays in org view (Override heatmap if holiday)
                 const holiday = calendarData?.holidays?.find(h => h.date === dateStr);
                 if (holiday) {
-                    style = {
-                        backgroundColor: holiday.is_national ? "#fff5f5" : "#fff9db",
-                        borderBottom: `2px solid ${holiday.is_national ? COLORS.holiday : COLORS.holidayCustom}`,
-                    };
                     className = `${className} ${holiday.is_national ? 'holiday-national' : 'holiday-custom'}`.trim();
                 }
             }
 
-            return { style, className };
+            return { className };
         },
         [calendarData, selectedUserId, orgDateStats],
     );
@@ -968,8 +952,8 @@ const AdminWorkCalendar = () => {
                             <Card className="border-0 shadow-sm h-100" style={{ background: card.gradient, color: "white" }}>
                                 <Card.Body className="p-3 text-center">
                                     <div className="mb-1"><i className={`bi ${card.icon}`} style={{ fontSize: "1.8rem" }}></i></div>
-                                    <h4 className="mb-0 fw-bold">{card.value}</h4>
-                                    <small className="text-white-50 fw-medium" style={{ fontSize: "0.75rem" }}>{card.label}</small>
+                                    <h4 className="mb-0 fw-bold text-white">{card.value}</h4>
+                                    <small className="text-white fw-medium" style={{ fontSize: "0.75rem" }}>{card.label}</small>
                                 </Card.Body>
                             </Card>
                         </Col>
@@ -1288,7 +1272,7 @@ const AdminWorkCalendar = () => {
                                     <h5 className="mb-0 fw-bold">
                                         Tampilan Kalender
                                     </h5>
-                                    <small className="text-white-50">
+                                    <small className="text-white">
                                         Pilih periode untuk melihat aktivitas
                                         organisasi
                                     </small>

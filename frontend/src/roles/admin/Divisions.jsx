@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import axiosInstance from "../../utils/axiosInstance";
 import toast from "react-hot-toast";
 import { getAvatarUrl } from "../../utils/Constant";
+import MemberDetailModal from "../../components/MemberDetailModal";
 
 const AdminDivisions = () => {
     const [loading, setLoading] = useState(true);
@@ -15,6 +16,10 @@ const AdminDivisions = () => {
     const [editingId, setEditingId] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [memberToRemove, setMemberToRemove] = useState(null);
+    const [selectedMember, setSelectedMember] = useState(null);
+    const [showMemberModal, setShowMemberModal] = useState(false);
+    const [viewDivisionMembers, setViewDivisionMembers] = useState(null);
+    const [showMembersListModal, setShowMembersListModal] = useState(false);
     const [formData, setFormData] = useState({
         name: "",
         description: "",
@@ -500,7 +505,7 @@ const AdminDivisions = () => {
                         <div className="card-body">
                             <div className="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 className="text-white-50 mb-1 small">
+                                    <h6 className="text-white opacity-75 mb-1 small">
                                         Total Divisi
                                     </h6>
                                     <h3 className="mb-0">
@@ -519,7 +524,7 @@ const AdminDivisions = () => {
                         <div className="card-body">
                             <div className="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 className="text-white-50 mb-1 small">
+                                    <h6 className="text-white opacity-75 mb-1 small">
                                         Divisi Aktif
                                     </h6>
                                     <h3 className="mb-0">
@@ -540,7 +545,7 @@ const AdminDivisions = () => {
                         <div className="card-body">
                             <div className="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 className="text-white-50 mb-1 small">
+                                    <h6 className="text-white opacity-75 mb-1 small">
                                         Divisi Nonaktif
                                     </h6>
                                     <h3 className="mb-0">
@@ -561,7 +566,7 @@ const AdminDivisions = () => {
                         <div className="card-body">
                             <div className="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 className="text-white-50 mb-1 small">
+                                    <h6 className="text-white opacity-75 mb-1 small">
                                         Hasil Filter
                                     </h6>
                                     <h3 className="mb-0">
@@ -663,11 +668,19 @@ const AdminDivisions = () => {
                                                 )}
                                             </td>
                                             <td className="px-4 py-3 text-center">
-                                                <span className="badge bg-primary">
-                                                    <i className="bi bi-people me-1"></i>
-                                                    {division.members?.length ||
-                                                        0}
-                                                </span>
+                                                <button
+                                                    type="button"
+                                                    className="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill px-3 py-2 text-decoration-none hover-shadow"
+                                                    style={{ cursor: "pointer", transition: "all 0.2s ease" }}
+                                                    onClick={() => {
+                                                        setViewDivisionMembers(division);
+                                                        setShowMembersListModal(true);
+                                                    }}
+                                                    title="Lihat Daftar Anggota Divisi"
+                                                >
+                                                    <i className="bi bi-people-fill me-1"></i>
+                                                    {division.members?.length || 0}
+                                                </button>
                                             </td>
                                             <td className="px-4 py-3 text-center">
                                                 <span
@@ -692,6 +705,18 @@ const AdminDivisions = () => {
                                             <td className="px-4 py-3 text-center">
                                                 <div className="btn-group btn-group-sm">
                                                     <button
+                                                        type="button"
+                                                        className="btn btn-outline-info"
+                                                        onClick={() => {
+                                                            setViewDivisionMembers(division);
+                                                            setShowMembersListModal(true);
+                                                        }}
+                                                        title="Lihat Anggota Divisi"
+                                                    >
+                                                        <i className="bi bi-people"></i>
+                                                    </button>
+                                                    <button
+                                                        type="button"
                                                         className="btn btn-outline-primary"
                                                         onClick={() => {
                                                             setEditingId(
@@ -784,7 +809,7 @@ const AdminDivisions = () => {
                                     <h5 className="modal-title fw-bold mb-1">
                                         {editingId ? "Edit Divisi" : "Tambah Divisi Baru"}
                                     </h5>
-                                    <p className="mb-0 small text-white-50">
+                                    <p className="mb-0 small text-white opacity-75">
                                         {editingId ? "Perbarui informasi divisi dan struktur keanggotaan." : "Buat divisi baru dan tetapkan supervisor beserta anggotanya."}
                                     </p>
                                 </div>
@@ -1060,6 +1085,18 @@ const AdminDivisions = () => {
                                                                             <span className="badge bg-success ms-auto rounded-pill me-2" style={{ fontSize: '11px' }}>Aktif</span>
                                                                             <button
                                                                                 type="button"
+                                                                                className="btn btn-sm btn-outline-primary border-0 rounded-pill me-1 px-2 py-1"
+                                                                                style={{ fontSize: "11px" }}
+                                                                                onClick={() => {
+                                                                                    setSelectedMember(member);
+                                                                                    setShowMemberModal(true);
+                                                                                }}
+                                                                                title="Lihat Detail Profil Anggota"
+                                                                            >
+                                                                                <i className="bi bi-eye me-1"></i> Detail
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
                                                                                 className="btn btn-sm btn-outline-danger border-0 rounded-circle"
                                                                                 onClick={() => setMemberToRemove(member)}
                                                                                 title="Keluarkan dari divisi"
@@ -1309,6 +1346,151 @@ const AdminDivisions = () => {
                     </div>
                 </div>
             )}
+
+            {/* ─── MODAL DAFTAR ANGGOTA DIVISI (ADMIN PREVIEW) ─── */}
+            {showMembersListModal && viewDivisionMembers && (
+                <div
+                    className="modal show d-block"
+                    style={{ backgroundColor: "rgba(15, 23, 42, 0.6)", backdropFilter: "blur(4px)", zIndex: 1050 }}
+                    onClick={(e) => {
+                        if (e.target.className.includes("modal show")) {
+                            setShowMembersListModal(false);
+                        }
+                    }}
+                >
+                    <div className="modal-dialog modal-dialog-centered modal-lg">
+                        <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style={{ backgroundColor: "var(--bg-card, #ffffff)" }}>
+                            <div
+                                className="modal-header border-0 text-white"
+                                style={{ background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #8b5cf6 100%)", padding: "1.5rem 1.75rem" }}
+                            >
+                                <div>
+                                    <h5 className="modal-title fw-bold text-white mb-1 d-flex align-items-center gap-2">
+                                        <i className="bi bi-diagram-3-fill"></i>
+                                        Anggota Divisi: {viewDivisionMembers.name}
+                                    </h5>
+                                    <small className="text-white-50">
+                                        Daftar seluruh personil dan supervisor yang terdaftar di divisi ini
+                                    </small>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn-close btn-close-white"
+                                    onClick={() => setShowMembersListModal(false)}
+                                ></button>
+                            </div>
+
+                            <div className="modal-body p-4" style={{ maxHeight: "65vh", overflowY: "auto" }}>
+                                {viewDivisionMembers.supervisor && (
+                                    <div
+                                        className="p-3 rounded-3 mb-4 d-flex align-items-center justify-content-between border"
+                                        style={{ backgroundColor: "rgba(245, 158, 11, 0.08)", borderColor: "rgba(245, 158, 11, 0.25)" }}
+                                    >
+                                        <div className="d-flex align-items-center gap-3">
+                                            <img
+                                                src={getAvatarUrl(viewDivisionMembers.supervisor)}
+                                                alt="Supervisor"
+                                                className="rounded-circle border border-2 border-warning shadow-sm"
+                                                style={{ width: "48px", height: "48px", objectFit: "cover" }}
+                                            />
+                                            <div>
+                                                <div className="d-flex align-items-center gap-2 mb-1">
+                                                    <span className="fw-bold text-dark" style={{ color: "var(--text-primary)" }}>
+                                                        {viewDivisionMembers.supervisor.name}
+                                                    </span>
+                                                    <span className="badge bg-warning bg-opacity-20 text-warning-emphasis border border-warning-subtle rounded-pill" style={{ fontSize: "11px" }}>
+                                                        <i className="bi bi-star-fill me-1"></i>
+                                                        Supervisor
+                                                    </span>
+                                                </div>
+                                                <small className="text-muted">{viewDivisionMembers.supervisor.email}</small>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-outline-warning rounded-pill px-3"
+                                            onClick={() => {
+                                                setSelectedMember(viewDivisionMembers.supervisor);
+                                                setShowMemberModal(true);
+                                            }}
+                                        >
+                                            <i className="bi bi-eye me-1"></i> Profil
+                                        </button>
+                                    </div>
+                                )}
+
+                                <h6 className="fw-bold mb-3 d-flex align-items-center gap-2 text-primary">
+                                    <i className="bi bi-people-fill"></i>
+                                    Mahasiswa & Rekan Tim ({viewDivisionMembers.members?.length || 0})
+                                </h6>
+
+                                {(!viewDivisionMembers.members || viewDivisionMembers.members.length === 0) ? (
+                                    <div className="text-center py-5 text-muted">
+                                        <i className="bi bi-people fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                        <p className="mb-0 fw-medium">Belum ada anggota yang terdaftar di divisi ini</p>
+                                    </div>
+                                ) : (
+                                    <div className="row g-3">
+                                        {viewDivisionMembers.members.map((member) => (
+                                            <div key={member.id} className="col-12 col-md-6">
+                                                <div
+                                                    className="p-3 rounded-3 border h-100 d-flex align-items-center justify-content-between hover-shadow"
+                                                    style={{ backgroundColor: "var(--bg-hover, #f8fafc)", borderColor: "var(--border-color, rgba(0,0,0,0.08))" }}
+                                                >
+                                                    <div className="d-flex align-items-center gap-3 overflow-hidden">
+                                                        <img
+                                                            src={getAvatarUrl(member)}
+                                                            alt={member.name}
+                                                            className="rounded-circle border shadow-sm flex-shrink-0"
+                                                            style={{ width: "42px", height: "42px", objectFit: "cover" }}
+                                                        />
+                                                        <div className="overflow-hidden">
+                                                            <div className="fw-bold text-truncate" style={{ color: "var(--text-primary)", fontSize: "0.92rem" }}>
+                                                                {member.name}
+                                                            </div>
+                                                            <div className="small text-muted text-truncate">{member.position || member.email}</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <button
+                                                        type="button"
+                                                        className="btn btn-sm btn-outline-primary rounded-pill px-3 flex-shrink-0 ms-2"
+                                                        style={{ fontSize: "0.8rem" }}
+                                                        onClick={() => {
+                                                            setSelectedMember(member);
+                                                            setShowMemberModal(true);
+                                                        }}
+                                                    >
+                                                        <i className="bi bi-eye me-1"></i> Detail
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="modal-footer border-top p-3" style={{ backgroundColor: "var(--bg-card, #ffffff)" }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary rounded-pill px-4 ms-auto"
+                                    onClick={() => setShowMembersListModal(false)}
+                                >
+                                    Tutup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── REUSABLE MEMBER DETAIL MODAL (ADMIN) ─── */}
+            <MemberDetailModal
+                show={showMemberModal}
+                onClose={() => setShowMemberModal(false)}
+                member={selectedMember}
+                divisionName={viewDivisionMembers?.name || divisions.find((d) => d.id === editingId)?.name}
+            />
         </div>
     );
 };

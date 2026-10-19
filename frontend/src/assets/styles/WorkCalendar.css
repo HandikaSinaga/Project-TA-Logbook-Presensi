@@ -115,3 +115,110 @@
 .btn-close-white:hover {
     opacity: 1;
 }
+
+/* ---- Calendar Day Overrides for Light/Dark Mode ---- */
+.today-date, .today-highlight {
+    background-color: #e3f2fd !important;
+    font-weight: bold;
+    border: 2px solid #2196f3 !important;
+    border-radius: 4px;
+}
+.weekend, .weekend-date {
+    background-color: #f8f9fa !important;
+    color: #6c757d !important;
+}
+.holiday-national {
+    background-color: #fff5f5 !important;
+    border-bottom: 2px solid #dc3545 !important;
+}
+.holiday-custom {
+    background-color: #fff9db !important;
+    border-bottom: 2px solid #fd7e14 !important;
+}
+.pre-join-date-disabled {
+    background-color: #e9ecef !important;
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: not-allowed;
+    text-decoration: line-through;
+}
+.future-date-disabled {
+    background-color: #f8f9fa !important;
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+.before-assigned-disabled {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ---- Dark Mode Overrides ---- */
+[data-theme="dark"] .today-date,
+[data-theme="dark"] .today-highlight {
+    background-color: #1e3a8a !important;
+    border-color: #3b82f6 !important;
+}
+[data-theme="dark"] .weekend,
+[data-theme="dark"] .weekend-date {
+    background-color: #1f2937 !important;
+    color: #9ca3af !important;
+}
+[data-theme="dark"] .holiday-national {
+    background-color: #450a0a !important;
+    border-bottom: 2px solid #ef4444 !important;
+}
+[data-theme="dark"] .holiday-custom {
+    background-color: #422006 !important;
+    border-bottom: 2px solid #f97316 !important;
+}
+[data-theme="dark"] .pre-join-date-disabled {
+    background-color: #111827 !important;
+    opacity: 0.4 !important;
+}
+[data-theme="dark"] .future-date-disabled {
+    background-color: #1f2937 !important;
+    opacity: 0.5 !important;
+}
+[data-theme="dark"] .before-assigned-disabled {
+    background-color: #45300a !important;
+    color: #fef08a !important;
+}
+
+/* ---- Heatmap Classes ---- */
+.attendance-high {
+    background-color: #e8f5e9 !important;
+}
+.attendance-mid {
+    background-color: #fff9c4 !important;
+}
+.attendance-low {
+    background-color: #fff3e0 !important;
+}
+.attendance-critical {
+    background-color: #ffebee !important;
+}
+.heatmap-day.no-data {
+    background-color: #fff3e0 !important;
+    opacity: 0.8;
+}
+
+/* ---- Dark Mode Heatmap ---- */
+[data-theme="dark"] .attendance-high {
+    background-color: #14532d !important;
+}
+[data-theme="dark"] .attendance-mid {
+    background-color: #422006 !important;
+}
+[data-theme="dark"] .attendance-low {
+    background-color: #7c2d12 !important;
+}
+[data-theme="dark"] .attendance-critical {
+    background-color: #450a0a !important;
+}
+[data-theme="dark"] .heatmap-day.no-data {
+    background-color: #7c2d12 !important;
+    opacity: 0.8;
+}

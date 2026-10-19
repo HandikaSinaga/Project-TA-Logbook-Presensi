@@ -98,17 +98,10 @@ class AttendanceService {
                                     notes: "Tanpa keterangan (Sistem Backfill)",
                                     approval_status: "approved"
                                 });
-                            } else if (reason === "holiday" && holiday) {
-                                // Missing attendance on a holiday, record it as holiday
-                                absentRecords.push({
-                                    user_id: userId,
-                                    division_id: user.division_id,
-                                    date: dateStr,
-                                    status: "holiday",
-                                    notes: `Hari Libur: ${holiday.name}`,
-                                    approval_status: "approved"
-                                });
                             }
+                            // Holidays and weekends are intentionally skipped — they don't need
+                            // attendance records. The CalendarController displays holidays
+                            // from the holidays table directly.
                         }
                     }
                 }
@@ -119,7 +112,7 @@ class AttendanceService {
                 await Attendance.bulkCreate(absentRecords);
             }
         } catch (error) {
-            // Error handling
+            console.error(`[AttendanceService] Error in ensureAttendanceRecords for user ${userId}:`, error.message);
         }
     }
 }
